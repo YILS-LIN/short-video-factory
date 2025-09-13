@@ -235,7 +235,7 @@ const handleSelectBgmFolder = async () => {
 }
 
 const handleOpenHomePage = () => {
-  window.electron.openExternal({ url: 'https://yils.blog' })
+  window.electron.openExternal({ url: 'https://fbjvryq00y.feishu.cn/wiki/XRnJwu9BDi3Uqxkj8PxcHSBEnQc' })
 }
 </script>
 

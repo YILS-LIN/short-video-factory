@@ -122,14 +122,6 @@
 4. 推送到分支 (`git push origin feature/AmazingFeature`)
 5. 开启一个Pull Request
 
-### 主要贡献者：
-
-<a href="https://github.com/TLS-802/TLS-Video-Factory/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=YILS-LIN/TLS-Video-Factory" alt="contrib.rocks image" />
-</a>
-
-<p align="right">(<a href="#readme-top">返回顶部</a>)</p>
-
 ## 💖 鸣谢
 
 - [rany2/edge-tts](https://github.com/rany2/edge-tts)
@@ -146,38 +138,17 @@ Copyright © 2025 YILS.
 
 <p align="right">(<a href="#readme-top">返回顶部</a>)</p>
 
-## 🐱 捐助
-
-如果这个项目对你有帮助，欢迎请作者喝杯咖啡(或者啤酒) 🍺
-
-你的 **Star ⭐** 和 **捐助** 是我持续更新的最大动力！
-
-> 捐助者未来也许会享有额外的特殊功能或新功能优先使用等福利
-
-<div align="left">
-  <img src="https://github.com/user-attachments/assets/6b832dd3-38ea-4927-9c3b-97549c77a1f0" alt="YILS的微信赞赏码" width="400">
-</div>
-
-<!-- 星标历史 -->
-## ⭐ 星标历史
-
-<div align="center">
-  <a href="https://star-history.com/#YILS-LIN/TLS-Video-Factory">
-    <img src="https://api.star-history.com/svg?repos=YILS-LIN/TLS-Video-Factory&type=Date" alt="Star History Chart" width="800">
-  </a>
-</div>
-
 <!-- MARKDOWN链接和图片 -->
-[contributors-shield]: https://img.shields.io/github/contributors/YILS-LIN/TLS-Video-Factory.svg?color=c4f042&labelColor=black&style=flat-square
+[contributors-shield]: https://img.shields.io/github/contributors/TLS-802/TLS-Video-Factory.svg?color=c4f042&labelColor=black&style=flat-square
 [contributors-url]: https://github.com/TLS-802/TLS-Video-Factory/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/YILS-LIN/TLS-Video-Factory.svg?color=8ae8ff&labelColor=black&style=flat-square
+[forks-shield]: https://img.shields.io/github/forks/TLS-802/TLS-Video-Factory.svg?color=8ae8ff&labelColor=black&style=flat-square
 [forks-url]: https://github.com/TLS-802/TLS-Video-Factory/network/members
-[stars-shield]: https://img.shields.io/github/stars/YILS-LIN/TLS-Video-Factory.svg?color=ffcb47&labelColor=black&style=flat-square
+[stars-shield]: https://img.shields.io/github/stars/TLS-802/TLS-Video-Factory.svg?color=ffcb47&labelColor=black&style=flat-square
 [stars-url]: https://github.com/TLS-802/TLS-Video-Factory/stargazers
-[issues-shield]: https://img.shields.io/github/issues/YILS-LIN/TLS-Video-Factory.svg?labelColor=black&style=flat-square
+[issues-shield]: https://img.shields.io/github/issues/TLS-802/TLS-Video-Factory.svg?labelColor=black&style=flat-square
 [issues-url]: https://github.com/TLS-802/TLS-Video-Factory/issues
-[release-shield]: https://img.shields.io/github/v/release/YILS-LIN/TLS-Video-Factory?labelColor=black&style=flat-square
+[release-shield]: https://img.shields.io/github/v/release/TLS-802/TLS-Video-Factory?labelColor=black&style=flat-square
 [release-url]: https://github.com/TLS-802/TLS-Video-Factory/releases
-[release-date-shield]: https://img.shields.io/github/release-date/YILS-LIN/TLS-Video-Factory?color=9cf&style=flat-round
-[license-shield]: https://img.shields.io/github/license/YILS-LIN/TLS-Video-Factory.svg?labelColor=black&style=flat-square
+[release-date-shield]: https://img.shields.io/github/release-date/TLS-802/TLS-Video-Factory?color=9cf&style=flat-round
+[license-shield]: https://img.shields.io/github/license/TLS-802/TLS-Video-Factory.svg?labelColor=black&style=flat-square
 [license-url]: https://github.com/TLS-802/TLS-Video-Factory/blob/main/LICENSE
