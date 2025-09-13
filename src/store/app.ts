@@ -58,7 +58,7 @@ export const useAppStore = defineStore(
     const gender = ref<string>()
     const voice = ref<EdgeTTSVoice | null>(null)
     const speed = ref(0)
-    const tryListeningText = ref('Hello，欢迎使用短视频工厂！')
+    const tryListeningText = ref('Hello，欢迎使用驼铃短视频混剪工厂！')
 
     // 合成配置
     const renderConfig = ref({

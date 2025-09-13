@@ -10,11 +10,11 @@
 <!-- 项目LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/YILS-LIN/short-video-factory">
+  <a href="https://github.com/TLS-802/TLS-Video-Factory">
     <img src="public/icon.png" alt="Logo" height="100">
   </a>
 
-<h3 align="center">AI Short Video Factory - 短视频工厂</h3>
+<h3 align="center">驼铃短视频混剪工厂</h3>
 
   <p align="center">
     🚀 一键生成产品营销与泛内容短视频，AI批量自动剪辑，高颜值跨平台桌面端工具
@@ -30,16 +30,16 @@
 [![许可证][license-shield]][license-url]
 
   <p align="center">
-    <a href="https://github.com/YILS-LIN/short-video-factory/issues/new?labels=bug&template=bug-report---.md">报告Bug</a>
+    <a href="https://github.com/TLS-802/TLS-Video-Factory/issues/new?labels=bug&template=bug-report---.md">报告Bug</a>
     &middot;
-    <a href="https://github.com/YILS-LIN/short-video-factory/issues/new?labels=enhancement&template=feature-request---.md">请求功能</a>
+    <a href="https://github.com/TLS-802/TLS-Video-Factory/issues/new?labels=enhancement&template=feature-request---.md">请求功能</a>
   </p>
 </div>
 
 <!-- 关于项目 -->
 ## 📖 关于项目
 
-短视频工厂是一个开源的桌面端应用，旨在通过AI技术简化短视频的制作流程。用户可以通过简单的提示词文本+视频分镜素材，快速且自动的剪辑出高质量的产品营销和泛内容短视频。该项目集成了AI驱动的文案生成、语音合成、视频剪辑、字幕特效等功能，旨在为用户提供开箱即用的短视频制作体验。
+驼铃短视频混剪工厂是一个开源的桌面端应用，旨在通过AI技术简化短视频的制作流程。用户可以通过简单的提示词文本+视频分镜素材，快速且自动的剪辑出高质量的产品营销和泛内容短视频。该项目集成了AI驱动的文案生成、语音合成、视频剪辑、字幕特效等功能，旨在为用户提供开箱即用的短视频制作体验。
 
 ### 核心功能
 
@@ -60,9 +60,9 @@
 
 ## 🚀 开始使用
 
-前往 [Github Release](https://github.com/YILS-LIN/short-video-factory/releases) 下载最新版本
+前往 [Github Release](https://github.com/TLS-802/TLS-Video-Factory/releases) 下载最新版本
 
-前往 [官方文档](https://short-video-factory.yils.blog) 查看使用手册
+前往 [官方文档](https://tls-video-factory.yils.blog) 查看使用手册
 
 <p align="right">(<a href="#readme-top">返回顶部</a>)</p>
 
@@ -83,7 +83,7 @@
 - [ ] 字幕特效，支持多种字幕样式和特效
 
 
-查看[开放问题](https://github.com/YILS-LIN/short-video-factory/issues)以获取提议功能（和已知问题）的完整列表。
+查看[开放问题](https://github.com/TLS-802/TLS-Video-Factory/issues)以获取提议功能（和已知问题）的完整列表。
 
 <p align="right">(<a href="#readme-top">返回顶部</a>)</p>
 
@@ -124,8 +124,8 @@
 
 ### 主要贡献者：
 
-<a href="https://github.com/YILS-LIN/short-video-factory/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=YILS-LIN/short-video-factory" alt="contrib.rocks image" />
+<a href="https://github.com/TLS-802/TLS-Video-Factory/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=YILS-LIN/TLS-Video-Factory" alt="contrib.rocks image" />
 </a>
 
 <p align="right">(<a href="#readme-top">返回顶部</a>)</p>
@@ -162,22 +162,22 @@ Copyright © 2025 YILS.
 ## ⭐ 星标历史
 
 <div align="center">
-  <a href="https://star-history.com/#YILS-LIN/short-video-factory">
-    <img src="https://api.star-history.com/svg?repos=YILS-LIN/short-video-factory&type=Date" alt="Star History Chart" width="800">
+  <a href="https://star-history.com/#YILS-LIN/TLS-Video-Factory">
+    <img src="https://api.star-history.com/svg?repos=YILS-LIN/TLS-Video-Factory&type=Date" alt="Star History Chart" width="800">
   </a>
 </div>
 
 <!-- MARKDOWN链接和图片 -->
-[contributors-shield]: https://img.shields.io/github/contributors/YILS-LIN/short-video-factory.svg?color=c4f042&labelColor=black&style=flat-square
-[contributors-url]: https://github.com/YILS-LIN/short-video-factory/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/YILS-LIN/short-video-factory.svg?color=8ae8ff&labelColor=black&style=flat-square
-[forks-url]: https://github.com/YILS-LIN/short-video-factory/network/members
-[stars-shield]: https://img.shields.io/github/stars/YILS-LIN/short-video-factory.svg?color=ffcb47&labelColor=black&style=flat-square
-[stars-url]: https://github.com/YILS-LIN/short-video-factory/stargazers
-[issues-shield]: https://img.shields.io/github/issues/YILS-LIN/short-video-factory.svg?labelColor=black&style=flat-square
-[issues-url]: https://github.com/YILS-LIN/short-video-factory/issues
-[release-shield]: https://img.shields.io/github/v/release/YILS-LIN/short-video-factory?labelColor=black&style=flat-square
-[release-url]: https://github.com/YILS-LIN/short-video-factory/releases
-[release-date-shield]: https://img.shields.io/github/release-date/YILS-LIN/short-video-factory?color=9cf&style=flat-round
-[license-shield]: https://img.shields.io/github/license/YILS-LIN/short-video-factory.svg?labelColor=black&style=flat-square
-[license-url]: https://github.com/YILS-LIN/short-video-factory/blob/main/LICENSE
+[contributors-shield]: https://img.shields.io/github/contributors/YILS-LIN/TLS-Video-Factory.svg?color=c4f042&labelColor=black&style=flat-square
+[contributors-url]: https://github.com/TLS-802/TLS-Video-Factory/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/YILS-LIN/TLS-Video-Factory.svg?color=8ae8ff&labelColor=black&style=flat-square
+[forks-url]: https://github.com/TLS-802/TLS-Video-Factory/network/members
+[stars-shield]: https://img.shields.io/github/stars/YILS-LIN/TLS-Video-Factory.svg?color=ffcb47&labelColor=black&style=flat-square
+[stars-url]: https://github.com/TLS-802/TLS-Video-Factory/stargazers
+[issues-shield]: https://img.shields.io/github/issues/YILS-LIN/TLS-Video-Factory.svg?labelColor=black&style=flat-square
+[issues-url]: https://github.com/TLS-802/TLS-Video-Factory/issues
+[release-shield]: https://img.shields.io/github/v/release/YILS-LIN/TLS-Video-Factory?labelColor=black&style=flat-square
+[release-url]: https://github.com/TLS-802/TLS-Video-Factory/releases
+[release-date-shield]: https://img.shields.io/github/release-date/YILS-LIN/TLS-Video-Factory?color=9cf&style=flat-round
+[license-shield]: https://img.shields.io/github/license/YILS-LIN/TLS-Video-Factory.svg?labelColor=black&style=flat-square
+[license-url]: https://github.com/TLS-802/TLS-Video-Factory/blob/main/LICENSE
