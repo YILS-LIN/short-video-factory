@@ -1,12 +1,12 @@
 {
   "name": "tls-video-factory",
-  "description": "驼铃短视频混剪工厂，一键生成产品营销与泛内容短视频，AI批量自动剪辑",
+  "description": "驼铃短视频工厂，一键生成产品营销与泛内容短视频，AI批量自动剪辑",
   "version": "1.1.1",
   "author": {
-    "name": "YILS",
-    "developer": "YILS",
-    "email": "yils_lin@163.com",
-    "url": "https://yils.blog/"
+    "name": "TLS-801",
+    "developer": "TLS-801",  
+    "email": "tls222888@gmail.com",
+    "url": "https://tls-video-factory.blog/"
   },
   "homepage": "https://github.com/TLS-802/TLS-Video-Factory",
   "main": "dist-electron/main.js",

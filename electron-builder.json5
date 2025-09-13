@@ -1,7 +1,7 @@
 // @see - https://www.electron.build/configuration/configuration
 {
   $schema: 'https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json',
-  productName: '驼铃短视频混剪工厂',
+  productName: '驼铃短视频工厂',
   appId: 'com.yils.tls-video-factory',
   asar: true,
   directories: {
