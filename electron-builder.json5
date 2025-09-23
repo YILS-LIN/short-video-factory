@@ -10,6 +10,9 @@
   files: ['dist', 'dist-electron', 'dist-native', 'locales'],
   npmRebuild: false, // disable rebuild node_modules 使用包内自带预构建二进制，而不重新构建
   beforePack: './scripts/before-pack.js',
+  asarUnpack: [
+    'dist-native/**/*'
+  ],
   mac: {
     target: [
       {

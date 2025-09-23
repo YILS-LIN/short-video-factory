@@ -39,24 +39,42 @@ function getFFmpegPath(): string {
       )
     } else {
       // 生产环境
-      const appPath = process.resourcesPath || path.join(__dirname, '..')
+      const resourcesPath = process.resourcesPath || path.join(__dirname, '..')
+      
+      // 在生产环境中，FFmpeg 二进制文件位于 app.asar.unpacked 目录
+      const asarUnpackedPath = path.join(resourcesPath, 'app.asar.unpacked')
+      
       bundledPaths.push(
-        path.join(appPath, 'dist-native/ffmpeg/ffmpeg-darwin-universal'),
-        path.join(appPath, 'dist-native/ffmpeg/ffmpeg-darwin-arm64'),
-        path.join(appPath, 'dist-native/ffmpeg/ffmpeg-darwin-x64')
+        // 首先检查 app.asar.unpacked 路径（推荐）
+        path.join(asarUnpackedPath, 'dist-native/ffmpeg/ffmpeg-darwin-universal'),
+        path.join(asarUnpackedPath, 'dist-native/ffmpeg/ffmpeg-darwin-arm64'),
+        path.join(asarUnpackedPath, 'dist-native/ffmpeg/ffmpeg-darwin-x64'),
+        // 备用路径：直接在 resources 目录下
+        path.join(resourcesPath, 'dist-native/ffmpeg/ffmpeg-darwin-universal'),
+        path.join(resourcesPath, 'dist-native/ffmpeg/ffmpeg-darwin-arm64'),
+        path.join(resourcesPath, 'dist-native/ffmpeg/ffmpeg-darwin-x64')
       )
     }
 
     // 检查打包的 FFmpeg
+    console.log('macOS FFmpeg 检测开始...')
+    console.log('资源路径:', process.resourcesPath)
+    console.log('__dirname:', __dirname)
+    console.log('待检查的路径:', bundledPaths)
+    
     for (const bundledPath of bundledPaths) {
+      console.log(`检查路径: ${bundledPath}`)
       if (fs.existsSync(bundledPath)) {
+        console.log(`文件存在: ${bundledPath}`)
         try {
           fs.accessSync(bundledPath, fs.constants.X_OK)
-          console.log('找到打包的 FFmpeg:', bundledPath)
+          console.log('✅ 找到可执行的 FFmpeg:', bundledPath)
           return bundledPath
         } catch (error) {
-          console.log('打包的 FFmpeg 无执行权限:', bundledPath)
+          console.log('❌ FFmpeg 文件存在但无执行权限:', bundledPath)
         }
+      } else {
+        console.log(`文件不存在: ${bundledPath}`)
       }
     }
 

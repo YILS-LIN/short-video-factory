@@ -1,6 +1,16 @@
 # Changelog
 此项目的所有显著更改都将记录在此文件中。
 
+## [v1.1.3] - 2025-09-23
+### Fixed
+- Fixed macOS FFmpeg path detection issue - FFmpeg now properly unpacked to app.asar.unpacked
+- Enhanced FFmpeg binary resolution with multiple fallback paths
+- Added detailed logging for FFmpeg path debugging
+### 修复
+- 修复 macOS FFmpeg 路径检测问题 - FFmpeg 现在正确解压到 app.asar.unpacked
+- 增强 FFmpeg 二进制解析，支持多个备用路径
+- 添加详细的 FFmpeg 路径调试日志
+
 ## [v1.1.2] - 2025-09-23
 ### Added
 - macOS FFmpeg bundled support - automatic FFmpeg packaging for macOS builds
