@@ -1,5 +1,4 @@
 import fs from 'node:fs'
-import os from 'os'
 import { spawn } from 'child_process'
 import { ExecuteFFmpegResult, RenderVideoParams } from './types'
 import { getTempTtsVoiceFilePath } from '../tts'
@@ -127,7 +126,7 @@ export async function testFFmpeg(): Promise<{ success: boolean; version?: string
     return { success: true, version }
   } catch (error) {
     console.error('FFmpeg 测试失败:', error)
-    return { success: false, error: error.message }
+    return { success: false, error: (error as Error).message }
   }
 }
 
@@ -277,7 +276,7 @@ export async function executeFFmpeg(
   try {
     validateExecutables()
   } catch (error) {
-    throw new Error(`FFmpeg 验证失败: ${error.message}`)
+    throw new Error(`FFmpeg 验证失败: ${(error as Error).message}`)
   }
 
   return new Promise((resolve, reject) => {
@@ -318,7 +317,7 @@ export async function executeFFmpeg(
       }
     })
 
-    child.on('error', (error) => {
+    child.on('error', (error: Error) => {
       reject(new Error(`Failed to start FFmpeg: ${error.message}`))
     })
 
@@ -362,7 +361,7 @@ function validateExecutables() {
 
     console.log('FFmpeg 验证通过')
   } catch (error) {
-    const errorMsg = `FFmpeg 文件权限错误: ${error.message}`
+    const errorMsg = `FFmpeg 文件权限错误: ${(error as Error).message}`
     console.error(errorMsg)
     throw new Error(errorMsg)
   }
