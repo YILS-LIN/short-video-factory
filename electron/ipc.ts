@@ -5,7 +5,7 @@ import { BrowserWindow, ipcMain, dialog, app, shell } from 'electron'
 import { sqBulkInsertOrUpdate, sqDelete, sqInsert, sqQuery, sqUpdate } from './sqlite'
 import { ListFilesFromFolderParams, OpenExternalParams, SelectFolderParams } from './types'
 import { edgeTtsGetVoiceList, edgeTtsSynthesizeToBase64, edgeTtsSynthesizeToFile } from './tts'
-import { renderVideo } from './ffmpeg'
+import { renderVideo, testFFmpeg } from './ffmpeg'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -101,6 +101,9 @@ export default function initIPC() {
 
   // 保存语音合成到文件
   ipcMain.handle('edge-tts-synthesize-to-file', (_event, params) => edgeTtsSynthesizeToFile(params))
+
+  // 测试 FFmpeg
+  ipcMain.handle('test-ffmpeg', () => testFFmpeg())
 
   // 渲染视频
   ipcMain.handle('render-video', (_event, params) => {

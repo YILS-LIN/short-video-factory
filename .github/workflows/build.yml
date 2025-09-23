@@ -33,6 +33,43 @@ jobs:
           npm install -g pnpm@10.12.4
           pnpm install
 
+      # Download and setup FFmpeg for MacOS
+      - name: Download FFmpeg for MacOS
+        if: matrix.os == 'macos-latest'
+        run: |
+          # Create ffmpeg directory
+          mkdir -p dist-native/ffmpeg
+          
+          # Download FFmpeg for Intel Mac
+          echo "Downloading FFmpeg for Intel Mac..."
+          curl -L "https://evermeet.cx/ffmpeg/ffmpeg-6.1.1.zip" -o ffmpeg-intel.zip
+          unzip -q ffmpeg-intel.zip
+          mv ffmpeg dist-native/ffmpeg/ffmpeg-darwin-x64
+          chmod +x dist-native/ffmpeg/ffmpeg-darwin-x64
+          
+          # Download FFmpeg for Apple Silicon Mac  
+          echo "Downloading FFmpeg for Apple Silicon Mac..."
+          curl -L "https://www.osxexperts.net/ffmpeg6arm.zip" -o ffmpeg-arm64.zip
+          unzip -q ffmpeg-arm64.zip -d ffmpeg-arm64
+          # Find the ffmpeg binary in the extracted folder
+          find ffmpeg-arm64 -name "ffmpeg" -type f -exec cp {} dist-native/ffmpeg/ffmpeg-darwin-arm64 \;
+          chmod +x dist-native/ffmpeg/ffmpeg-darwin-arm64
+          
+          # Create universal binary
+          echo "Creating universal FFmpeg binary..."
+          lipo -create dist-native/ffmpeg/ffmpeg-darwin-x64 dist-native/ffmpeg/ffmpeg-darwin-arm64 -output dist-native/ffmpeg/ffmpeg-darwin-universal
+          chmod +x dist-native/ffmpeg/ffmpeg-darwin-universal
+          
+          # Verify binaries
+          echo "Verifying FFmpeg binaries..."
+          file dist-native/ffmpeg/ffmpeg-darwin-x64
+          file dist-native/ffmpeg/ffmpeg-darwin-arm64  
+          file dist-native/ffmpeg/ffmpeg-darwin-universal
+          
+          # Clean up
+          rm -f ffmpeg-intel.zip ffmpeg-arm64.zip
+          rm -rf ffmpeg-arm64
+
       # MacOS Build
       - name: Build MacOS
         if: matrix.os == 'macos-latest'

@@ -55,6 +55,7 @@ contextBridge.exposeInMainWorld('electron', {
     ipcRenderer.invoke('edge-tts-synthesize-to-base64', params),
   edgeTtsSynthesizeToFile: (params: EdgeTtsSynthesizeCommonParams) =>
     ipcRenderer.invoke('edge-tts-synthesize-to-file', params),
+  testFFmpeg: () => ipcRenderer.invoke('test-ffmpeg'),
   renderVideo: (params: RenderVideoParams) => ipcRenderer.invoke('render-video', params),
 })
 
