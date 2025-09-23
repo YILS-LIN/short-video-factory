@@ -1,6 +1,20 @@
 # Changelog
 此项目的所有显著更改都将记录在此文件中。
 
+## [v1.1.2] - 2025-09-23
+### Added
+- macOS FFmpeg bundled support - automatic FFmpeg packaging for macOS builds
+- Cross-architecture compatibility for Apple Silicon and Intel Macs
+- Universal binary creation for optimal performance
+### 新增
+- macOS FFmpeg 内置支持 - macOS 构建时自动打包 FFmpeg
+- 跨架构兼容性，支持 Apple Silicon 和 Intel Mac
+- 通用二进制文件创建，优化性能表现
+### Fixed  
+- Enhanced FFmpeg path detection logic for better reliability
+### 修复
+- 增强 FFmpeg 路径检测逻辑，提升可靠性
+
 ## [v1.1.1] - 2025-08-26
 ### Fixed
 - Fix MAC copy and paste shortcut key failure issue
