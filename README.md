@@ -66,7 +66,7 @@
 
 前往 [Github Release](https://github.com/TLS-802/TLS-Video-Factory/releases) 下载最新版本
 
-前往 [官方文档](https://short-video-factory.yils.blog) 查看使用手册
+前往 [官方文档](https://short-video-factory.yils.blog/manual/) 查看使用手册
 
 <p align="right">(<a href="#readme-top">返回顶部</a>)</p>
 
