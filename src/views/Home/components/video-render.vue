@@ -164,8 +164,16 @@
     </v-sheet>
 
     <div class="absolute bottom-2 w-full flex justify-center text-sm">
-      <span class="text-indigo cursor-pointer select-none" @click="handleOpenHomePage">
+      <span class="text-gray-600 select-none">
         {{ t('footer.poweredBy') }}
+        <a 
+          :href="t('footer.poweredByLink')" 
+          target="_blank" 
+          class="text-indigo cursor-pointer hover:underline"
+          @click.prevent="handleOpenHomePage"
+        >
+          {{ t('footer.poweredByName') }}
+        </a>
       </span>
     </div>
   </div>
@@ -235,7 +243,7 @@ const handleSelectBgmFolder = async () => {
 }
 
 const handleOpenHomePage = () => {
-  window.electron.openExternal({ url: 'https://yils.blog/?ref=short-video-factory' })
+  window.electron.openExternal({ url: t('footer.poweredByLink') })
 }
 </script>
 

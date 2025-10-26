@@ -142,6 +142,8 @@
     }
   },
   "footer": {
-    "poweredBy": "Powered by TLS-801（https://fbjvryq00y.feishu.cn/wiki/KnpjwnxZaijQ8SkjRtScJUkenl7?fromScene=spaceOverview）"
+    "poweredBy": "Powered by",
+    "poweredByName": "TLS-801",
+    "poweredByLink": "https://fbjvryq00y.feishu.cn/wiki/KnpjwnxZaijQ8SkjRtScJUkenl7?fromScene=spaceOverview"
   }
 }
