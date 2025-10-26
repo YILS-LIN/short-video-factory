@@ -2,8 +2,8 @@ name: Build and Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - 'main'
 
 jobs:
   release:
@@ -56,10 +56,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Get version from tag
-      - name: Get version from tag
+      # Get version from package.json
+      - name: Get version from package.json
         id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
         shell: bash
 
       # Read release notes
@@ -76,6 +78,8 @@ jobs:
       - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ env.VERSION }}
+          name: Release v${{ env.VERSION }}
           files: |
             release/${{ env.VERSION }}/*.dmg
             release/${{ env.VERSION }}/*.exe

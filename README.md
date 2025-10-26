@@ -14,7 +14,7 @@
     <img src="public/icon.png" alt="Logo" height="100">
   </a>
 
-<h3 align="center">AI Short Video Factory - 短视频工厂</h3>
+<h3 align="center">AI TLS Video Factory - 驼铃短视频工厂</h3>
 
   <p align="center">
     🚀 一键生成产品营销与泛内容短视频，AI批量自动剪辑，高颜值跨平台桌面端工具
@@ -43,7 +43,7 @@
 
 ## 📖 关于项目
 
-短视频工厂是一个开源的桌面端应用，旨在通过AI技术简化短视频的制作流程。用户可以通过简单的提示词文本+视频分镜素材，快速且自动的剪辑出高质量的产品营销和泛内容短视频。该项目集成了AI驱动的文案生成、语音合成、视频剪辑、字幕特效等功能，旨在为用户提供开箱即用的短视频制作体验。
+驼铃短视频工厂是一个开源的桌面端应用，旨在通过AI技术简化短视频的制作流程。用户可以通过简单的提示词文本+视频分镜素材，快速且自动的剪辑出高质量的产品营销和泛内容短视频。该项目集成了AI驱动的文案生成、语音合成、视频剪辑、字幕特效等功能，旨在为用户提供开箱即用的短视频制作体验。
 
 ### 核心功能
 
@@ -64,7 +64,7 @@
 
 ## 🚀 开始使用
 
-前往 [Github Release](https://github.com/YILS-LIN/short-video-factory/releases) 下载最新版本
+前往 [Github Release](https://github.com/TLS-802/TLS-Video-Factory/releases) 下载最新版本
 
 前往 [官方文档](https://short-video-factory.yils.blog) 查看使用手册
 
@@ -86,7 +86,7 @@
 - [ ] 更多的语音合成API
 - [ ] 字幕特效，支持多种字幕样式和特效
 
-查看[开放问题](https://github.com/YILS-LIN/short-video-factory/issues)以获取提议功能（和已知问题）的完整列表。
+查看[开放问题](https://github.com/TLS-802/TLS-Video-Factory/issues)以获取提议功能（和已知问题）的完整列表。
 
 <p align="right">(<a href="#readme-top">返回顶部</a>)</p>
 
@@ -151,27 +151,13 @@ Copyright © 2025 YILS.
 
 <p align="right">(<a href="#readme-top">返回顶部</a>)</p>
 
-## 🐱 捐赠
-
-如果这个项目对你有帮助，欢迎请作者喝杯咖啡(或者啤酒) 🍺
-
-你的 **Star ⭐** 和 **捐赠** 是我持续更新的最大动力！
-
-<div align="left">
-  <img src="https://github.com/user-attachments/assets/6b832dd3-38ea-4927-9c3b-97549c77a1f0" alt="YILS的微信赞赏码" width="400">
-</div>
-
-👉 在此处查看捐赠者名单：[千古留名 - 捐赠者留言板](https://short-video-factory.yils.blog/donate/list.html)
-
-<p align="right">(<a href="#readme-top">返回顶部</a>)</p>
-
 <!-- 星标历史 -->
 
 ## ⭐ 星标历史
 
 <div align="center">
-  <a href="https://star-history.com/#YILS-LIN/short-video-factory">
-    <img src="https://api.star-history.com/svg?repos=YILS-LIN/short-video-factory&type=Date" alt="Star History Chart" width="800">
+  <a href="https://star-history.com/#TLS-802/TLS-Video-Factory">
+    <img src="https://api.star-history.com/svg?repos=TLS-802/TLS-Video-Factory&type=Date" alt="Star History Chart" width="800">
   </a>
 </div>
 

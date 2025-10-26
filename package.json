@@ -1,14 +1,13 @@
 {
-  "name": "short-video-factory",
-  "description": "短视频工厂，一键生成产品营销与泛内容短视频，AI批量自动剪辑",
+  "name": "tls-video-factory",
+  "description": "驼铃短视频工厂，一键生成产品营销与泛内容短视频，AI批量自动剪辑",
   "version": "1.1.10",
   "author": {
-    "name": "YILS",
-    "developer": "YILS",
-    "email": "yils_lin@163.com",
+    "name": "TLS",
+    "developer": "TLS",
     "url": "https://yils.blog/"
   },
-  "homepage": "https://github.com/YILS-LIN/short-video-factory",
+  "homepage": "https://github.com/TLS-802/TLS-Video-Factory",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "cross-env VITE_CJS_IGNORE_WARNING=true vite",
