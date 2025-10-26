@@ -10,7 +10,7 @@
 <!-- 项目LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/YILS-LIN/short-video-factory">
+  <a href="https://github.com/TLS-802/TLS-Video-Factory">
     <img src="public/icon.png" alt="Logo" height="100">
   </a>
 
@@ -33,9 +33,9 @@
 [![许可证][license-shield]][license-url]
 
   <p align="center">
-    <a href="https://github.com/YILS-LIN/short-video-factory/issues/new?labels=bug&template=bug-report---.md">报告Bug</a>
+    <a href="https://github.com/TLS-802/TLS-Video-Factory/issues/new?labels=bug&template=bug-report---.md">报告Bug</a>
     &middot;
-    <a href="https://github.com/YILS-LIN/short-video-factory/issues/new?labels=enhancement&template=feature-request---.md">请求功能</a>
+    <a href="https://github.com/TLS-802/TLS-Video-Factory/issues/new?labels=enhancement&template=feature-request---.md">请求功能</a>
   </p>
 </div>
 
@@ -128,7 +128,7 @@
 
 ### 主要贡献者：
 
-<a href="https://github.com/YILS-LIN/short-video-factory/graphs/contributors">
+<a href="https://github.com/TLS-802/TLS-Video-Factory/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=YILS-LIN/short-video-factory" alt="contrib.rocks image" />
 </a>
 
@@ -165,16 +165,16 @@ Copyright © 2025 YILS.
 
 <!-- MARKDOWN链接和图片 -->
 
-[contributors-shield]: https://img.shields.io/github/contributors/YILS-LIN/short-video-factory.svg?color=c4f042&labelColor=black&style=flat-square
-[contributors-url]: https://github.com/YILS-LIN/short-video-factory/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/YILS-LIN/short-video-factory.svg?color=8ae8ff&labelColor=black&style=flat-square
-[forks-url]: https://github.com/YILS-LIN/short-video-factory/network/members
-[stars-shield]: https://img.shields.io/github/stars/YILS-LIN/short-video-factory.svg?color=ffcb47&labelColor=black&style=flat-square
-[stars-url]: https://github.com/YILS-LIN/short-video-factory/stargazers
-[issues-shield]: https://img.shields.io/github/issues/YILS-LIN/short-video-factory.svg?labelColor=black&style=flat-square
-[issues-url]: https://github.com/YILS-LIN/short-video-factory/issues
-[release-shield]: https://img.shields.io/github/v/release/YILS-LIN/short-video-factory?labelColor=black&style=flat-square
-[release-url]: https://github.com/YILS-LIN/short-video-factory/releases
-[release-date-shield]: https://img.shields.io/github/release-date/YILS-LIN/short-video-factory?color=9cf&style=flat-round
-[license-shield]: https://img.shields.io/github/license/YILS-LIN/short-video-factory.svg?labelColor=black&style=flat-square
-[license-url]: https://github.com/YILS-LIN/short-video-factory/blob/main/LICENSE
+[contributors-shield]: https://img.shields.io/github/contributors/TLS-802/TLS-Video-Factory.svg?color=c4f042&labelColor=black&style=flat-square
+[contributors-url]: https://github.com/TLS-802/TLS-Video-Factory/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/TLS-802/TLS-Video-Factory.svg?color=8ae8ff&labelColor=black&style=flat-square
+[forks-url]: https://github.com/TLS-802/TLS-Video-Factory/network/members
+[stars-shield]: https://img.shields.io/github/stars/TLS-802/TLS-Video-Factory.svg?color=ffcb47&labelColor=black&style=flat-square
+[stars-url]: https://github.com/TLS-802/TLS-Video-Factory/stargazers
+[issues-shield]: https://img.shields.io/github/issues/TLS-802/TLS-Video-Factory.svg?labelColor=black&style=flat-square
+[issues-url]: https://github.com/TLS-802/TLS-Video-Factory/issues
+[release-shield]: https://img.shields.io/github/v/release/TLS-802/TLS-Video-Factory?labelColor=black&style=flat-square
+[release-url]: https://github.com/TLS-802/TLS-Video-Factory/releases
+[release-date-shield]: https://img.shields.io/github/release-date/TLS-802/TLS-Video-Factory?color=9cf&style=flat-round
+[license-shield]: https://img.shields.io/github/license/TLS-802/TLS-Video-Factory.svg?labelColor=black&style=flat-square
+[license-url]: https://github.com/TLS-802/TLS-Video-Factory/blob/main/LICENSE
