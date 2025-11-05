@@ -70,8 +70,8 @@ import { useTranslation } from 'i18next-vue'
 import { useAppStore } from '@/store'
 import { useToast } from 'vue-toastification'
 import { ListFilesFromFolderRecord } from '~/electron/types'
-import VideoAutoPreview, { VideoInfo } from '@/components/video-auto-preview.vue'
 import { RenderVideoParams } from '~/electron/ffmpeg/types'
+import VideoAutoPreview, { VideoInfo } from '@/components/VideoAutoPreview.vue'
 import random from 'random'
 
 const toast = useToast()
