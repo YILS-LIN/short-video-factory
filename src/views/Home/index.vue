@@ -29,10 +29,10 @@
 </template>
 
 <script lang="ts" setup>
-import TextGenerate from './components/text-generate.vue'
-import VideoManage from './components/video-manage.vue'
-import TtsControl from './components/tts-control.vue'
-import VideoRender from './components/video-render.vue'
+import TextGenerate from './components/TextGenerate.vue'
+import VideoManage from './components/VideoManage.vue'
+import TtsControl from './components/TtsControl.vue'
+import VideoRender from './components/VideoRender.vue'
 
 import { ref } from 'vue'
 import { RenderStatus, useAppStore } from '@/store'
@@ -66,9 +66,11 @@ const handleRenderVideo = async () => {
   let randomBgm: ListFilesFromFolderRecord | undefined = undefined
   if (appStore.renderConfig.bgmPath) {
     try {
-      const bgmList = (await window.electron.listFilesFromFolder({
-        folderPath: appStore.renderConfig.bgmPath.replace(/\\/g, '/'),
-      })).filter((asset) => asset.name.endsWith('.mp3'))
+      const bgmList = (
+        await window.electron.listFilesFromFolder({
+          folderPath: appStore.renderConfig.bgmPath.replace(/\\/g, '/'),
+        })
+      ).filter((asset) => asset.name.endsWith('.mp3'))
       if (bgmList.length > 0) {
         randomBgm = random.choice(bgmList)
       }
