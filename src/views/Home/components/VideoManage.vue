@@ -112,12 +112,12 @@ const refreshAssets = async () => {
     videoAssets.value = assets.filter((asset) => asset.name.endsWith('.mp4'))
     if (!videoAssets.value.length) {
       if (assets.length) {
-        toast.warning(t('videoManage.noMp4InFolder'))
+        toast.warning(t('errors.noMp4InFolder'))
       } else {
-        toast.warning(t('videoManage.emptyFolder'))
+        toast.warning(t('empty.assetsFolderEmpty'))
       }
     } else {
-      toast.success(t('videoManage.readSuccess'))
+      toast.success(t('success.assetsLoad'))
     }
   } catch (error: any) {
     console.dir(error)
@@ -127,13 +127,13 @@ const refreshAssets = async () => {
         // 使用vnode方式创建自定义错误弹窗实例，以获得良好的类型提示
         render: () =>
           h(ActionToastEmbed, {
-            message: t('videoManage.readFailed'),
+            message: t('errors.assetsLoadFailed'),
             detail: String(errorMessage),
             actionText: t('actions.copyErrorDetail'),
             onActionTirgger: () => {
               navigator.clipboard.writeText(
                 JSON.stringify({
-                  message: t('videoManage.readFailed'),
+                  message: t('errors.assetsLoadFailed'),
                   detail: String(errorMessage),
                 }),
               )

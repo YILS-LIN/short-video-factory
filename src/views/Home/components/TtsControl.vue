@@ -100,7 +100,7 @@ const handleTryListening = async () => {
     })
     const audio = new Audio(`data:audio/mp3;base64,${speech}`)
     audio.play()
-    toast.info(t('tts.playTryAudio'))
+    toast.info(t('info.playTryAudio'))
   } catch (error: any) {
     console.log('试听语音合成失败', error)
     const errorMessage = error?.error?.message || error?.message || error
@@ -109,13 +109,13 @@ const handleTryListening = async () => {
         // 使用vnode方式创建自定义错误弹窗实例，以获得良好的类型提示
         render: () =>
           h(ActionToastEmbed, {
-            message: t('tts.trySynthesisFailedNetwork'),
+            message: t('errors.ttsTrySynthesisNetwork'),
             detail: String(errorMessage),
             actionText: t('actions.copyErrorDetail'),
             onActionTirgger: () => {
               navigator.clipboard.writeText(
                 JSON.stringify({
-                  message: t('tts.trySynthesisFailedNetwork'),
+                  message: t('errors.ttsTrySynthesisNetwork'),
                   detail: String(errorMessage),
                 }),
               )

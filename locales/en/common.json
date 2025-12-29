@@ -71,19 +71,27 @@
     "assetsDurationInsufficient": "Total assets duration is insufficient",
     "edgeTtsListFailed": "Failed to fetch Edge TTS voice list. Please check your network",
     "ttsConfigInvalid": "TTS configuration is invalid",
-    "ttsSynthesisFailed": "TTS synthesis failed"
+    "ttsSynthesisFailed": "TTS synthesis failed",
+    "llmConnectFailedPrefix": "LLM connection failed, please check your configuration",
+    "assetsLoadFailed": "Failed to read assets. Please check if the folder exists",
+    "noMp4InFolder": "No MP4 video files found in the selected folder",
+    "ttsTrySynthesisNetwork": "Failed to synthesize try-listen audio. Please check network"
   },
   "success": {
     "renderSuccess": "Video rendered successfully",
-    "copySuccess": "Copied to clipboard"
+    "copySuccess": "Copied to clipboard",
+    "llmConnect": "LLM connected successfully",
+    "assetsLoad": "Assets loaded successfully"
   },
   "info": {
     "batchNext": "Start next render",
-    "renderCanceled": "Video rendering canceled"
+    "renderCanceled": "Video rendering canceled",
+    "playTryAudio": "Playing try-listen audio"
   },
   "empty": {
     "noContent": "No content yet",
-    "hintSelectFolder": "Please choose a folder above with enough storyboard assets"
+    "hintSelectFolder": "Please choose a folder above with enough storyboard assets",
+    "assetsFolderEmpty": "The selected folder is empty"
   },
   "llm": {
     "promptLabel": "Prompt",
@@ -92,16 +100,10 @@
     "modelName": "Model Name",
     "apiUrl": "API URL",
     "apiKey": "API Key",
-    "compatibleNote": "Compatible with any OpenAI-compatible API",
-    "connectSuccess": "LLM connected successfully",
-    "connectFailedPrefix": "LLM connection failed, please check your configuration"
+    "compatibleNote": "Compatible with any OpenAI-compatible API"
   },
   "videoManage": {
-    "assetsFolderLabel": "Storyboard assets folder",
-    "noMp4InFolder": "No MP4 video files found in the selected folder",
-    "emptyFolder": "The selected folder is empty",
-    "readSuccess": "Assets loaded successfully",
-    "readFailed": "Failed to read assets. Please check if the folder exists"
+    "assetsFolderLabel": "Storyboard assets folder"
   },
   "tts": {
     "language": "Language",
@@ -113,8 +115,6 @@
     "selectLanguageGenderFirst": "Please select language and gender first",
     "selectVoiceWarning": "Please select a voice",
     "tryTextEmptyWarning": "Try-listen text cannot be empty",
-    "playTryAudio": "Playing try-listen audio",
-    "trySynthesisFailedNetwork": "Failed to synthesize try-listen audio. Please check network",
     "genderMale": "Male",
     "genderFemale": "Female",
     "speedSlow": "Slow",

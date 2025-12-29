@@ -221,7 +221,7 @@ const handleTestConfig = async () => {
     })
     console.log(`result`, result)
     testStatus.value = TestStatusEnum.SUCCESS
-    toast.success(t('llm.connectSuccess'))
+    toast.success(t('success.llmConnect'))
   } catch (error: any) {
     console.log(error)
     testStatus.value = TestStatusEnum.ERROR
@@ -231,13 +231,13 @@ const handleTestConfig = async () => {
         // 使用vnode方式创建自定义错误弹窗实例，以获得良好的类型提示
         render: () =>
           h(ActionToastEmbed, {
-            message: t('llm.connectFailedPrefix'),
+            message: t('errors.llmConnectFailedPrefix'),
             detail: String(errorMessage),
             actionText: t('actions.copyErrorDetail'),
             onActionTirgger: () => {
               navigator.clipboard.writeText(
                 JSON.stringify({
-                  message: t('llm.connectFailedPrefix'),
+                  message: t('errors.llmConnectFailedPrefix'),
                   detail: String(errorMessage),
                 }),
               )
