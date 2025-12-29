@@ -65,13 +65,14 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, toRaw } from 'vue'
+import { h, onMounted, ref, toRaw } from 'vue'
 import { useTranslation } from 'i18next-vue'
 import { useAppStore } from '@/store'
 import { useToast } from 'vue-toastification'
 import { ListFilesFromFolderRecord } from '~/electron/types'
 import { RenderVideoParams } from '~/electron/ffmpeg/types'
 import VideoAutoPreview, { VideoInfo } from '@/components/VideoAutoPreview.vue'
+import ActionToastEmbed from '@/components/ActionToastEmbed.vue'
 import random from 'random'
 
 const toast = useToast()
@@ -119,13 +120,34 @@ const refreshAssets = async () => {
       toast.success(t('videoManage.readSuccess'))
     }
   } catch (error) {
-    console.log(error)
-    toast.error(t('videoManage.readFailed'))
+    console.dir(error)
+    toast.error({
+      component: {
+        // 使用vnode方式创建自定义错误弹窗实例，以获得良好的类型提示
+        render: () =>
+          h(ActionToastEmbed, {
+            message: t('videoManage.readFailed'),
+            detail: String(error),
+            actionText: t('actions.copyErrorDetail'),
+            onActionTirgger: () => {
+              navigator.clipboard.writeText(
+                JSON.stringify({
+                  message: t('videoManage.readFailed'),
+                  detail: String(error),
+                }),
+              )
+              toast.success(t('success.copySuccess'))
+            },
+          }),
+      },
+    })
   } finally {
     refreshAssetsLoading.value = false
   }
 }
-refreshAssets()
+onMounted(() => {
+  refreshAssets()
+})
 
 // 获取视频分镜随机素材片段
 const videoInfoList = ref<VideoInfo[]>([])

@@ -49,7 +49,8 @@
     "generate": "Generate",
     "stop": "Stop",
     "config": "Configure",
-    "refreshAssets": "Refresh Assets"
+    "refreshAssets": "Refresh Assets",
+    "copyErrorDetail": "Copy error details"
   },
   "dialogs": {
     "selectAssetsFolderTitle": "Select storyboard assets folder",
@@ -73,7 +74,8 @@
     "ttsSynthesisFailed": "TTS synthesis failed"
   },
   "success": {
-    "renderSuccess": "Video rendered successfully"
+    "renderSuccess": "Video rendered successfully",
+    "copySuccess": "Copied to clipboard"
   },
   "info": {
     "batchNext": "Start next render",

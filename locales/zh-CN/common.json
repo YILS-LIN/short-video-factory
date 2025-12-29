@@ -49,7 +49,8 @@
     "generate": "生成",
     "stop": "停止",
     "config": "配置",
-    "refreshAssets": "刷新素材库"
+    "refreshAssets": "刷新素材库",
+    "copyErrorDetail": "复制报错详细信息"
   },
   "dialogs": {
     "selectAssetsFolderTitle": "选择分镜素材文件夹",
@@ -73,7 +74,8 @@
     "ttsSynthesisFailed": "语音合成失败"
   },
   "success": {
-    "renderSuccess": "视频合成成功"
+    "renderSuccess": "视频合成成功",
+    "copySuccess": "已复制到剪贴板"
   },
   "info": {
     "batchNext": "开始合成下一个",

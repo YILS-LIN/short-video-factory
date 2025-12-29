@@ -35,7 +35,11 @@ const vuetify = createVuetify({
 const app = createApp(App)
 
 app.use(vuetify)
-app.use(Toast, { position: 'bottom-left', pauseOnFocusLoss: false } as PluginOptions)
+app.use(Toast, {
+  position: 'bottom-left',
+  pauseOnFocusLoss: false,
+  closeOnClick: false,
+} as PluginOptions)
 app.use(router)
 app.use(store)
 

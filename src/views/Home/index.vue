@@ -34,11 +34,12 @@ import VideoManage from './components/VideoManage.vue'
 import TtsControl from './components/TtsControl.vue'
 import VideoRender from './components/VideoRender.vue'
 
-import { ref } from 'vue'
+import { h, ref } from 'vue'
 import { RenderStatus, useAppStore } from '@/store'
 import { useTranslation } from 'i18next-vue'
 import { useToast } from 'vue-toastification'
-import { ListFilesFromFolderRecord } from '~/electron/types'
+import type { ListFilesFromFolderRecord } from '~/electron/types'
+import ActionToastEmbed from '@/components/ActionToastEmbed.vue'
 import random from 'random'
 
 const toast = useToast()
@@ -76,7 +77,26 @@ const handleRenderVideo = async () => {
       }
     } catch (error) {
       console.log('获取背景音乐列表失败', error)
-      toast.error(t('errors.bgmListFailed'))
+      toast.error({
+        component: {
+          // 使用vnode方式创建自定义错误弹窗实例，以获得良好的类型提示
+          render: () =>
+            h(ActionToastEmbed, {
+              message: t('errors.bgmListFailed'),
+              detail: String(error),
+              actionText: t('actions.copyErrorDetail'),
+              onActionTirgger: () => {
+                navigator.clipboard.writeText(
+                  JSON.stringify({
+                    message: t('errors.bgmListFailed'),
+                    detail: String(error),
+                  }),
+                )
+                toast.success(t('success.copySuccess'))
+              },
+            }),
+        },
+      })
     }
   }
 
