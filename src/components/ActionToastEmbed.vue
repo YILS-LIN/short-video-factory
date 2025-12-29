@@ -2,7 +2,7 @@
   <div class="pr-1">
     <div>{{ message }}</div>
     <div class="mt-1 text-sm">{{ detailShort }}</div>
-    <div class="mt-2">
+    <div v-if="detailShort" class="mt-2">
       <button
         class="cursor-pointer transition-all bg-gray-100 text-red-600 text-sm px-4 py-2 rounded-lg border-blue-800 border-b-[4px] hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px] active:border-b-[2px] active:brightness-90 active:translate-y-[2px]"
         @click="$emit('actionTirgger')"

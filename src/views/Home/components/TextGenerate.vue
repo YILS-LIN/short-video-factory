@@ -102,11 +102,12 @@
 
 <script lang="ts" setup>
 import { useAppStore } from '@/store'
-import { nextTick, ref, toRaw } from 'vue'
+import { h, nextTick, ref, toRaw } from 'vue'
 import { createOpenAI } from '@ai-sdk/openai'
 import { generateText, streamText } from 'ai'
 import { useToast } from 'vue-toastification'
 import { useTranslation } from 'i18next-vue'
+import ActionToastEmbed from '@/components/ActionToastEmbed.vue'
 
 const toast = useToast()
 const appStore = useAppStore()
@@ -120,9 +121,9 @@ defineProps<{
 const outputText = ref('')
 const isGenerating = ref(false)
 const abortController = ref<AbortController | null>(null)
-const handleGenerate = async (oprions?: { noToast?: boolean }) => {
+const handleGenerate = async (options?: { noToast?: boolean }) => {
   if (!appStore.prompt) {
-    !oprions?.noToast && toast.warning(t('errors.promptRequired'))
+    !options?.noToast && toast.warning(t('errors.promptRequired'))
     throw new Error(t('errors.promptRequired') as string)
   }
 
@@ -148,16 +149,33 @@ const handleGenerate = async (oprions?: { noToast?: boolean }) => {
       outputText.value += textPart
     }
     return outputText.value
-  } catch (error) {
+  } catch (error: any) {
     console.log(`error`, error)
     // @ts-ignore
     if (error?.name !== 'AbortError' && error?.error?.name !== 'AbortError') {
-      // @ts-ignore
-      const errorMessage = error?.message || error?.error?.message
-      !oprions?.noToast &&
-        toast.error(
-          `${t('errors.generateFailedPrefix')}\n${errorMessage ? 'Error: ' + errorMessage : ''}`,
-        )
+      const errorMessage = error?.error?.message || error?.message || error
+      if (!options?.noToast) {
+        toast.error({
+          component: {
+            // 使用vnode方式创建自定义错误弹窗实例，以获得良好的类型提示
+            render: () =>
+              h(ActionToastEmbed, {
+                message: t('errors.generateFailedPrefix'),
+                detail: String(errorMessage),
+                actionText: t('actions.copyErrorDetail'),
+                onActionTirgger: () => {
+                  navigator.clipboard.writeText(
+                    JSON.stringify({
+                      message: t('errors.generateFailedPrefix'),
+                      detail: String(errorMessage),
+                    }),
+                  )
+                  toast.success(t('success.copySuccess'))
+                },
+              }),
+          },
+        })
+      }
       throw error
     }
   } finally {
@@ -204,12 +222,30 @@ const handleTestConfig = async () => {
     console.log(`result`, result)
     testStatus.value = TestStatusEnum.SUCCESS
     toast.success(t('llm.connectSuccess'))
-  } catch (error) {
+  } catch (error: any) {
     console.log(error)
     testStatus.value = TestStatusEnum.ERROR
-    // @ts-ignore
-    const errorMessage = error?.message
-    toast.error(`${t('llm.connectFailedPrefix')}\n${errorMessage ? 'Error: ' + errorMessage : ''}`)
+    const errorMessage = error?.error?.message || error?.message || error
+    toast.error({
+      component: {
+        // 使用vnode方式创建自定义错误弹窗实例，以获得良好的类型提示
+        render: () =>
+          h(ActionToastEmbed, {
+            message: t('llm.connectFailedPrefix'),
+            detail: String(errorMessage),
+            actionText: t('actions.copyErrorDetail'),
+            onActionTirgger: () => {
+              navigator.clipboard.writeText(
+                JSON.stringify({
+                  message: t('llm.connectFailedPrefix'),
+                  detail: String(errorMessage),
+                }),
+              )
+              toast.success(t('success.copySuccess'))
+            },
+          }),
+      },
+    })
   }
 }
 

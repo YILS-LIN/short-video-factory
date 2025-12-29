@@ -57,10 +57,11 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, h } from 'vue'
 import { useAppStore } from '@/store'
 import { useToast } from 'vue-toastification'
 import { useTranslation } from 'i18next-vue'
+import ActionToastEmbed from '@/components/ActionToastEmbed.vue'
 
 const toast = useToast()
 const appStore = useAppStore()
@@ -100,9 +101,29 @@ const handleTryListening = async () => {
     const audio = new Audio(`data:audio/mp3;base64,${speech}`)
     audio.play()
     toast.info(t('tts.playTryAudio'))
-  } catch (error) {
+  } catch (error: any) {
     console.log('试听语音合成失败', error)
-    toast.error(t('tts.trySynthesisFailedNetwork'))
+    const errorMessage = error?.error?.message || error?.message || error
+    toast.error({
+      component: {
+        // 使用vnode方式创建自定义错误弹窗实例，以获得良好的类型提示
+        render: () =>
+          h(ActionToastEmbed, {
+            message: t('tts.trySynthesisFailedNetwork'),
+            detail: String(errorMessage),
+            actionText: t('actions.copyErrorDetail'),
+            onActionTirgger: () => {
+              navigator.clipboard.writeText(
+                JSON.stringify({
+                  message: t('tts.trySynthesisFailedNetwork'),
+                  detail: String(errorMessage),
+                }),
+              )
+              toast.success(t('success.copySuccess'))
+            },
+          }),
+      },
+    })
   } finally {
     tryListeningLoading.value = false
   }
@@ -137,9 +158,29 @@ const fetchVoices = async () => {
   try {
     appStore.originalVoicesList = await window.electron.edgeTtsGetVoiceList()
     console.log('EdgeTTS语音列表更新：', appStore.originalVoicesList)
-  } catch (error) {
+  } catch (error: any) {
     console.log('获取EdgeTTS语音列表失败', error)
-    toast.error(t('errors.edgeTtsListFailed'))
+    const errorMessage = error?.error?.message || error?.message || error
+    toast.error({
+      component: {
+        // 使用vnode方式创建自定义错误弹窗实例，以获得良好的类型提示
+        render: () =>
+          h(ActionToastEmbed, {
+            message: t('errors.edgeTtsListFailed'),
+            detail: String(errorMessage),
+            actionText: t('actions.copyErrorDetail'),
+            onActionTirgger: () => {
+              navigator.clipboard.writeText(
+                JSON.stringify({
+                  message: t('errors.edgeTtsListFailed'),
+                  detail: String(errorMessage),
+                }),
+              )
+              toast.success(t('success.copySuccess'))
+            },
+          }),
+      },
+    })
   }
 }
 onMounted(async () => {

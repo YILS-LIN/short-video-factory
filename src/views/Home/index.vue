@@ -75,21 +75,22 @@ const handleRenderVideo = async () => {
       if (bgmList.length > 0) {
         randomBgm = random.choice(bgmList)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.log('获取背景音乐列表失败', error)
+      const errorMessage = error?.error?.message || error?.message || error
       toast.error({
         component: {
           // 使用vnode方式创建自定义错误弹窗实例，以获得良好的类型提示
           render: () =>
             h(ActionToastEmbed, {
               message: t('errors.bgmListFailed'),
-              detail: String(error),
+              detail: String(errorMessage),
               actionText: t('actions.copyErrorDetail'),
               onActionTirgger: () => {
                 navigator.clipboard.writeText(
                   JSON.stringify({
                     message: t('errors.bgmListFailed'),
-                    detail: String(error),
+                    detail: String(errorMessage),
                   }),
                 )
                 toast.success(t('success.copySuccess'))
@@ -166,13 +167,30 @@ const handleRenderVideo = async () => {
       TextGenerateInstance.value?.clearOutputText()
       handleRenderVideo()
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('视频合成失败:', error)
     if (appStore.renderStatus === RenderStatus.None) return
-
-    // @ts-ignore
-    const errorMessage = error?.message || error?.error?.message
-    toast.error(`${t('errors.renderFailedPrefix')}${errorMessage ? '\n' + errorMessage : ''}`)
+    const errorMessage = error?.error?.message || error?.message || error
+    toast.error({
+      component: {
+        // 使用vnode方式创建自定义错误弹窗实例，以获得良好的类型提示
+        render: () =>
+          h(ActionToastEmbed, {
+            message: t('errors.renderFailedPrefix'),
+            detail: String(errorMessage),
+            actionText: t('actions.copyErrorDetail'),
+            onActionTirgger: () => {
+              navigator.clipboard.writeText(
+                JSON.stringify({
+                  message: t('errors.renderFailedPrefix'),
+                  detail: String(errorMessage),
+                }),
+              )
+              toast.success(t('success.copySuccess'))
+            },
+          }),
+      },
+    })
     appStore.updateRenderStatus(RenderStatus.Failed)
   }
 }
