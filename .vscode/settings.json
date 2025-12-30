@@ -3,9 +3,7 @@
   "editor.quickSuggestions": {
     "strings": "on"
   },
-  "css.customData": [
-    ".vscode/unocss.json"
-  ],
+  "css.customData": [".vscode/unocss.json"],
   "[jsonc]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   }
