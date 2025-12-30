@@ -5,7 +5,7 @@
         <v-textarea
           class="h-full"
           v-model="appStore.prompt"
-          :label="t('llm.promptLabel')"
+          :label="t('features.llm.config.promptLabel')"
           counter
           persistent-counter
           no-resize
@@ -19,7 +19,7 @@
             :disabled="disabled"
             @click="handleGenerate"
           >
-            {{ t('actions.generate') }}
+            {{ t('common.buttons.generate') }}
           </v-btn>
           <v-btn
             v-else
@@ -29,55 +29,62 @@
             :disabled="disabled"
             @click="handleStopGenerate"
           >
-            {{ t('actions.stop') }}
+            {{ t('common.buttons.stop') }}
           </v-btn>
 
           <v-dialog v-model="configDialogShow" max-width="600" persistent>
             <template v-slot:activator="{ props: activatorProps }">
               <v-btn v-bind="activatorProps" :disabled="disabled">
-                {{ t('actions.config') }}
+                {{ t('common.buttons.config') }}
               </v-btn>
             </template>
 
-            <v-card prepend-icon="mdi-text-box-edit-outline" :title="t('llm.configTitle')">
+            <v-card
+              prepend-icon="mdi-text-box-edit-outline"
+              :title="t('features.llm.config.configTitle')"
+            >
               <v-card-text>
                 <v-text-field
-                  :label="t('llm.modelName')"
+                  :label="t('features.llm.config.modelName')"
                   v-model="config.modelName"
                   required
                   clearable
                 ></v-text-field>
                 <v-text-field
-                  :label="t('llm.apiUrl')"
+                  :label="t('features.llm.config.apiUrl')"
                   v-model="config.apiUrl"
                   required
                   clearable
                 ></v-text-field>
                 <v-text-field
-                  :label="t('llm.apiKey')"
+                  :label="t('features.llm.config.apiKey')"
                   v-model="config.apiKey"
                   type="password"
                   required
                   clearable
                 ></v-text-field>
                 <small class="text-caption text-medium-emphasis">{{
-                  t('llm.compatibleNote')
+                  t('features.llm.config.compatibleNote')
                 }}</small>
               </v-card-text>
               <v-divider></v-divider>
               <v-card-actions>
                 <v-spacer></v-spacer>
-                <v-btn :text="t('common.close')" variant="plain" @click="handleCloseDialog"></v-btn>
+                <v-btn
+                  :text="t('common.buttons.close')"
+                  variant="plain"
+                  @click="handleCloseDialog"
+                ></v-btn>
                 <v-btn
                   color="success"
-                  :text="t('common.test')"
+                  :text="t('common.buttons.test')"
                   variant="tonal"
                   :loading="testStatus === TestStatusEnum.LOADING"
                   @click="handleTestConfig"
                 ></v-btn>
                 <v-btn
                   color="primary"
-                  :text="t('common.save')"
+                  :text="t('common.buttons.save')"
                   variant="tonal"
                   @click="handleSaveConfig"
                 ></v-btn>
@@ -90,7 +97,7 @@
         <v-textarea
           class="h-full"
           v-model="outputText"
-          :label="t('llm.outputLabel')"
+          :label="t('features.llm.config.outputLabel')"
           counter
           persistent-counter
           no-resize
@@ -123,8 +130,8 @@ const isGenerating = ref(false)
 const abortController = ref<AbortController | null>(null)
 const handleGenerate = async (options?: { noToast?: boolean }) => {
   if (!appStore.prompt) {
-    !options?.noToast && toast.warning(t('errors.promptRequired'))
-    throw new Error(t('errors.promptRequired') as string)
+    !options?.noToast && toast.warning(t('features.llm.errors.promptRequired'))
+    throw new Error(t('features.llm.errors.promptRequired') as string)
   }
 
   const openai = createOpenAI({
@@ -160,17 +167,17 @@ const handleGenerate = async (options?: { noToast?: boolean }) => {
             // 使用vnode方式创建自定义错误弹窗实例，以获得良好的类型提示
             render: () =>
               h(ActionToastEmbed, {
-                message: t('errors.generateFailedPrefix'),
+                message: t('features.llm.errors.generateFailed'),
                 detail: String(errorMessage),
-                actionText: t('actions.copyErrorDetail'),
+                actionText: t('common.buttons.copyErrorDetail'),
                 onActionTirgger: () => {
                   navigator.clipboard.writeText(
                     JSON.stringify({
-                      message: t('errors.generateFailedPrefix'),
+                      message: t('features.llm.errors.generateFailed'),
                       detail: String(errorMessage),
                     }),
                   )
-                  toast.success(t('success.copySuccess'))
+                  toast.success(t('common.messages.success.copySuccess'))
                 },
               }),
           },
@@ -221,7 +228,7 @@ const handleTestConfig = async () => {
     })
     console.log(`result`, result)
     testStatus.value = TestStatusEnum.SUCCESS
-    toast.success(t('success.llmConnect'))
+    toast.success(t('features.llm.success.connectionSucceeded'))
   } catch (error: any) {
     console.log(error)
     testStatus.value = TestStatusEnum.ERROR
@@ -231,17 +238,17 @@ const handleTestConfig = async () => {
         // 使用vnode方式创建自定义错误弹窗实例，以获得良好的类型提示
         render: () =>
           h(ActionToastEmbed, {
-            message: t('errors.llmConnectFailedPrefix'),
+            message: t('features.llm.errors.connectionFailed'),
             detail: String(errorMessage),
-            actionText: t('actions.copyErrorDetail'),
+            actionText: t('common.buttons.copyErrorDetail'),
             onActionTirgger: () => {
               navigator.clipboard.writeText(
                 JSON.stringify({
-                  message: t('errors.llmConnectFailedPrefix'),
+                  message: t('features.llm.errors.connectionFailed'),
                   detail: String(errorMessage),
                 }),
               )
-              toast.success(t('success.copySuccess'))
+              toast.success(t('common.messages.success.copySuccess'))
             },
           }),
       },

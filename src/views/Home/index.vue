@@ -52,15 +52,15 @@ const VideoManageInstance = ref<InstanceType<typeof VideoManage> | null>()
 const TtsControlInstance = ref<InstanceType<typeof TtsControl> | null>()
 const handleRenderVideo = async () => {
   if (!appStore.renderConfig.outputFileName) {
-    toast.warning(t('errors.outputFileNameRequired'))
+    toast.warning(t('features.render.errors.outputFileNameRequired'))
     return
   }
   if (!appStore.renderConfig.outputPath) {
-    toast.warning(t('errors.outputPathRequired'))
+    toast.warning(t('features.render.errors.outputPathRequired'))
     return
   }
   if (!appStore.renderConfig.outputSize?.width || !appStore.renderConfig.outputSize?.height) {
-    toast.warning(t('errors.outputSizeRequired'))
+    toast.warning(t('features.render.errors.outputSizeRequired'))
     return
   }
 
@@ -83,17 +83,17 @@ const handleRenderVideo = async () => {
           // 使用vnode方式创建自定义错误弹窗实例，以获得良好的类型提示
           render: () =>
             h(ActionToastEmbed, {
-              message: t('errors.bgmListFailed'),
+              message: t('features.render.errors.bgmListFailed'),
               detail: String(errorMessage),
-              actionText: t('actions.copyErrorDetail'),
+              actionText: t('common.buttons.copyErrorDetail'),
               onActionTirgger: () => {
                 navigator.clipboard.writeText(
                   JSON.stringify({
-                    message: t('errors.bgmListFailed'),
+                    message: t('features.render.errors.bgmListFailed'),
                     detail: String(errorMessage),
                   }),
                 )
-                toast.success(t('success.copySuccess'))
+                toast.success(t('common.messages.success.copySuccess'))
               },
             }),
         },
@@ -119,10 +119,10 @@ const handleRenderVideo = async () => {
       withCaption: true,
     })
     if (ttsResult?.duration === undefined) {
-      throw new Error(t('errors.ttsFailedCorrupt'))
+      throw new Error(t('features.tts.errors.fileCorrupt'))
     }
     if (ttsResult?.duration === 0) {
-      throw new Error(t('errors.ttsZeroDuration'))
+      throw new Error(t('features.tts.errors.zeroDuration'))
     }
 
     // 获取视频片段
@@ -159,11 +159,11 @@ const handleRenderVideo = async () => {
         appStore.renderConfig.outputFileExt,
     })
 
-    toast.success(t('success.renderSuccess'))
+    toast.success(t('features.render.success.succeeded'))
     appStore.updateRenderStatus(RenderStatus.Completed)
 
     if (appStore.autoBatch) {
-      toast.info(t('info.batchNext'))
+      toast.info(t('features.render.info.batchNext'))
       TextGenerateInstance.value?.clearOutputText()
       handleRenderVideo()
     }
@@ -176,17 +176,17 @@ const handleRenderVideo = async () => {
         // 使用vnode方式创建自定义错误弹窗实例，以获得良好的类型提示
         render: () =>
           h(ActionToastEmbed, {
-            message: t('errors.renderFailedPrefix'),
+            message: t('features.render.errors.failed'),
             detail: String(errorMessage),
-            actionText: t('actions.copyErrorDetail'),
+            actionText: t('common.buttons.copyErrorDetail'),
             onActionTirgger: () => {
               navigator.clipboard.writeText(
                 JSON.stringify({
-                  message: t('errors.renderFailedPrefix'),
+                  message: t('features.render.errors.failed'),
                   detail: String(errorMessage),
                 }),
               )
-              toast.success(t('success.copySuccess'))
+              toast.success(t('common.messages.success.copySuccess'))
             },
           }),
       },
@@ -215,7 +215,7 @@ const handleCancelRender = () => {
       break
   }
   appStore.updateRenderStatus(RenderStatus.None)
-  toast.info(t('info.renderCanceled'))
+  toast.info(t('features.render.info.canceled'))
 }
 </script>
 

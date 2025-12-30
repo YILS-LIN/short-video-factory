@@ -5,15 +5,15 @@
         <v-combobox
           v-model="appStore.language"
           density="comfortable"
-          :label="t('tts.language')"
+          :label="t('features.tts.config.language')"
           :items="appStore.languageList"
-          :no-data-text="t('common.noData')"
+          :no-data-text="t('common.states.noData')"
           @update:model-value="clearVoice"
         ></v-combobox>
         <v-select
           v-model="appStore.gender"
           density="comfortable"
-          :label="t('tts.gender')"
+          :label="t('features.tts.config.gender')"
           :items="genderItems"
           item-title="label"
           item-value="value"
@@ -22,16 +22,16 @@
         <v-select
           v-model="appStore.voice"
           density="comfortable"
-          :label="t('tts.voice')"
+          :label="t('features.tts.config.voice')"
           :items="filteredVoicesList"
           item-title="FriendlyName"
           return-object
-          :no-data-text="t('tts.selectLanguageGenderFirst')"
+          :no-data-text="t('features.tts.config.selectLanguageGenderFirst')"
         ></v-select>
         <v-select
           v-model="appStore.speed"
           density="comfortable"
-          :label="t('tts.speed')"
+          :label="t('features.tts.config.speed')"
           :items="speedItems"
           item-title="label"
           item-value="value"
@@ -39,7 +39,7 @@
         <v-text-field
           v-model="appStore.tryListeningText"
           density="comfortable"
-          :label="t('tts.tryText')"
+          :label="t('features.tts.config.tryText')"
         ></v-text-field>
         <v-btn
           class="mb-2"
@@ -49,7 +49,7 @@
           :disabled="disabled"
           @click="handleTryListening"
         >
-          {{ t('tts.tryListen') }}
+          {{ t('features.tts.config.tryListen') }}
         </v-btn>
       </v-sheet>
     </v-form>
@@ -73,12 +73,12 @@ defineProps<{
 
 const configValid = () => {
   if (!appStore.voice) {
-    toast.warning(t('tts.selectVoiceWarning'))
+    toast.warning(t('features.tts.config.selectVoiceWarning'))
     return false
   }
 
   if (!appStore.tryListeningText) {
-    toast.warning(t('tts.tryTextEmptyWarning'))
+    toast.warning(t('features.tts.config.tryTextEmptyWarning'))
     return false
   }
 
@@ -100,7 +100,7 @@ const handleTryListening = async () => {
     })
     const audio = new Audio(`data:audio/mp3;base64,${speech}`)
     audio.play()
-    toast.info(t('info.playTryAudio'))
+    toast.info(t('features.tts.info.playTryAudio'))
   } catch (error: any) {
     console.log('试听语音合成失败', error)
     const errorMessage = error?.error?.message || error?.message || error
@@ -109,17 +109,17 @@ const handleTryListening = async () => {
         // 使用vnode方式创建自定义错误弹窗实例，以获得良好的类型提示
         render: () =>
           h(ActionToastEmbed, {
-            message: t('errors.ttsTrySynthesisNetwork'),
+            message: t('features.tts.errors.trySynthesisNetwork'),
             detail: String(errorMessage),
-            actionText: t('actions.copyErrorDetail'),
+            actionText: t('common.buttons.copyErrorDetail'),
             onActionTirgger: () => {
               navigator.clipboard.writeText(
                 JSON.stringify({
-                  message: t('errors.ttsTrySynthesisNetwork'),
+                  message: t('features.tts.errors.trySynthesisNetwork'),
                   detail: String(errorMessage),
                 }),
               )
-              toast.success(t('success.copySuccess'))
+              toast.success(t('common.messages.success.copySuccess'))
             },
           }),
       },
@@ -141,16 +141,16 @@ const filteredVoicesList = computed(() => {
 
 const genderItems = computed(() => {
   return [
-    { label: t('tts.genderMale'), value: 'Male' },
-    { label: t('tts.genderFemale'), value: 'Female' },
+    { label: t('features.tts.config.genderMale'), value: 'Male' },
+    { label: t('features.tts.config.genderFemale'), value: 'Female' },
   ]
 })
 
 const speedItems = computed(() => {
   return [
-    { label: t('tts.speedSlow'), value: -30 },
-    { label: t('tts.speedMedium'), value: 0 },
-    { label: t('tts.speedFast'), value: 30 },
+    { label: t('features.tts.config.speedSlow'), value: -30 },
+    { label: t('features.tts.config.speedMedium'), value: 0 },
+    { label: t('features.tts.config.speedFast'), value: 30 },
   ]
 })
 
@@ -166,17 +166,17 @@ const fetchVoices = async () => {
         // 使用vnode方式创建自定义错误弹窗实例，以获得良好的类型提示
         render: () =>
           h(ActionToastEmbed, {
-            message: t('errors.edgeTtsListFailed'),
+            message: t('features.tts.errors.fetchVoicesFailed'),
             detail: String(errorMessage),
-            actionText: t('actions.copyErrorDetail'),
+            actionText: t('common.buttons.copyErrorDetail'),
             onActionTirgger: () => {
               navigator.clipboard.writeText(
                 JSON.stringify({
-                  message: t('errors.edgeTtsListFailed'),
+                  message: t('features.tts.errors.fetchVoicesFailed'),
                   detail: String(errorMessage),
                 }),
               )
-              toast.success(t('success.copySuccess'))
+              toast.success(t('common.messages.success.copySuccess'))
             },
           }),
       },
@@ -191,7 +191,7 @@ onMounted(async () => {
 })
 
 const synthesizedSpeechToFile = async (option: { text: string; withCaption?: boolean }) => {
-  if (!configValid()) throw new Error(t('errors.ttsConfigInvalid'))
+  if (!configValid()) throw new Error(t('features.tts.errors.configInvalid'))
 
   try {
     const result = await window.electron.edgeTtsSynthesizeToFile({
@@ -205,7 +205,7 @@ const synthesizedSpeechToFile = async (option: { text: string; withCaption?: boo
     return result
   } catch (error) {
     console.log('语音合成失败', error)
-    throw new Error(t('errors.ttsSynthesisFailed'))
+    throw new Error(t('features.tts.errors.synthesisFailed'))
   }
 }
 

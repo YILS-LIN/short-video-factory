@@ -5,7 +5,7 @@
         <div class="flex gap-2 mb-2">
           <v-text-field
             v-model="appStore.videoAssetsFolder"
-            :label="t('videoManage.assetsFolderLabel')"
+            :label="t('features.assets.config.folderLabel')"
             density="compact"
             hide-details
             readonly
@@ -17,7 +17,7 @@
             :disabled="disabled"
             @click="handleSelectFolder"
           >
-            {{ t('common.select') }}
+            {{ t('common.buttons.select') }}
           </v-btn>
         </div>
 
@@ -43,8 +43,8 @@
           </div>
           <v-empty-state
             v-else
-            :headline="t('empty.noContent')"
-            :text="t('empty.hintSelectFolder')"
+            :headline="t('emptyStates.noContent')"
+            :text="t('emptyStates.hintSelectFolder')"
           ></v-empty-state>
         </div>
 
@@ -56,7 +56,7 @@
             :loading="refreshAssetsLoading"
             @click="refreshAssets"
           >
-            {{ t('actions.refreshAssets') }}
+            {{ t('common.buttons.refreshAssets') }}
           </v-btn>
         </div>
       </v-sheet>
@@ -86,7 +86,7 @@ defineProps<{
 // 选择文件夹
 const handleSelectFolder = async () => {
   const folderPath = await window.electron.selectFolder({
-    title: t('dialogs.selectAssetsFolderTitle'),
+    title: t('dialogs.selectAssetsFolder'),
     defaultPath: appStore.videoAssetsFolder,
   })
   console.log('用户选择分镜素材文件夹，绝对路径：', folderPath)
@@ -112,12 +112,12 @@ const refreshAssets = async () => {
     videoAssets.value = assets.filter((asset) => asset.name.endsWith('.mp4'))
     if (!videoAssets.value.length) {
       if (assets.length) {
-        toast.warning(t('errors.noMp4InFolder'))
+        toast.warning(t('features.assets.errors.noMp4InFolder'))
       } else {
-        toast.warning(t('empty.assetsFolderEmpty'))
+        toast.warning(t('emptyStates.assetsFolderEmpty'))
       }
     } else {
-      toast.success(t('success.assetsLoad'))
+      toast.success(t('features.assets.success.loadSucceeded'))
     }
   } catch (error: any) {
     console.dir(error)
@@ -127,17 +127,17 @@ const refreshAssets = async () => {
         // 使用vnode方式创建自定义错误弹窗实例，以获得良好的类型提示
         render: () =>
           h(ActionToastEmbed, {
-            message: t('errors.assetsLoadFailed'),
+            message: t('features.assets.errors.loadFailed'),
             detail: String(errorMessage),
-            actionText: t('actions.copyErrorDetail'),
+            actionText: t('common.buttons.copyErrorDetail'),
             onActionTirgger: () => {
               navigator.clipboard.writeText(
                 JSON.stringify({
-                  message: t('errors.assetsLoadFailed'),
+                  message: t('features.assets.errors.loadFailed'),
                   detail: String(errorMessage),
                 }),
               )
-              toast.success(t('success.copySuccess'))
+              toast.success(t('common.messages.success.copySuccess'))
             },
           }),
       },
@@ -158,7 +158,7 @@ const getVideoSegments = (options: { duration: number }) => {
 
   // 判断素材库视频时长是否过短
   if (videeAssetsTotalDuration < 1) {
-    throw new Error(t('errors.assetsDurationInsufficient'))
+    throw new Error(t('features.assets.errors.durationInsufficient'))
   }
 
   // 判断素材库是否满足TTS时长要求
