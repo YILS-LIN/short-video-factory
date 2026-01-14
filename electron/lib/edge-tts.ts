@@ -266,12 +266,23 @@ class SynthesisResultImpl implements SynthesisResult {
     function pushSrtNode() {
       const firstWord = currentSentence[0]
       const lastWord = currentSentence[currentSentence.length - 1]
+
+      const textList = currentSentence.map((sentence) => sentence.text.Text)
+      const joinedText = textList.reduce((acc, text, index) => {
+        if (index === 0) return text
+        const prevChar = acc[acc.length - 1]
+        const currChar = text[0]
+        const prevIsChinese = /[\u4e00-\u9fa5]/.test(prevChar)
+        const currIsChinese = /[\u4e00-\u9fa5]/.test(currChar)
+        return acc + (prevIsChinese && currIsChinese ? '' : ' ') + text
+      }, '')
+
       srtCaptionList.push({
         type: 'cue',
         data: {
           start: firstWord.Offset / 10000,
           end: (lastWord.Offset + lastWord.Duration) / 10 ** 4,
-          text: currentSentence.map((sentence) => sentence.text.Text).join(''),
+          text: joinedText,
         },
       })
     }

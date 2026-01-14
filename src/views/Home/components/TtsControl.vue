@@ -206,7 +206,7 @@ const synthesizedSpeechToFile = async (option: { text: string; withCaption?: boo
     return result
   } catch (error) {
     console.log('语音合成失败', error)
-    throw new Error(t('features.tts.errors.synthesisFailed'))
+    throw new Error(t('features.tts.errors.synthesisFailed') + ' ' + String(error))
   }
 }
 
