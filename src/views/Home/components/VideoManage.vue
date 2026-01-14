@@ -17,7 +17,7 @@
             :disabled="disabled"
             @click="handleSelectFolder"
           >
-            {{ t('common.buttons.select') }}
+            {{ t('common.buttons.selectFolder') }}
           </v-btn>
         </div>
 
@@ -109,7 +109,7 @@ const refreshAssets = async () => {
       folderPath: appStore.videoAssetsFolder,
     })
     console.log(`素材库刷新:`, assets)
-    videoAssets.value = assets.filter((asset) => asset.name.endsWith('.mp4'))
+    videoAssets.value = assets.filter((asset) => asset.name.toLowerCase().endsWith('.mp4'))
     if (!videoAssets.value.length) {
       if (assets.length) {
         toast.warning(t('features.assets.errors.noMp4InFolder'))

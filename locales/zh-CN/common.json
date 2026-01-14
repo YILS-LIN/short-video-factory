@@ -45,6 +45,7 @@
       "config": "配置",
       "save": "保存",
       "select": "选择",
+      "selectFolder": "选择文件夹",
       "test": "测试",
       "close": "关闭",
       "refreshAssets": "刷新素材库",

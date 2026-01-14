@@ -45,6 +45,7 @@
       "config": "Configure",
       "save": "Save",
       "select": "Select",
+      "selectFolder": "Select Folder",
       "test": "Test",
       "close": "Close",
       "refreshAssets": "Refresh Assets",
