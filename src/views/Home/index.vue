@@ -41,6 +41,7 @@ import { useToast } from 'vue-toastification'
 import type { ListFilesFromFolderRecord } from '~/electron/types'
 import ActionToastEmbed from '@/components/ActionToastEmbed.vue'
 import random from 'random'
+import { formatErrorForCopy } from '@/lib/error-copy'
 
 const toast = useToast()
 const appStore = useAppStore()
@@ -88,10 +89,10 @@ const handleRenderVideo = async () => {
               actionText: t('common.buttons.copyErrorDetail'),
               onActionTirgger: () => {
                 navigator.clipboard.writeText(
-                  JSON.stringify({
-                    message: t('features.render.errors.bgmListFailed'),
-                    detail: String(errorMessage),
-                  }),
+                  formatErrorForCopy(
+                    t('features.render.errors.bgmListFailed'),
+                    String(errorMessage),
+                  ),
                 )
                 toast.success(t('common.messages.success.copySuccess'))
               },
@@ -181,10 +182,7 @@ const handleRenderVideo = async () => {
             actionText: t('common.buttons.copyErrorDetail'),
             onActionTirgger: () => {
               navigator.clipboard.writeText(
-                JSON.stringify({
-                  message: t('features.render.errors.failed'),
-                  detail: String(errorMessage),
-                }),
+                formatErrorForCopy(t('features.render.errors.failed'), String(errorMessage)),
               )
               toast.success(t('common.messages.success.copySuccess'))
             },

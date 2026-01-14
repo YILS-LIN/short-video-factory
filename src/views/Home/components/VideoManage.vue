@@ -74,6 +74,7 @@ import { RenderVideoParams } from '~/electron/ffmpeg/types'
 import VideoAutoPreview, { VideoInfo } from '@/components/VideoAutoPreview.vue'
 import ActionToastEmbed from '@/components/ActionToastEmbed.vue'
 import random from 'random'
+import { formatErrorForCopy } from '@/lib/error-copy'
 
 const toast = useToast()
 const appStore = useAppStore()
@@ -132,10 +133,7 @@ const refreshAssets = async () => {
             actionText: t('common.buttons.copyErrorDetail'),
             onActionTirgger: () => {
               navigator.clipboard.writeText(
-                JSON.stringify({
-                  message: t('features.assets.errors.loadFailed'),
-                  detail: String(errorMessage),
-                }),
+                formatErrorForCopy(t('features.assets.errors.loadFailed'), String(errorMessage)),
               )
               toast.success(t('common.messages.success.copySuccess'))
             },

@@ -62,6 +62,7 @@ import { useAppStore } from '@/store'
 import { useToast } from 'vue-toastification'
 import { useTranslation } from 'i18next-vue'
 import ActionToastEmbed from '@/components/ActionToastEmbed.vue'
+import { formatErrorForCopy } from '@/lib/error-copy'
 
 const toast = useToast()
 const appStore = useAppStore()
@@ -114,10 +115,10 @@ const handleTryListening = async () => {
             actionText: t('common.buttons.copyErrorDetail'),
             onActionTirgger: () => {
               navigator.clipboard.writeText(
-                JSON.stringify({
-                  message: t('features.tts.errors.trySynthesisNetwork'),
-                  detail: String(errorMessage),
-                }),
+                formatErrorForCopy(
+                  t('features.tts.errors.trySynthesisNetwork'),
+                  String(errorMessage),
+                ),
               )
               toast.success(t('common.messages.success.copySuccess'))
             },
@@ -171,10 +172,10 @@ const fetchVoices = async () => {
             actionText: t('common.buttons.copyErrorDetail'),
             onActionTirgger: () => {
               navigator.clipboard.writeText(
-                JSON.stringify({
-                  message: t('features.tts.errors.fetchVoicesFailed'),
-                  detail: String(errorMessage),
-                }),
+                formatErrorForCopy(
+                  t('features.tts.errors.fetchVoicesFailed'),
+                  String(errorMessage),
+                ),
               )
               toast.success(t('common.messages.success.copySuccess'))
             },
