@@ -263,6 +263,11 @@ class SynthesisResultImpl implements SynthesisResult {
     let srtCaptionList: SubtitleNodeList = []
     let currentSentence: WordBoundary[] = []
 
+    const isNoSpaceScript = (char: string): boolean => {
+      const regex = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u
+      return regex.test(char)
+    }
+
     function pushSrtNode() {
       const firstWord = currentSentence[0]
       const lastWord = currentSentence[currentSentence.length - 1]
@@ -272,9 +277,9 @@ class SynthesisResultImpl implements SynthesisResult {
         if (index === 0) return text
         const prevChar = acc[acc.length - 1]
         const currChar = text[0]
-        const prevIsChinese = /[\u4e00-\u9fa5]/.test(prevChar)
-        const currIsChinese = /[\u4e00-\u9fa5]/.test(currChar)
-        return acc + (prevIsChinese && currIsChinese ? '' : ' ') + text
+        const prevIsCompact = isNoSpaceScript(prevChar)
+        const currIsCompact = isNoSpaceScript(currChar)
+        return acc + (prevIsCompact && currIsCompact ? '' : ' ') + text
       }, '')
 
       srtCaptionList.push({
