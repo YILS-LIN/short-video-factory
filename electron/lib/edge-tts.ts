@@ -288,14 +288,14 @@ class SynthesisResultImpl implements SynthesisResult {
     }
 
     this.wordList.forEach((word, index) => {
-      const tooLong = () =>
-        currentSentence.map((sentence) => sentence.text.Text).join('').length > 24
+      // const tooLong = () =>
+      //   currentSentence.map((sentence) => sentence.text.Text).join('').length > 24
 
       const vocieGap = () =>
         word.Offset - (this.wordList[index - 1].Offset + this.wordList[index - 1].Duration) >
         100 * 10 ** 4
 
-      if (index !== 0 && (tooLong() || vocieGap())) {
+      if (index !== 0 && vocieGap()) {
         pushSrtNode()
         currentSentence = [word]
         return
