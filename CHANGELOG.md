@@ -1,7 +1,38 @@
 # Changelog
 
 All significant changes to this project will be recorded in this file.
+
 此项目的所有显著更改都将记录在此文件中。
+
+## [v1.2.0] - 2026-01-22
+
+### Added
+
+- Add error details copy button
+- Automatically stop the previous sound when trying to play the next sound in the text
+- Better background music and vocal volume balance control
+
+### Fixed & Optimized
+
+- Implementing Unicode Non Space Sentence System Matching
+- Solving the problem of non Chinese subtitle sticking
+- Cancel subtitle segmentation length limit
+- Fix EdgeTTS synthesis failure issue
+- Adjust UI Text
+
+### 新增
+
+- 增加报错详细信息复制按钮
+- 试听文本播放下一个声音时，自动停止上一个
+- 更好的背景音乐和人声音量均衡控制
+
+### 修复与优化
+
+- 实现Unicode非空格断句语言体系匹配
+- 解决非中文字幕黏连问题
+- 取消字幕分割长度限制
+- 修复EdgeTTS合成失败问题
+- 调整UI文本
 
 ## [v1.1.10] - 2025-10-22
 
