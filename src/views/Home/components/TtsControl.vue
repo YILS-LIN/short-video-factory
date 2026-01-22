@@ -57,7 +57,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, h } from 'vue'
+import { ref, computed, onMounted, onUnmounted, h } from 'vue'
 import { useAppStore } from '@/store'
 import { useToast } from 'vue-toastification'
 import { useTranslation } from 'i18next-vue'
@@ -87,8 +87,15 @@ const configValid = () => {
 }
 
 const tryListeningLoading = ref(false)
+let currentAudio: HTMLAudioElement | null = null
 const handleTryListening = async () => {
   if (!configValid()) return
+
+  if (currentAudio) {
+    currentAudio.pause()
+    currentAudio.currentTime = 0
+    currentAudio = null
+  }
 
   tryListeningLoading.value = true
   try {
@@ -99,8 +106,8 @@ const handleTryListening = async () => {
         rate: appStore.speed,
       },
     })
-    const audio = new Audio(`data:audio/mp3;base64,${speech}`)
-    audio.play()
+    currentAudio = new Audio(`data:audio/mp3;base64,${speech}`)
+    currentAudio.play()
     toast.info(t('features.tts.info.playTryAudio'))
   } catch (error: any) {
     console.log('试听语音合成失败', error)
@@ -188,6 +195,14 @@ onMounted(async () => {
   await fetchVoices()
   if (!appStore.originalVoicesList.find((voice) => voice.Name === appStore.voice?.Name)) {
     appStore.voice = null
+  }
+})
+
+onUnmounted(() => {
+  if (currentAudio) {
+    currentAudio.pause()
+    currentAudio.currentTime = 0
+    currentAudio = null
   }
 })
 
