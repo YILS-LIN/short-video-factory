@@ -82,7 +82,7 @@ function buildMenu() {
                 label: i18next.t('menu.app.about'),
                 click: async () => {
                   const { shell } = await import('electron')
-                  await shell.openExternal('https://github.com/TLS-802/TLS-Video-Factory')
+                  await shell.openExternal('https://github.com/TuoLingTeam/TLS-Video-Factory')
                 },
               },
               { type: 'separator' },
@@ -147,7 +147,7 @@ function buildMenu() {
           label: i18next.t('menu.help.learnMore'),
           click: async () => {
             const { shell } = await import('electron')
-            await shell.openExternal('https://github.com/TLS-802/TLS-Video-Factory')
+            await shell.openExternal('https://github.com/TuoLingTeam/TLS-Video-Factory')
           },
         },
       ] as MenuItemConstructorOptions[],

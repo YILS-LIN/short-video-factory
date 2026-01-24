@@ -7,7 +7,7 @@
     "developer": "TLS",
     "url": "https://dy.202802.xyz/"
   },
-  "homepage": "https://github.com/TLS-802/TLS-Video-Factory",
+  "homepage": "https://github.com/TuoLingTeam/TLS-Video-Factory",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "cross-env VITE_CJS_IGNORE_WARNING=true vite",

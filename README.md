@@ -10,7 +10,7 @@
 <!-- 项目LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/TLS-802/TLS-Video-Factory">
+  <a href="https://github.com/TuoLingTeam/TLS-Video-Factory">
     <img src="public/icon.png" alt="Logo" height="100">
   </a>
 
@@ -33,9 +33,9 @@
 [![许可证][license-shield]][license-url]
 
   <p align="center">
-    <a href="https://github.com/TLS-802/TLS-Video-Factory/issues/new?labels=bug&template=bug-report---.md">报告Bug</a>
+    <a href="https://github.com/TuoLingTeam/TLS-Video-Factory/issues/new?labels=bug&template=bug-report---.md">报告Bug</a>
     &middot;
-    <a href="https://github.com/TLS-802/TLS-Video-Factory/issues/new?labels=enhancement&template=feature-request---.md">请求功能</a>
+    <a href="https://github.com/TuoLingTeam/TLS-Video-Factory/issues/new?labels=enhancement&template=feature-request---.md">请求功能</a>
   </p>
 </div>
 
@@ -64,7 +64,7 @@
 
 ## 🚀 开始使用
 
-前往 [Github Release](https://github.com/TLS-802/TLS-Video-Factory/releases) 下载最新版本
+前往 [Github Release](https://github.com/TuoLingTeam/TLS-Video-Factory/releases) 下载最新版本
 
 前往 [官方文档](https://short-video-factory.yils.blog/manual/) 查看使用手册
 
@@ -86,7 +86,7 @@
 - [ ] 更多的语音合成API
 - [ ] 字幕特效，支持多种字幕样式和特效
 
-查看[开放问题](https://github.com/TLS-802/TLS-Video-Factory/issues)以获取提议功能（和已知问题）的完整列表。
+查看[开放问题](https://github.com/TuoLingTeam/TLS-Video-Factory/issues)以获取提议功能（和已知问题）的完整列表。
 
 <p align="right">(<a href="#readme-top">返回顶部</a>)</p>
 
@@ -128,7 +128,7 @@
 
 ### 主要贡献者：
 
-<a href="https://github.com/TLS-802/TLS-Video-Factory/graphs/contributors">
+<a href="https://github.com/TuoLingTeam/TLS-Video-Factory/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=YILS-LIN/short-video-factory" alt="contrib.rocks image" />
 </a>
 
@@ -166,15 +166,15 @@ Copyright © 2025 YILS.
 <!-- MARKDOWN链接和图片 -->
 
 [contributors-shield]: https://img.shields.io/github/contributors/TLS-802/TLS-Video-Factory.svg?color=c4f042&labelColor=black&style=flat-square
-[contributors-url]: https://github.com/TLS-802/TLS-Video-Factory/graphs/contributors
+[contributors-url]: https://github.com/TuoLingTeam/TLS-Video-Factory/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/TLS-802/TLS-Video-Factory.svg?color=8ae8ff&labelColor=black&style=flat-square
-[forks-url]: https://github.com/TLS-802/TLS-Video-Factory/network/members
+[forks-url]: https://github.com/TuoLingTeam/TLS-Video-Factory/network/members
 [stars-shield]: https://img.shields.io/github/stars/TLS-802/TLS-Video-Factory.svg?color=ffcb47&labelColor=black&style=flat-square
-[stars-url]: https://github.com/TLS-802/TLS-Video-Factory/stargazers
+[stars-url]: https://github.com/TuoLingTeam/TLS-Video-Factory/stargazers
 [issues-shield]: https://img.shields.io/github/issues/TLS-802/TLS-Video-Factory.svg?labelColor=black&style=flat-square
-[issues-url]: https://github.com/TLS-802/TLS-Video-Factory/issues
+[issues-url]: https://github.com/TuoLingTeam/TLS-Video-Factory/issues
 [release-shield]: https://img.shields.io/github/v/release/TLS-802/TLS-Video-Factory?labelColor=black&style=flat-square
-[release-url]: https://github.com/TLS-802/TLS-Video-Factory/releases
+[release-url]: https://github.com/TuoLingTeam/TLS-Video-Factory/releases
 [release-date-shield]: https://img.shields.io/github/release-date/TLS-802/TLS-Video-Factory?color=9cf&style=flat-round
 [license-shield]: https://img.shields.io/github/license/TLS-802/TLS-Video-Factory.svg?labelColor=black&style=flat-square
-[license-url]: https://github.com/TLS-802/TLS-Video-Factory/blob/main/LICENSE
+[license-url]: https://github.com/TuoLingTeam/TLS-Video-Factory/blob/main/LICENSE
