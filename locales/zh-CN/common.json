@@ -39,111 +39,140 @@
     }
   },
   "common": {
-    "close": "关闭",
-    "test": "测试",
-    "save": "保存",
-    "select": "选择",
-    "noData": "无数据"
-  },
-  "actions": {
-    "generate": "生成",
-    "stop": "停止",
-    "config": "配置",
-    "refreshAssets": "刷新素材库"
-  },
-  "dialogs": {
-    "selectAssetsFolderTitle": "选择分镜素材文件夹",
-    "selectOutputFolderTitle": "选择视频导出文件夹",
-    "selectBgmFolderTitle": "选择背景音乐文件夹",
-    "renderConfigTitle": "配置合成选项"
-  },
-  "errors": {
-    "promptRequired": "提示词不能为空",
-    "generateFailedPrefix": "生成失败，请检查大模型配置是否正确",
-    "outputFileNameRequired": "请先配置导出文件名",
-    "outputPathRequired": "请先配置导出文件夹",
-    "outputSizeRequired": "请先配置导出分辨率（宽高）",
-    "bgmListFailed": "获取背景音乐列表失败，请检查文件夹是否存在",
-    "ttsFailedCorrupt": "语音合成失败，音频文件损坏",
-    "ttsZeroDuration": "语音时长为0秒，检查TTS语音合成配置及网络连接是否正常",
-    "renderFailedPrefix": "视频合成失败，请检查各项配置是否正确",
-    "assetsDurationInsufficient": "素材总时长不足",
-    "edgeTtsListFailed": "获取EdgeTTS语音列表失败，请检查网络",
-    "ttsConfigInvalid": "TTS语音合成配置无效",
-    "ttsSynthesisFailed": "语音合成失败"
-  },
-  "success": {
-    "renderSuccess": "视频合成成功"
-  },
-  "info": {
-    "batchNext": "开始合成下一个",
-    "renderCanceled": "视频合成已终止"
-  },
-  "empty": {
-    "noContent": "暂无内容",
-    "hintSelectFolder": "从上面选择一个包含足够分镜素材的文件夹"
-  },
-  "llm": {
-    "promptLabel": "提示词",
-    "outputLabel": "输出文案（可编辑）",
-    "configTitle": "配置大语言模型接口",
-    "modelName": "模型名称",
-    "apiUrl": "API 地址",
-    "apiKey": "API Key",
-    "compatibleNote": "兼容任意 OpenAI 标准接口",
-    "connectSuccess": "大模型连接成功",
-    "connectFailedPrefix": "大模型连接失败，请检查配置是否正确"
-  },
-  "videoManage": {
-    "assetsFolderLabel": "分镜视频素材文件夹",
-    "noMp4InFolder": "选择的文件夹中不包含MP4视频文件",
-    "emptyFolder": "选择的文件夹为空",
-    "readSuccess": "素材读取成功",
-    "readFailed": "素材读取失败，请检查文件夹是否存在"
-  },
-  "tts": {
-    "language": "语言",
-    "gender": "性别",
-    "voice": "声音",
-    "speed": "语速",
-    "tryText": "试听文本",
-    "tryListen": "试听",
-    "selectLanguageGenderFirst": "请先选择语言和性别",
-    "selectVoiceWarning": "请选择一个声音",
-    "tryTextEmptyWarning": "试听文本不能为空",
-    "playTryAudio": "播放试听语音",
-    "trySynthesisFailedNetwork": "试听语音合成失败，请检查网络",
-    "genderMale": "男性",
-    "genderFemale": "女性",
-    "speedSlow": "慢",
-    "speedMedium": "中",
-    "speedFast": "快"
-  },
-  "render": {
-    "status": {
-      "idle": "空闲，可以开始合成",
-      "generatingText": "正在使用 AI 大模型生成文案",
-      "synthesizingSpeech": "正在使用 TTS 合成语音",
-      "segmentingVideo": "正在处理分镜素材",
-      "rendering": "正在渲染视频",
-      "success": "渲染成功，可以开始下一个",
-      "failed": "渲染失败，请重新尝试"
+    "buttons": {
+      "generate": "生成",
+      "stop": "停止",
+      "config": "配置",
+      "save": "保存",
+      "select": "选择",
+      "selectFolder": "选择文件夹",
+      "test": "测试",
+      "close": "关闭",
+      "refreshAssets": "刷新素材库",
+      "copyErrorDetail": "复制报错详细信息"
     },
-    "startRender": "开始合成",
-    "stopRender": "停止合成",
-    "autoBatch": "自动批量合成",
-    "bgmFolderLabel": "背景音乐文件夹（随机选取.mp3，为空则无背景音）",
-    "output": {
-      "width": "导出视频宽度",
-      "height": "导出视频高度",
-      "fileName": "导出文件名",
-      "format": "导出格式",
-      "folder": "导出文件夹"
+    "states": {
+      "noData": "无数据"
+    },
+    "messages": {
+      "success": {
+        "copySuccess": "已复制到剪贴板"
+      }
     }
   },
+  "emptyStates": {
+    "noContent": "暂无内容",
+    "hintSelectFolder": "从上面选择一个包含足够分镜素材的文件夹",
+    "assetsFolderEmpty": "选择的文件夹为空"
+  },
+  "dialogs": {
+    "selectAssetsFolder": "选择分镜素材文件夹",
+    "selectOutputFolder": "选择视频导出文件夹",
+    "selectBgmFolder": "选择背景音乐文件夹",
+    "renderConfig": "配置合成选项"
+  },
   "footer": {
-    "poweredBy": "Powered by",
-    "poweredByName": "TLS-801",
-    "poweredByLink": "https://fbjvryq00y.feishu.cn/wiki/KnpjwnxZaijQ8SkjRtScJUkenl7?fromScene=spaceOverview"
+    "poweredBy": "Powered by YILS（博客地址：https://yils.blog）"
+  },
+  "features": {
+    "llm": {
+      "config": {
+        "promptLabel": "提示词",
+        "outputLabel": "输出文案（可编辑）",
+        "configTitle": "配置大语言模型接口",
+        "modelName": "模型名称",
+        "apiUrl": "API 地址",
+        "apiKey": "API Key",
+        "compatibleNote": "兼容任意 OpenAI 标准接口"
+      },
+      "errors": {
+        "promptRequired": "提示词不能为空",
+        "connectionFailed": "大模型连接失败，请检查配置是否正确",
+        "generateFailed": "生成失败，请检查大模型配置是否正确"
+      },
+      "success": {
+        "connectionSucceeded": "大模型连接成功"
+      }
+    },
+    "tts": {
+      "config": {
+        "language": "语言",
+        "gender": "性别",
+        "voice": "声音",
+        "speed": "语速",
+        "tryText": "试听文本",
+        "tryListen": "试听",
+        "selectLanguageGenderFirst": "请先选择语言和性别",
+        "selectVoiceWarning": "请选择一个声音",
+        "tryTextEmptyWarning": "试听文本不能为空",
+        "genderMale": "男性",
+        "genderFemale": "女性",
+        "speedSlow": "慢",
+        "speedMedium": "中",
+        "speedFast": "快"
+      },
+      "errors": {
+        "fetchVoicesFailed": "获取EdgeTTS语音列表失败，请检查网络",
+        "synthesisFailed": "语音合成失败",
+        "fileCorrupt": "语音合成失败，音频文件损坏",
+        "zeroDuration": "语音时长为0秒，检查TTS语音合成配置及网络连接是否正常",
+        "configInvalid": "TTS语音合成配置无效",
+        "trySynthesisNetwork": "试听语音合成失败，请检查网络"
+      },
+      "info": {
+        "playTryAudio": "播放试听语音"
+      }
+    },
+    "assets": {
+      "config": {
+        "folderLabel": "分镜视频素材文件夹"
+      },
+      "errors": {
+        "loadFailed": "素材读取失败，请检查文件夹是否存在",
+        "noMp4InFolder": "选择的文件夹中不包含MP4视频文件",
+        "durationInsufficient": "素材总时长不足"
+      },
+      "success": {
+        "loadSucceeded": "素材读取成功"
+      }
+    },
+    "render": {
+      "config": {
+        "startLabel": "开始合成",
+        "stopLabel": "停止合成",
+        "autoBatch": "自动批量合成",
+        "bgmFolderLabel": "背景音乐文件夹（随机选取.mp3，为空则无背景音）",
+        "output": {
+          "width": "导出视频宽度",
+          "height": "导出视频高度",
+          "fileName": "导出文件名",
+          "format": "导出格式",
+          "folder": "导出文件夹"
+        }
+      },
+      "status": {
+        "idle": "空闲，可以开始合成",
+        "generatingText": "正在使用 AI 大模型生成文案",
+        "synthesizingSpeech": "正在使用 TTS 合成语音",
+        "segmentingVideo": "正在处理分镜素材",
+        "rendering": "正在渲染视频",
+        "success": "渲染成功，可以开始下一个",
+        "failed": "渲染失败，请重新尝试"
+      },
+      "errors": {
+        "failed": "视频合成失败，请检查各项配置是否正确",
+        "bgmListFailed": "获取背景音乐列表失败，请检查文件夹是否存在",
+        "outputFileNameRequired": "请先配置导出文件名",
+        "outputPathRequired": "请先配置导出文件夹",
+        "outputSizeRequired": "请先配置导出分辨率（宽高）"
+      },
+      "success": {
+        "succeeded": "视频合成成功"
+      },
+      "info": {
+        "batchNext": "开始合成下一个",
+        "canceled": "视频合成已终止"
+      }
+    }
   }
 }

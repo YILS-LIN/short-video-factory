@@ -10,7 +10,12 @@ export const Constants = {
   VOICES_URL: 'https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list',
 }
 
-export const CHROMIUM_FULL_VERSION = '130.0.2849.68'
+const BASE_URL = 'speech.platform.bing.com/consumer/speech/synthesize/readaloud'
+
+export const WSS_URL_CONST = `wss://${BASE_URL}/edge/v1?TrustedClientToken=${Constants.TRUSTED_CLIENT_TOKEN}`
+export const VOICE_LIST_URL = `https://${BASE_URL}/voices/list?trustedclienttoken=${Constants.TRUSTED_CLIENT_TOKEN}`
+
+export const CHROMIUM_FULL_VERSION = '143.0.3650.75'
 export const CHROMIUM_MAJOR_VERSION = CHROMIUM_FULL_VERSION.split('.', 1)[0]
 export const SEC_MS_GEC_VERSION = `1-${CHROMIUM_FULL_VERSION}`
 
@@ -19,7 +24,7 @@ export const S_TO_NS = 1e9
 
 export const BASE_HEADERS = {
   'User-Agent': `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${CHROMIUM_MAJOR_VERSION}.0.0.0 Safari/537.36 Edg/${CHROMIUM_MAJOR_VERSION}.0.0.0`,
-  'Accept-Encoding': 'gzip, deflate, br',
+  'Accept-Encoding': 'gzip, deflate, br, zstd',
   'Accept-Language': 'en-US,en;q=0.9',
 }
 
@@ -28,6 +33,7 @@ export const WSS_HEADERS = {
   Pragma: 'no-cache',
   'Cache-Control': 'no-cache',
   Origin: 'chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold',
+  'Sec-WebSocket-Version': '13',
 }
 
 export const VOICE_HEADERS = {
@@ -132,6 +138,99 @@ export interface SynthesisResult {
    * Get Caption Srt String
    */
   getCaptionSrtString(): string
+}
+
+const INCOMPATIBLE_CODE_RANGES = [
+  [0, 8],
+  [11, 12],
+  [14, 31],
+]
+
+function removeIncompatibleCharacters(text: string): string {
+  const chars = text.split('')
+  for (let idx = 0; idx < chars.length; idx++) {
+    const code = chars[idx].codePointAt(0) ?? 0
+    for (const [start, end] of INCOMPATIBLE_CODE_RANGES) {
+      if (code >= start && code <= end) {
+        chars[idx] = ' '
+        break
+      }
+    }
+  }
+  return chars.join('')
+}
+
+function findLastNewlineOrSpaceWithinLimit(text: Buffer, limit: number): number {
+  const newlineIndex = text.lastIndexOf(Buffer.from('\n'), limit)
+  if (newlineIndex >= 0) {
+    return newlineIndex
+  }
+  return text.lastIndexOf(Buffer.from(' '), limit)
+}
+
+function findSafeUtf8SplitPoint(textSegment: Buffer): number {
+  let splitAt = textSegment.length
+  while (splitAt > 0) {
+    try {
+      textSegment.subarray(0, splitAt).toString('utf-8')
+      return splitAt
+    } catch {
+      splitAt--
+    }
+  }
+  return splitAt
+}
+
+function adjustSplitPointForXmlEntity(text: Buffer, splitAt: number): number {
+  while (splitAt > 0) {
+    const ampersandIndex = text.subarray(0, splitAt).lastIndexOf(Buffer.from('&'))
+    if (ampersandIndex < 0) {
+      break
+    }
+    const semicolonIndex = text.subarray(ampersandIndex, splitAt).indexOf(Buffer.from(';'))
+    if (semicolonIndex >= 0) {
+      break
+    }
+    splitAt = ampersandIndex
+  }
+  return splitAt
+}
+
+export function splitTextByByteLength(text: string | Buffer, byteLength: number): string[] {
+  const chunks: string[] = []
+  let currentText = Buffer.isBuffer(text) ? text : Buffer.from(text, 'utf-8')
+
+  if (byteLength <= 0) {
+    throw new Error('byteLength must be greater than 0')
+  }
+
+  while (currentText.length > byteLength) {
+    let splitAt = findLastNewlineOrSpaceWithinLimit(currentText, byteLength)
+
+    if (splitAt < 0) {
+      splitAt = findSafeUtf8SplitPoint(currentText)
+    }
+
+    splitAt = adjustSplitPointForXmlEntity(currentText, splitAt)
+
+    if (splitAt < 0) {
+      throw new Error('Maximum byte length is too small or invalid text structure')
+    }
+
+    let chunk = currentText.subarray(0, splitAt).toString('utf-8').trim()
+    if (chunk) {
+      chunks.push(chunk)
+    }
+
+    currentText = splitAt > 0 ? currentText.subarray(splitAt) : currentText.subarray(1)
+  }
+
+  const remainingChunk = currentText.toString('utf-8').trim()
+  if (remainingChunk) {
+    chunks.push(remainingChunk)
+  }
+
+  return chunks
 }
 
 class SkewAdjustmentError extends Error {
@@ -263,28 +362,44 @@ class SynthesisResultImpl implements SynthesisResult {
     let srtCaptionList: SubtitleNodeList = []
     let currentSentence: WordBoundary[] = []
 
+    const isNoSpaceScript = (char: string): boolean => {
+      const regex = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u
+      return regex.test(char)
+    }
+
     function pushSrtNode() {
       const firstWord = currentSentence[0]
       const lastWord = currentSentence[currentSentence.length - 1]
+
+      const textList = currentSentence.map((sentence) => sentence.text.Text)
+      const joinedText = textList.reduce((acc, text, index) => {
+        if (index === 0) return text
+        const prevChar = acc[acc.length - 1]
+        const currChar = text[0]
+        const prevIsCompact = isNoSpaceScript(prevChar)
+        const currIsCompact = isNoSpaceScript(currChar)
+        return acc + (prevIsCompact && currIsCompact ? '' : ' ') + text
+      }, '')
+
       srtCaptionList.push({
         type: 'cue',
         data: {
           start: firstWord.Offset / 10000,
           end: (lastWord.Offset + lastWord.Duration) / 10 ** 4,
-          text: currentSentence.map((sentence) => sentence.text.Text).join(''),
+          text: joinedText,
         },
       })
     }
 
     this.wordList.forEach((word, index) => {
-      const tooLong = () =>
-        currentSentence.map((sentence) => sentence.text.Text).join('').length > 24
+      // const tooLong = () =>
+      //   currentSentence.map((sentence) => sentence.text.Text).join('').length > 24
 
       const vocieGap = () =>
         word.Offset - (this.wordList[index - 1].Offset + this.wordList[index - 1].Duration) >
         100 * 10 ** 4
 
-      if (index !== 0 && (tooLong() || vocieGap())) {
+      if (index !== 0 && vocieGap()) {
         pushSrtNode()
         currentSentence = [word]
         return
@@ -363,6 +478,35 @@ export class EdgeTTS {
     text: string,
     voice: string = 'en-US-AnaNeural',
     options: SynthesisOptions = {},
+  ): Promise<SynthesisResult> {
+    const cleanedText = removeIncompatibleCharacters(text)
+    const textChunks = splitTextByByteLength(cleanedText, 4096)
+
+    if (textChunks.length === 1) {
+      return this.synthesizeSingle(text, voice, options)
+    }
+
+    const allAudioData: Buffer[] = []
+    const allWordList: WordBoundary[] = []
+    let offsetCompensation = 0
+
+    for (const chunk of textChunks) {
+      const result = await this.synthesizeSingle(chunk, voice, options)
+      const audioData = result.getBuffer()
+      if (audioData.length > 0) {
+        allAudioData.push(audioData)
+      }
+      allWordList.push(...allWordList)
+      offsetCompensation += 8_750_000
+    }
+
+    return new SynthesisResultImpl(allWordList, allAudioData)
+  }
+
+  private async synthesizeSingle(
+    text: string,
+    voice: string,
+    options: SynthesisOptions,
   ): Promise<SynthesisResult> {
     return new Promise((resolve, reject) => {
       const audioStream: Buffer[] = []

@@ -5,15 +5,15 @@
         <v-combobox
           v-model="appStore.language"
           density="comfortable"
-          :label="t('tts.language')"
+          :label="t('features.tts.config.language')"
           :items="appStore.languageList"
-          :no-data-text="t('common.noData')"
+          :no-data-text="t('common.states.noData')"
           @update:model-value="clearVoice"
         ></v-combobox>
         <v-select
           v-model="appStore.gender"
           density="comfortable"
-          :label="t('tts.gender')"
+          :label="t('features.tts.config.gender')"
           :items="genderItems"
           item-title="label"
           item-value="value"
@@ -22,16 +22,16 @@
         <v-select
           v-model="appStore.voice"
           density="comfortable"
-          :label="t('tts.voice')"
+          :label="t('features.tts.config.voice')"
           :items="filteredVoicesList"
           item-title="FriendlyName"
           return-object
-          :no-data-text="t('tts.selectLanguageGenderFirst')"
+          :no-data-text="t('features.tts.config.selectLanguageGenderFirst')"
         ></v-select>
         <v-select
           v-model="appStore.speed"
           density="comfortable"
-          :label="t('tts.speed')"
+          :label="t('features.tts.config.speed')"
           :items="speedItems"
           item-title="label"
           item-value="value"
@@ -39,7 +39,7 @@
         <v-text-field
           v-model="appStore.tryListeningText"
           density="comfortable"
-          :label="t('tts.tryText')"
+          :label="t('features.tts.config.tryText')"
         ></v-text-field>
         <v-btn
           class="mb-2"
@@ -49,7 +49,7 @@
           :disabled="disabled"
           @click="handleTryListening"
         >
-          {{ t('tts.tryListen') }}
+          {{ t('features.tts.config.tryListen') }}
         </v-btn>
       </v-sheet>
     </v-form>
@@ -57,10 +57,12 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, h } from 'vue'
 import { useAppStore } from '@/store'
 import { useToast } from 'vue-toastification'
 import { useTranslation } from 'i18next-vue'
+import ActionToastEmbed from '@/components/ActionToastEmbed.vue'
+import { formatErrorForCopy } from '@/lib/error-copy'
 
 const toast = useToast()
 const appStore = useAppStore()
@@ -72,12 +74,12 @@ defineProps<{
 
 const configValid = () => {
   if (!appStore.voice) {
-    toast.warning(t('tts.selectVoiceWarning'))
+    toast.warning(t('features.tts.config.selectVoiceWarning'))
     return false
   }
 
   if (!appStore.tryListeningText) {
-    toast.warning(t('tts.tryTextEmptyWarning'))
+    toast.warning(t('features.tts.config.tryTextEmptyWarning'))
     return false
   }
 
@@ -85,8 +87,15 @@ const configValid = () => {
 }
 
 const tryListeningLoading = ref(false)
+let currentAudio: HTMLAudioElement | null = null
 const handleTryListening = async () => {
   if (!configValid()) return
+
+  if (currentAudio) {
+    currentAudio.pause()
+    currentAudio.currentTime = 0
+    currentAudio = null
+  }
 
   tryListeningLoading.value = true
   try {
@@ -97,12 +106,32 @@ const handleTryListening = async () => {
         rate: appStore.speed,
       },
     })
-    const audio = new Audio(`data:audio/mp3;base64,${speech}`)
-    audio.play()
-    toast.info(t('tts.playTryAudio'))
-  } catch (error) {
+    currentAudio = new Audio(`data:audio/mp3;base64,${speech}`)
+    currentAudio.play()
+    toast.info(t('features.tts.info.playTryAudio'))
+  } catch (error: any) {
     console.log('试听语音合成失败', error)
-    toast.error(t('tts.trySynthesisFailedNetwork'))
+    const errorMessage = error?.error?.message || error?.message || error
+    toast.error({
+      component: {
+        // 使用vnode方式创建自定义错误弹窗实例，以获得良好的类型提示
+        render: () =>
+          h(ActionToastEmbed, {
+            message: t('features.tts.errors.trySynthesisNetwork'),
+            detail: String(errorMessage),
+            actionText: t('common.buttons.copyErrorDetail'),
+            onActionTirgger: () => {
+              navigator.clipboard.writeText(
+                formatErrorForCopy(
+                  t('features.tts.errors.trySynthesisNetwork'),
+                  String(errorMessage),
+                ),
+              )
+              toast.success(t('common.messages.success.copySuccess'))
+            },
+          }),
+      },
+    })
   } finally {
     tryListeningLoading.value = false
   }
@@ -120,16 +149,16 @@ const filteredVoicesList = computed(() => {
 
 const genderItems = computed(() => {
   return [
-    { label: t('tts.genderMale'), value: 'Male' },
-    { label: t('tts.genderFemale'), value: 'Female' },
+    { label: t('features.tts.config.genderMale'), value: 'Male' },
+    { label: t('features.tts.config.genderFemale'), value: 'Female' },
   ]
 })
 
 const speedItems = computed(() => {
   return [
-    { label: t('tts.speedSlow'), value: -30 },
-    { label: t('tts.speedMedium'), value: 0 },
-    { label: t('tts.speedFast'), value: 30 },
+    { label: t('features.tts.config.speedSlow'), value: -30 },
+    { label: t('features.tts.config.speedMedium'), value: 0 },
+    { label: t('features.tts.config.speedFast'), value: 30 },
   ]
 })
 
@@ -137,9 +166,29 @@ const fetchVoices = async () => {
   try {
     appStore.originalVoicesList = await window.electron.edgeTtsGetVoiceList()
     console.log('EdgeTTS语音列表更新：', appStore.originalVoicesList)
-  } catch (error) {
+  } catch (error: any) {
     console.log('获取EdgeTTS语音列表失败', error)
-    toast.error(t('errors.edgeTtsListFailed'))
+    const errorMessage = error?.error?.message || error?.message || error
+    toast.error({
+      component: {
+        // 使用vnode方式创建自定义错误弹窗实例，以获得良好的类型提示
+        render: () =>
+          h(ActionToastEmbed, {
+            message: t('features.tts.errors.fetchVoicesFailed'),
+            detail: String(errorMessage),
+            actionText: t('common.buttons.copyErrorDetail'),
+            onActionTirgger: () => {
+              navigator.clipboard.writeText(
+                formatErrorForCopy(
+                  t('features.tts.errors.fetchVoicesFailed'),
+                  String(errorMessage),
+                ),
+              )
+              toast.success(t('common.messages.success.copySuccess'))
+            },
+          }),
+      },
+    })
   }
 }
 onMounted(async () => {
@@ -149,8 +198,16 @@ onMounted(async () => {
   }
 })
 
+onUnmounted(() => {
+  if (currentAudio) {
+    currentAudio.pause()
+    currentAudio.currentTime = 0
+    currentAudio = null
+  }
+})
+
 const synthesizedSpeechToFile = async (option: { text: string; withCaption?: boolean }) => {
-  if (!configValid()) throw new Error(t('errors.ttsConfigInvalid'))
+  if (!configValid()) throw new Error(t('features.tts.errors.configInvalid'))
 
   try {
     const result = await window.electron.edgeTtsSynthesizeToFile({
@@ -164,7 +221,7 @@ const synthesizedSpeechToFile = async (option: { text: string; withCaption?: boo
     return result
   } catch (error) {
     console.log('语音合成失败', error)
-    throw new Error(t('errors.ttsSynthesisFailed'))
+    throw new Error(t('features.tts.errors.synthesisFailed') + ' ' + String(error))
   }
 }
 

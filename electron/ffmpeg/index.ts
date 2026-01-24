@@ -93,22 +93,30 @@ export async function renderVideo(
     // 在视频拼接后添加字幕
     filters.push(`[vout]subtitles=${subtitleFile.replace(/\:/g, '\\\\:')}[with_subs]`)
 
-    // 音频处理：raw 静音 voice 放大音量，bgm 减小音量
-    filters.push(`[${videoFiles.length}:a]volume=2[voice]`) // voice 音量放大
-    audioFiles?.bgm && filters.push(`[${videoFiles.length + 1}:a]volume=0.5[bgm]`) // bgm 音量缩小
+    // 音频处理：使用响度归一化(loudnorm)确保音量均衡
+    const voiceStreamIdx = videoFiles.length
+    const bgmStreamIdx = audioFiles?.bgm ? videoFiles.length + 1 : null
 
-    // 混合音频
-    if (audioFiles?.bgm) {
-      filters.push(`[voice][bgm]amix=inputs=2:duration=longest[aout]`)
+    const voiceLoudnorm = `loudnorm=I=-16:TP=-1.5:LRA=11`
+    filters.push(`[${voiceStreamIdx}:a]${voiceLoudnorm}[voice_normalized]`)
+
+    if (bgmStreamIdx !== null) {
+      const bgmLoudnorm = `loudnorm=I=-25:TP=-1.5:LRA=11`
+      filters.push(`[${bgmStreamIdx}:a]${bgmLoudnorm}[bgm_normalized]`)
+      filters.push(
+        `[voice_normalized][bgm_normalized]amix=inputs=2:duration=longest:weights=1 0.5[aout]`,
+      )
     } else {
-      filters.push(`[voice]amix=inputs=1:duration=longest[aout]`)
+      filters.push(`[voice_normalized]anull[aout]`)
     }
+
+    filters.push(`[aout]loudnorm=I=-16:TP=-1.5:LRA=11[final_audio]`)
 
     // 设置 filter_complex
     args.push('-filter_complex', `${filters.join(';')}`)
 
     // 映射输出流
-    args.push('-map', '[with_subs]', '-map', '[aout]')
+    args.push('-map', '[with_subs]', '-map', '[final_audio]')
 
     // 编码参数
     args.push(

@@ -1,7 +1,7 @@
 {
-  "name": "tls-video-factory",
+  "name": "tuoling-video-factory",
   "description": "驼铃短视频工厂，一键生成产品营销与泛内容短视频，AI批量自动剪辑",
-  "version": "1.1.10",
+  "version": "1.2.0",
   "author": {
     "name": "TLS",
     "developer": "TLS",
@@ -16,7 +16,7 @@
     "format": "prettier --write .",
     "preinstall": "npx only-allow pnpm",
     "postinstall": "node scripts/post-install.js",
-    "lipo-ffmpeg":"node scripts/lipo-ffmpeg.js"
+    "lipo-ffmpeg": "node scripts/lipo-ffmpeg.js"
   },
   "dependencies": {
     "axios": "^1.11.0",
@@ -59,7 +59,7 @@
     "vue-router": "^4.5.1",
     "vue-toastification": "2.0.0-rc.5",
     "vue-tsc": "3.0.1",
-    "vuetify": "^3.9.0"
+    "vuetify": "^3.11.5"
   },
   "pnpm": {
     "ignoredBuiltDependencies": [

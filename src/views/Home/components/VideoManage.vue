@@ -5,7 +5,7 @@
         <div class="flex gap-2 mb-2">
           <v-text-field
             v-model="appStore.videoAssetsFolder"
-            :label="t('videoManage.assetsFolderLabel')"
+            :label="t('features.assets.config.folderLabel')"
             density="compact"
             hide-details
             readonly
@@ -17,7 +17,7 @@
             :disabled="disabled"
             @click="handleSelectFolder"
           >
-            {{ t('common.select') }}
+            {{ t('common.buttons.selectFolder') }}
           </v-btn>
         </div>
 
@@ -43,8 +43,8 @@
           </div>
           <v-empty-state
             v-else
-            :headline="t('empty.noContent')"
-            :text="t('empty.hintSelectFolder')"
+            :headline="t('emptyStates.noContent')"
+            :text="t('emptyStates.hintSelectFolder')"
           ></v-empty-state>
         </div>
 
@@ -56,7 +56,7 @@
             :loading="refreshAssetsLoading"
             @click="refreshAssets"
           >
-            {{ t('actions.refreshAssets') }}
+            {{ t('common.buttons.refreshAssets') }}
           </v-btn>
         </div>
       </v-sheet>
@@ -65,14 +65,16 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, toRaw } from 'vue'
+import { h, onMounted, ref, toRaw } from 'vue'
 import { useTranslation } from 'i18next-vue'
 import { useAppStore } from '@/store'
 import { useToast } from 'vue-toastification'
 import { ListFilesFromFolderRecord } from '~/electron/types'
 import { RenderVideoParams } from '~/electron/ffmpeg/types'
 import VideoAutoPreview, { VideoInfo } from '@/components/VideoAutoPreview.vue'
+import ActionToastEmbed from '@/components/ActionToastEmbed.vue'
 import random from 'random'
+import { formatErrorForCopy } from '@/lib/error-copy'
 
 const toast = useToast()
 const appStore = useAppStore()
@@ -85,7 +87,7 @@ defineProps<{
 // 选择文件夹
 const handleSelectFolder = async () => {
   const folderPath = await window.electron.selectFolder({
-    title: t('dialogs.selectAssetsFolderTitle'),
+    title: t('dialogs.selectAssetsFolder'),
     defaultPath: appStore.videoAssetsFolder,
   })
   console.log('用户选择分镜素材文件夹，绝对路径：', folderPath)
@@ -108,24 +110,43 @@ const refreshAssets = async () => {
       folderPath: appStore.videoAssetsFolder,
     })
     console.log(`素材库刷新:`, assets)
-    videoAssets.value = assets.filter((asset) => asset.name.endsWith('.mp4'))
+    videoAssets.value = assets.filter((asset) => asset.name.toLowerCase().endsWith('.mp4'))
     if (!videoAssets.value.length) {
       if (assets.length) {
-        toast.warning(t('videoManage.noMp4InFolder'))
+        toast.warning(t('features.assets.errors.noMp4InFolder'))
       } else {
-        toast.warning(t('videoManage.emptyFolder'))
+        toast.warning(t('emptyStates.assetsFolderEmpty'))
       }
     } else {
-      toast.success(t('videoManage.readSuccess'))
+      toast.success(t('features.assets.success.loadSucceeded'))
     }
-  } catch (error) {
-    console.log(error)
-    toast.error(t('videoManage.readFailed'))
+  } catch (error: any) {
+    console.dir(error)
+    const errorMessage = error?.error?.message || error?.message || error
+    toast.error({
+      component: {
+        // 使用vnode方式创建自定义错误弹窗实例，以获得良好的类型提示
+        render: () =>
+          h(ActionToastEmbed, {
+            message: t('features.assets.errors.loadFailed'),
+            detail: String(errorMessage),
+            actionText: t('common.buttons.copyErrorDetail'),
+            onActionTirgger: () => {
+              navigator.clipboard.writeText(
+                formatErrorForCopy(t('features.assets.errors.loadFailed'), String(errorMessage)),
+              )
+              toast.success(t('common.messages.success.copySuccess'))
+            },
+          }),
+      },
+    })
   } finally {
     refreshAssetsLoading.value = false
   }
 }
-refreshAssets()
+onMounted(() => {
+  refreshAssets()
+})
 
 // 获取视频分镜随机素材片段
 const videoInfoList = ref<VideoInfo[]>([])
@@ -135,7 +156,7 @@ const getVideoSegments = (options: { duration: number }) => {
 
   // 判断素材库视频时长是否过短
   if (videeAssetsTotalDuration < 1) {
-    throw new Error(t('errors.assetsDurationInsufficient'))
+    throw new Error(t('features.assets.errors.durationInsufficient'))
   }
 
   // 判断素材库是否满足TTS时长要求

@@ -39,111 +39,140 @@
     }
   },
   "common": {
-    "close": "Close",
-    "test": "Test",
-    "save": "Save",
-    "select": "Select",
-    "noData": "No data"
-  },
-  "actions": {
-    "generate": "Generate",
-    "stop": "Stop",
-    "config": "Configure",
-    "refreshAssets": "Refresh Assets"
-  },
-  "dialogs": {
-    "selectAssetsFolderTitle": "Select storyboard assets folder",
-    "selectOutputFolderTitle": "Select video export folder",
-    "selectBgmFolderTitle": "Select background music folder",
-    "renderConfigTitle": "Configure render options"
-  },
-  "errors": {
-    "promptRequired": "Prompt cannot be empty",
-    "generateFailedPrefix": "Generation failed, please check LLM configuration",
-    "outputFileNameRequired": "Please set an output file name first",
-    "outputPathRequired": "Please set an export folder first",
-    "outputSizeRequired": "Please set output resolution (width x height) first",
-    "bgmListFailed": "Failed to load BGM list. Please check the folder exists",
-    "ttsFailedCorrupt": "TTS failed: audio file is corrupted",
-    "ttsZeroDuration": "TTS duration is 0s. Check TTS config and network connectivity",
-    "renderFailedPrefix": "Video rendering failed. Please check all configurations",
-    "assetsDurationInsufficient": "Total assets duration is insufficient",
-    "edgeTtsListFailed": "Failed to fetch Edge TTS voice list. Please check your network",
-    "ttsConfigInvalid": "TTS configuration is invalid",
-    "ttsSynthesisFailed": "TTS synthesis failed"
-  },
-  "success": {
-    "renderSuccess": "Video rendered successfully"
-  },
-  "info": {
-    "batchNext": "Start next render",
-    "renderCanceled": "Video rendering canceled"
-  },
-  "empty": {
-    "noContent": "No content yet",
-    "hintSelectFolder": "Please choose a folder above with enough storyboard assets"
-  },
-  "llm": {
-    "promptLabel": "Prompt",
-    "outputLabel": "Output Text (editable)",
-    "configTitle": "Configure LLM API",
-    "modelName": "Model Name",
-    "apiUrl": "API URL",
-    "apiKey": "API Key",
-    "compatibleNote": "Compatible with any OpenAI-compatible API",
-    "connectSuccess": "LLM connected successfully",
-    "connectFailedPrefix": "LLM connection failed, please check your configuration"
-  },
-  "videoManage": {
-    "assetsFolderLabel": "Storyboard assets folder",
-    "noMp4InFolder": "No MP4 video files found in the selected folder",
-    "emptyFolder": "The selected folder is empty",
-    "readSuccess": "Assets loaded successfully",
-    "readFailed": "Failed to read assets. Please check if the folder exists"
-  },
-  "tts": {
-    "language": "Language",
-    "gender": "Gender",
-    "voice": "Voice",
-    "speed": "Speed",
-    "tryText": "Try-listen text",
-    "tryListen": "Try listen",
-    "selectLanguageGenderFirst": "Please select language and gender first",
-    "selectVoiceWarning": "Please select a voice",
-    "tryTextEmptyWarning": "Try-listen text cannot be empty",
-    "playTryAudio": "Playing try-listen audio",
-    "trySynthesisFailedNetwork": "Failed to synthesize try-listen audio. Please check network",
-    "genderMale": "Male",
-    "genderFemale": "Female",
-    "speedSlow": "Slow",
-    "speedMedium": "Medium",
-    "speedFast": "Fast"
-  },
-  "render": {
-    "status": {
-      "idle": "Idle, ready to render",
-      "generatingText": "Generating script with AI LLM",
-      "synthesizingSpeech": "Synthesizing speech with TTS",
-      "segmentingVideo": "Processing video segments",
-      "rendering": "Rendering video",
-      "success": "Rendered successfully, you can start the next one",
-      "failed": "Render failed, please try again"
+    "buttons": {
+      "generate": "Generate",
+      "stop": "Stop",
+      "config": "Configure",
+      "save": "Save",
+      "select": "Select",
+      "selectFolder": "Select Folder",
+      "test": "Test",
+      "close": "Close",
+      "refreshAssets": "Refresh Assets",
+      "copyErrorDetail": "Copy error details"
     },
-    "startRender": "Start Rendering",
-    "stopRender": "Stop Rendering",
-    "autoBatch": "Auto batch render",
-    "bgmFolderLabel": "Background music folder (.mp3, pick randomly)",
-    "output": {
-      "width": "Output width",
-      "height": "Output height",
-      "fileName": "Output file name",
-      "format": "Output format",
-      "folder": "Output folder"
+    "states": {
+      "noData": "No data"
+    },
+    "messages": {
+      "success": {
+        "copySuccess": "Copied to clipboard"
+      }
     }
   },
+  "emptyStates": {
+    "noContent": "No content yet",
+    "hintSelectFolder": "Please choose a folder above with enough storyboard assets",
+    "assetsFolderEmpty": "The selected folder is empty"
+  },
+  "dialogs": {
+    "selectAssetsFolder": "Select storyboard assets folder",
+    "selectOutputFolder": "Select video export folder",
+    "selectBgmFolder": "Select background music folder",
+    "renderConfig": "Configure render options"
+  },
   "footer": {
-    "poweredBy": "Powered by",
-    "poweredByName": "TLS-801",
-    "poweredByLink": "https://fbjvryq00y.feishu.cn/wiki/KnpjwnxZaijQ8SkjRtScJUkenl7?fromScene=spaceOverview"
+    "poweredBy": "Powered by YILS (Blog: https://yils.blog)"
+  },
+  "features": {
+    "llm": {
+      "config": {
+        "promptLabel": "Prompt",
+        "outputLabel": "Output Text (editable)",
+        "configTitle": "Configure LLM API",
+        "modelName": "Model Name",
+        "apiUrl": "API URL",
+        "apiKey": "API Key",
+        "compatibleNote": "Compatible with any OpenAI-compatible API"
+      },
+      "errors": {
+        "promptRequired": "Prompt cannot be empty",
+        "connectionFailed": "LLM connection failed, please check your configuration",
+        "generateFailed": "Generation failed, please check LLM configuration"
+      },
+      "success": {
+        "connectionSucceeded": "LLM connected successfully"
+      }
+    },
+    "tts": {
+      "config": {
+        "language": "Language",
+        "gender": "Gender",
+        "voice": "Voice",
+        "speed": "Speed",
+        "tryText": "Try-listen text",
+        "tryListen": "Try listen",
+        "selectLanguageGenderFirst": "Please select language and gender first",
+        "selectVoiceWarning": "Please select a voice",
+        "tryTextEmptyWarning": "Try-listen text cannot be empty",
+        "genderMale": "Male",
+        "genderFemale": "Female",
+        "speedSlow": "Slow",
+        "speedMedium": "Medium",
+        "speedFast": "Fast"
+      },
+      "errors": {
+        "fetchVoicesFailed": "Failed to fetch Edge TTS voice list. Please check your network",
+        "synthesisFailed": "TTS synthesis failed",
+        "fileCorrupt": "TTS failed: audio file is corrupted",
+        "zeroDuration": "TTS duration is 0s. Check TTS config and network connectivity",
+        "configInvalid": "TTS configuration is invalid",
+        "trySynthesisNetwork": "Failed to synthesize try-listen audio. Please check network"
+      },
+      "info": {
+        "playTryAudio": "Playing try-listen audio"
+      }
+    },
+    "assets": {
+      "config": {
+        "folderLabel": "Storyboard assets folder"
+      },
+      "errors": {
+        "loadFailed": "Failed to read assets. Please check if the folder exists",
+        "noMp4InFolder": "No MP4 video files found in the selected folder",
+        "durationInsufficient": "Total assets duration is insufficient"
+      },
+      "success": {
+        "loadSucceeded": "Assets loaded successfully"
+      }
+    },
+    "render": {
+      "config": {
+        "startLabel": "Start Rendering",
+        "stopLabel": "Stop Rendering",
+        "autoBatch": "Auto batch render",
+        "bgmFolderLabel": "Background music folder (.mp3, pick randomly)",
+        "output": {
+          "width": "Output width",
+          "height": "Output height",
+          "fileName": "Output file name",
+          "format": "Output format",
+          "folder": "Output folder"
+        }
+      },
+      "status": {
+        "idle": "Idle, ready to render",
+        "generatingText": "Generating script with AI LLM",
+        "synthesizingSpeech": "Synthesizing speech with TTS",
+        "segmentingVideo": "Processing video segments",
+        "rendering": "Rendering video",
+        "success": "Rendered successfully, you can start the next one",
+        "failed": "Render failed, please try again"
+      },
+      "errors": {
+        "failed": "Video rendering failed. Please check all configurations",
+        "bgmListFailed": "Failed to load BGM list. Please check the folder exists",
+        "outputFileNameRequired": "Please set an output file name first",
+        "outputPathRequired": "Please set an export folder first",
+        "outputSizeRequired": "Please set output resolution (width x height) first"
+      },
+      "success": {
+        "succeeded": "Video rendered successfully"
+      },
+      "info": {
+        "batchNext": "Start next render",
+        "canceled": "Video rendering canceled"
+      }
+    }
   }
 }

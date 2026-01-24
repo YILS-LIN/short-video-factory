@@ -2,29 +2,29 @@
   <div class="h-0 flex-1 relative">
     <div class="absolute top-1/12 w-full flex justify-center cursor-default select-none">
       <v-chip v-if="appStore.renderStatus === RenderStatus.None">
-        {{ t('render.status.idle') }}
+        {{ t('features.render.status.idle') }}
       </v-chip>
       <v-chip v-if="appStore.renderStatus === RenderStatus.GenerateText" variant="elevated">
-        {{ t('render.status.generatingText') }}
+        {{ t('features.render.status.generatingText') }}
       </v-chip>
       <v-chip v-if="appStore.renderStatus === RenderStatus.SynthesizedSpeech" variant="elevated">
-        {{ t('render.status.synthesizingSpeech') }}
+        {{ t('features.render.status.synthesizingSpeech') }}
       </v-chip>
       <v-chip v-if="appStore.renderStatus === RenderStatus.SegmentVideo" variant="elevated">
-        {{ t('render.status.segmentingVideo') }}
+        {{ t('features.render.status.segmentingVideo') }}
       </v-chip>
       <v-chip v-if="appStore.renderStatus === RenderStatus.Rendering" variant="elevated">
-        {{ t('render.status.rendering') }}
+        {{ t('features.render.status.rendering') }}
       </v-chip>
       <v-chip
         v-if="appStore.renderStatus === RenderStatus.Completed"
         variant="elevated"
         color="success"
       >
-        {{ t('render.status.success') }}
+        {{ t('features.render.status.success') }}
       </v-chip>
       <v-chip v-if="appStore.renderStatus === RenderStatus.Failed" variant="elevated" color="error">
-        {{ t('render.status.failed') }}
+        {{ t('features.render.status.failed') }}
       </v-chip>
     </div>
 
@@ -48,7 +48,7 @@
             prepend-icon="mdi-rocket-launch"
             @click="emit('renderVideo')"
           >
-            {{ t('render.startRender') }}
+            {{ t('features.render.config.startLabel') }}
           </v-btn>
           <v-btn
             v-else
@@ -57,36 +57,33 @@
             prepend-icon="mdi-stop"
             @click="emit('cancelRender')"
           >
-            {{ t('render.stopRender') }}
+            {{ t('features.render.config.stopLabel') }}
           </v-btn>
           <v-dialog v-model="configDialogShow" max-width="600" persistent>
             <template v-slot:activator="{ props: activatorProps }">
               <v-btn v-bind="activatorProps" :disabled="taskInProgress">
-                {{ t('actions.config') }}
+                {{ t('common.buttons.config') }}
               </v-btn>
             </template>
 
-            <v-card
-              prepend-icon="mdi-text-box-edit-outline"
-              :title="t('dialogs.renderConfigTitle')"
-            >
+            <v-card prepend-icon="mdi-text-box-edit-outline" :title="t('dialogs.renderConfig')">
               <v-card-text>
                 <div class="w-full flex gap-2 mb-4 items-center">
                   <v-text-field
-                    :label="t('render.output.width')"
+                    :label="t('features.render.config.output.width')"
                     v-model="config.outputSize.width"
                     hide-details
                   ></v-text-field>
                   <v-text-field
                     v-model="config.outputSize.height"
-                    :label="t('render.output.height')"
+                    :label="t('features.render.config.output.height')"
                     hide-details
                     required
                   ></v-text-field>
                 </div>
                 <div class="w-full flex gap-2 mb-4 items-center">
                   <v-text-field
-                    :label="t('render.output.fileName')"
+                    :label="t('features.render.config.output.fileName')"
                     v-model="config.outputFileName"
                     hide-details
                     required
@@ -95,7 +92,7 @@
                   <v-text-field
                     class="w-[120px] flex-none"
                     v-model="config.outputFileExt"
-                    :label="t('render.output.format')"
+                    :label="t('features.render.config.output.format')"
                     hide-details
                     readonly
                     required
@@ -103,7 +100,7 @@
                 </div>
                 <div class="w-full flex gap-2 mb-4 items-center">
                   <v-text-field
-                    :label="t('render.output.folder')"
+                    :label="t('features.render.config.output.folder')"
                     v-model="config.outputPath"
                     hide-details
                     readonly
@@ -114,12 +111,12 @@
                     prepend-icon="mdi-folder-open"
                     @click="handleSelectOutputFolder"
                   >
-                    {{ t('common.select') }}
+                    {{ t('common.buttons.select') }}
                   </v-btn>
                 </div>
                 <div class="w-full flex gap-2 mb-2 items-center">
                   <v-text-field
-                    :label="t('render.bgmFolderLabel')"
+                    :label="t('features.render.config.bgmFolderLabel')"
                     v-model="config.bgmPath"
                     hide-details
                     readonly
@@ -131,17 +128,21 @@
                     prepend-icon="mdi-folder-open"
                     @click="handleSelectBgmFolder"
                   >
-                    {{ t('common.select') }}
+                    {{ t('common.buttons.select') }}
                   </v-btn>
                 </div>
               </v-card-text>
               <v-divider></v-divider>
               <v-card-actions>
                 <v-spacer></v-spacer>
-                <v-btn :text="t('common.close')" variant="plain" @click="handleCloseDialog"></v-btn>
+                <v-btn
+                  :text="t('common.buttons.close')"
+                  variant="plain"
+                  @click="handleCloseDialog"
+                ></v-btn>
                 <v-btn
                   color="primary"
-                  :text="t('common.save')"
+                  :text="t('common.buttons.save')"
                   variant="tonal"
                   @click="handleSaveConfig"
                 ></v-btn>
@@ -154,7 +155,7 @@
       <div class="w-full flex justify-center">
         <v-switch
           v-model="appStore.autoBatch"
-          :label="t('render.autoBatch')"
+          :label="t('features.render.config.autoBatch')"
           color="indigo"
           density="compact"
           hide-details
@@ -223,7 +224,7 @@ const handleSaveConfig = () => {
 // 选择文件夹
 const handleSelectOutputFolder = async () => {
   const folderPath = await window.electron.selectFolder({
-    title: t('dialogs.selectOutputFolderTitle'),
+    title: t('dialogs.selectOutputFolder'),
     defaultPath: config.value.outputPath,
   })
   console.log('用户选择视频导出文件夹，绝对路径：', folderPath)
@@ -233,7 +234,7 @@ const handleSelectOutputFolder = async () => {
 }
 const handleSelectBgmFolder = async () => {
   const folderPath = await window.electron.selectFolder({
-    title: t('dialogs.selectBgmFolderTitle'),
+    title: t('dialogs.selectBgmFolder'),
     defaultPath: config.value.bgmPath,
   })
   console.log('用户选择背景音乐文件夹，绝对路径：', folderPath)
