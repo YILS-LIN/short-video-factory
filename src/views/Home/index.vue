@@ -72,9 +72,11 @@ const handleRenderVideo = async () => {
         await window.electron.listFilesFromFolder({
           folderPath: appStore.renderConfig.bgmPath.replace(/\\/g, '/'),
         })
-      ).filter((asset) => asset.name.endsWith('.mp3'))
+      ).filter((asset) => asset.name.toLowerCase().endsWith('.mp3'))
+      console.log('获取到的背景音乐列表', bgmList)
       if (bgmList.length > 0) {
         randomBgm = random.choice(bgmList)
+        console.log('随机选取的背景音乐', randomBgm)
       }
     } catch (error: any) {
       console.log('获取背景音乐列表失败', error)
