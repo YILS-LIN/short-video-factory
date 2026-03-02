@@ -99,6 +99,7 @@ const handleRenderVideo = async () => {
             }),
         },
       })
+      return
     }
   }
 
