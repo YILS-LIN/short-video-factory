@@ -1,5 +1,5 @@
 <template>
-  <div class="pr-1">
+  <div class="pr-1 select-none">
     <div>{{ message }}</div>
     <div class="mt-1 text-sm">{{ detailShort }}</div>
     <div v-if="detailShort" class="mt-2">

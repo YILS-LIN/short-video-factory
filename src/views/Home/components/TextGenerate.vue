@@ -144,7 +144,7 @@ const handleGenerate = async (options?: { noToast?: boolean }) => {
   outputText.value = ''
   try {
     const result = streamText({
-      model: openai(appStore.llmConfig.modelName),
+      model: openai.chat(appStore.llmConfig.modelName),
       // system: ``,
       // 未来也许会设置一个系统提示词，但现在必须注释掉，因为部分接口提交空 system prompt 会报错
       prompt: appStore.prompt,
@@ -224,7 +224,7 @@ const handleTestConfig = async () => {
   const openai = createOpenAI({ baseURL: config.value.apiUrl, apiKey: config.value.apiKey })
   try {
     const result = await generateText({
-      model: openai(config.value.modelName),
+      model: openai.chat(config.value.modelName),
       prompt: 'Hello',
     })
     console.log(`result`, result)

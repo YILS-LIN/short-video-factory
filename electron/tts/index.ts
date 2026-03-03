@@ -66,7 +66,8 @@ export async function edgeTtsSynthesizeToFile(
     fs.writeFileSync(srtPath, srtString)
   }
 
-  const metadata = await parseBuffer(result.getBuffer())
+  // 指定 mimeType 为 audio/mpeg (MP3)，避免自动检测格式失败
+  const metadata = await parseBuffer(result.getBuffer(), { mimeType: 'audio/mpeg' })
   return {
     duration: metadata.format.duration,
   }

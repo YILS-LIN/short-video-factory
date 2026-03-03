@@ -97,20 +97,40 @@ export async function renderVideo(
     const voiceStreamIdx = videoFiles.length
     const bgmStreamIdx = audioFiles?.bgm ? videoFiles.length + 1 : null
 
-    const voiceLoudnorm = `loudnorm=I=-16:TP=-1.5:LRA=11`
-    filters.push(`[${voiceStreamIdx}:a]${voiceLoudnorm}[voice_normalized]`)
-
-    if (bgmStreamIdx !== null) {
-      const bgmLoudnorm = `loudnorm=I=-25:TP=-1.5:LRA=11`
-      filters.push(`[${bgmStreamIdx}:a]${bgmLoudnorm}[bgm_normalized]`)
+    if (outputDuration) {
+      // 先对音频trim到目标时长，避免loudnorm导致的截断
+      const voiceLoudnorm = `loudnorm=I=-16:TP=-1.5:LRA=11`
+      filters.push(`[${voiceStreamIdx}:a]${voiceLoudnorm}[voice_norm_raw]`)
       filters.push(
-        `[voice_normalized][bgm_normalized]amix=inputs=2:duration=longest:weights=1 0.5[aout]`,
+        `[voice_norm_raw]atrim=0:${outputDuration},asetpts=PTS-STARTPTS[voice_normalized]`,
       )
-    } else {
-      filters.push(`[voice_normalized]anull[aout]`)
-    }
 
-    filters.push(`[aout]loudnorm=I=-16:TP=-1.5:LRA=11[final_audio]`)
+      if (bgmStreamIdx !== null) {
+        const bgmLoudnorm = `loudnorm=I=-25:TP=-1.5:LRA=11`
+        // 对BGM先归一化，然后trim到目标时长
+        filters.push(`[${bgmStreamIdx}:a]${bgmLoudnorm}[bgm_norm_raw]`)
+        filters.push(`[bgm_norm_raw]atrim=0:${outputDuration},asetpts=PTS-STARTPTS[bgm_trimmed]`)
+        // 使用 duration=first 混合（以语音为准），并添加 dropout_transition=0
+        filters.push(
+          `[voice_normalized][bgm_trimmed]amix=inputs=2:duration=first:dropout_transition=0[final_audio]`,
+        )
+      } else {
+        filters.push(`[voice_normalized]acopy[final_audio]`)
+      }
+    } else {
+      const voiceLoudnorm = `loudnorm=I=-16:TP=-1.5:LRA=11`
+      filters.push(`[${voiceStreamIdx}:a]${voiceLoudnorm}[voice_normalized]`)
+
+      if (bgmStreamIdx !== null) {
+        const bgmLoudnorm = `loudnorm=I=-25:TP=-1.5:LRA=11`
+        filters.push(`[${bgmStreamIdx}:a]${bgmLoudnorm}[bgm_normalized]`)
+        filters.push(
+          `[voice_normalized][bgm_normalized]amix=inputs=2:duration=first:dropout_transition=0[final_audio]`,
+        )
+      } else {
+        filters.push(`[voice_normalized]acopy[final_audio]`)
+      }
+    }
 
     // 设置 filter_complex
     args.push('-filter_complex', `${filters.join(';')}`)
