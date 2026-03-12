@@ -4,6 +4,32 @@ All significant changes to this project will be recorded in this file.
 
 此项目的所有显著更改都将记录在此文件中。
 
+## [v1.2.1] - 2026-03-12
+
+### Added
+
+- Add anonymous event reporting in the Electron main process for key workflow events
+
+### Fixed & Optimized
+
+- Fix BGM filename matching edge cases during media selection
+- Resolve voice truncation caused by loudness normalization when adding BGM
+- Fix TTS audio metadata parsing by specifying mimeType to avoid format detection failures
+- Fix synthesis flow when BGM folder is missing and optimize related error handling
+- Upgrade AI SDK dependency
+
+### 新增
+
+- 增加主进程匿名统计上报，覆盖关键流程事件
+
+### 修复与优化
+
+- 修复素材选择过程中 BGM 文件名匹配边界问题
+- 解决添加 BGM 后因响度归一化导致语音截断的问题
+- 通过指定 mimeType 修复 TTS 音频元数据读取，避免自动识别格式失败
+- 修复 BGM 文件夹不存在时合成流程未正确中断的问题，并优化相关异常处理
+- 升级 AI SDK 依赖
+
 ## [v1.2.0] - 2026-01-22
 
 ### Added
