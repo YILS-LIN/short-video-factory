@@ -6,7 +6,12 @@ import {
   DeleteParams,
   BulkInsertOrUpdateParams,
 } from './sqlite/types'
-import { ListFilesFromFolderParams, OpenExternalParams, SelectFolderParams } from './types'
+import {
+  ListFilesFromFolderParams,
+  OpenExternalParams,
+  SelectFolderParams,
+  StatEventParams,
+} from './types'
 import { EdgeTtsSynthesizeCommonParams } from './tts/types'
 import { RenderVideoParams } from './ffmpeg/types'
 
@@ -56,6 +61,7 @@ contextBridge.exposeInMainWorld('electron', {
   edgeTtsSynthesizeToFile: (params: EdgeTtsSynthesizeCommonParams) =>
     ipcRenderer.invoke('edge-tts-synthesize-to-file', params),
   renderVideo: (params: RenderVideoParams) => ipcRenderer.invoke('render-video', params),
+  statTrack: (params: StatEventParams) => ipcRenderer.invoke('stat-track', params),
 })
 
 contextBridge.exposeInMainWorld('sqlite', {

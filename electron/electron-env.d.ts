@@ -49,6 +49,7 @@ interface Window {
     renderVideo: (
       params: import('./ffmpeg/types').RenderVideoParams,
     ) => Promise<import('./ffmpeg/types').ExecuteFFmpegResult>
+    statTrack: (params: import('./types').StatEventParams) => Promise<void>
   }
   sqlite: {
     query: (param: import('./sqlite/types').QueryParams) => Promise<any>

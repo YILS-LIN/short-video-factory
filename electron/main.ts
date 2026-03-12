@@ -9,6 +9,7 @@ import i18next from 'i18next'
 import { changeAppLanguage, initI18n } from './i18n'
 import { i18nLanguages } from './i18n/common-options'
 import useCookieAllowCrossSite from './lib/cookie-allow-cross-site'
+import { sendStatEvent } from './lib/stat'
 
 // 用于引入 CommonJS 模块的方法
 // import { createRequire } from 'node:module'
@@ -61,6 +62,10 @@ function createWindow() {
   //测试向渲染器进程发送的活动推送消息。
   win.webContents.on('did-finish-load', () => {
     win?.webContents.send('main-process-message', new Date().toLocaleString())
+    void sendStatEvent({
+      title: '软件主界面',
+      userAgent: win?.webContents.getUserAgent(),
+    })
   })
 
   if (VITE_DEV_SERVER_URL) {

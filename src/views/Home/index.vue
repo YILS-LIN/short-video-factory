@@ -47,6 +47,17 @@ const toast = useToast()
 const appStore = useAppStore()
 const { t } = useTranslation()
 
+const buildStatPayload = (title: string) => ({
+  title,
+  language: navigator.language,
+  screen: `${window.screen.width}x${window.screen.height}`,
+  userAgent: navigator.userAgent,
+})
+
+const trackStat = (title: string) => {
+  window.electron.statTrack(buildStatPayload(title)).catch(() => {})
+}
+
 // 渲染合成视频
 const TextGenerateInstance = ref<InstanceType<typeof TextGenerate> | null>()
 const VideoManageInstance = ref<InstanceType<typeof VideoManage> | null>()
@@ -106,6 +117,8 @@ const handleRenderVideo = async () => {
   }
 
   try {
+    trackStat('开始渲染视频')
+
     // 获取文案
     appStore.updateRenderStatus(RenderStatus.GenerateText)
     const text =
@@ -164,6 +177,7 @@ const handleRenderVideo = async () => {
     })
 
     toast.success(t('features.render.success.succeeded'))
+    trackStat('视频渲染成功')
     appStore.updateRenderStatus(RenderStatus.Completed)
 
     if (appStore.autoBatch) {
@@ -173,6 +187,7 @@ const handleRenderVideo = async () => {
     }
   } catch (error: any) {
     console.error('视频合成失败:', error)
+    trackStat('视频渲染失败')
     if (appStore.renderStatus === RenderStatus.None) return
     const errorMessage = error?.error?.message || error?.message || error
     toast.error({
@@ -197,6 +212,9 @@ const handleRenderVideo = async () => {
 }
 const handleCancelRender = () => {
   console.log('视频合成终止')
+  if (appStore.renderStatus !== RenderStatus.None) {
+    trackStat('视频渲染取消')
+  }
   switch (appStore.renderStatus) {
     case RenderStatus.GenerateText:
       TextGenerateInstance.value?.handleStopGenerate()
