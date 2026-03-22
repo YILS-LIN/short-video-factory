@@ -3,9 +3,15 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { BrowserWindow, ipcMain, dialog, app, shell } from 'electron'
 import { sqBulkInsertOrUpdate, sqDelete, sqInsert, sqQuery, sqUpdate } from './sqlite'
-import { ListFilesFromFolderParams, OpenExternalParams, SelectFolderParams } from './types'
+import {
+  ListFilesFromFolderParams,
+  OpenExternalParams,
+  SelectFolderParams,
+  StatEventParams,
+} from './types'
 import { edgeTtsGetVoiceList, edgeTtsSynthesizeToBase64, edgeTtsSynthesizeToFile } from './tts'
 import { renderVideo } from './ffmpeg'
+import { sendStatEvent } from './lib/stat'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -93,6 +99,9 @@ export default function initIPC() {
 
   // 获取EdgeTTS语音列表
   ipcMain.handle('edge-tts-get-voice-list', () => edgeTtsGetVoiceList())
+
+  // 统计事件上报
+  ipcMain.handle('stat-track', (_event, params: StatEventParams) => sendStatEvent(params))
 
   // 语音合成并获取Base64
   ipcMain.handle('edge-tts-synthesize-to-base64', (_event, params) =>
