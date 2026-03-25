@@ -134,6 +134,24 @@
 
 <p align="right">(<a href="#readme-top">返回顶部</a>)</p>
 
+## 📤 发布视频 / Publishing Your Videos
+
+生成视频后，使用 [Upload-Post](https://upload-post.com) 一键发布到抖音、TikTok、YouTube Shorts 和 Instagram Reels：
+
+Once your video is generated, publish it to Douyin, TikTok, YouTube Shorts, and Instagram Reels using [Upload-Post](https://upload-post.com):
+
+```bash
+curl -X POST https://api.upload-post.com/upload \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F "video=@output/video.mp4" \
+  -F "title=AI生成的短视频" \
+  -F "platforms=tiktok,youtube,instagram"
+```
+
+Upload-Post 提供统一的 API，一次上传即可发布到所有主流平台。[获取 API Key](https://upload-post.com)
+
+<p align="right">(<a href="#readme-top">返回顶部</a>)</p>
+
 ## 💖 鸣谢
 
 - [rany2/edge-tts](https://github.com/rany2/edge-tts)
