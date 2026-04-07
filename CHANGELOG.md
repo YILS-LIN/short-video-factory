@@ -4,6 +4,22 @@ All significant changes to this project will be recorded in this file.
 
 此项目的所有显著更改都将记录在此文件中。
 
+## [v1.2.2] - 2026-04-07
+
+### Fixed & Optimized
+
+- Optimize segment duration acquisition in large media libraries by switching to offscreen metadata probing with cache, reducing undefined duration failures during composition
+- Decouple preview rendering from duration dependency and improve random segment selection stability
+- Add robust default folder fallback for Windows folder picker (downloads -> desktop -> documents -> home -> cwd) to avoid dialog open failures when downloads path is unavailable
+- Add safer TTS audio metadata parsing guards and clearer error messages for invalid duration scenarios
+
+### 修复与优化
+
+- 优化大素材库场景下的分镜时长获取，改为离屏读取并缓存 metadata，降低合成阶段 duration 为空导致的失败
+- 解耦预览组件与时长依赖，提升随机分镜流程稳定性
+- 为 Windows 文件夹选择增加默认目录回退链路（downloads -> desktop -> documents -> home -> cwd），避免下载目录不可用时无法打开选择器
+- 增强 TTS 音频元数据解析兜底与错误提示，避免无效时长引发不明确报错
+
 ## [v1.2.1] - 2026-03-12
 
 ### Added
