@@ -31,14 +31,7 @@
               v-for="(item, index) in videoAssets"
               :key="index"
             >
-              <VideoAutoPreview
-                :asset="item"
-                @loaded="
-                  (info) => {
-                    videoInfoList[index] = info
-                  }
-                "
-              />
+              <VideoAutoPreview :asset="item" />
             </div>
           </div>
           <v-empty-state
@@ -71,7 +64,7 @@ import { useAppStore } from '@/store'
 import { useToast } from 'vue-toastification'
 import { ListFilesFromFolderRecord } from '~/electron/types'
 import { RenderVideoParams } from '~/electron/ffmpeg/types'
-import VideoAutoPreview, { VideoInfo } from '@/components/VideoAutoPreview.vue'
+import VideoAutoPreview from '@/components/VideoAutoPreview.vue'
 import ActionToastEmbed from '@/components/ActionToastEmbed.vue'
 import random from 'random'
 import { formatErrorForCopy } from '@/lib/error-copy'
@@ -99,6 +92,7 @@ const handleSelectFolder = async () => {
 
 // 刷新素材库
 const videoAssets = ref<ListFilesFromFolderRecord[]>([])
+const videoDurationCache = ref(new Map<string, number>())
 const refreshAssetsLoading = ref(false)
 const refreshAssets = async () => {
   if (!appStore.videoAssetsFolder) {
@@ -111,6 +105,7 @@ const refreshAssets = async () => {
     })
     console.log(`素材库刷新:`, assets)
     videoAssets.value = assets.filter((asset) => asset.name.toLowerCase().endsWith('.mp4'))
+    videoDurationCache.value.clear()
     if (!videoAssets.value.length) {
       if (assets.length) {
         toast.warning(t('features.assets.errors.noMp4InFolder'))
@@ -148,21 +143,60 @@ onMounted(() => {
   refreshAssets()
 })
 
-// 获取视频分镜随机素材片段
-const videoInfoList = ref<VideoInfo[]>([])
-const getVideoSegments = (options: { duration: number }) => {
-  // 视频资源总时长
-  const videeAssetsTotalDuration = videoInfoList.value.reduce((pre, cur) => pre + cur.duration, 0)
-
-  // 判断素材库视频时长是否过短
-  if (videeAssetsTotalDuration < 1) {
-    throw new Error(t('features.assets.errors.durationInsufficient'))
+const readVideoDuration = (assetPath: string) => {
+  const cached = videoDurationCache.value.get(assetPath)
+  if (typeof cached === 'number' && Number.isFinite(cached) && cached > 0) {
+    return Promise.resolve(cached)
   }
 
-  // 判断素材库是否满足TTS时长要求
-  // if (videeAssetsTotalDuration < options.duration) {
-  //   throw new Error(t('errors.assetsDurationInsufficient'))
-  // }
+  return new Promise<number>((resolve, reject) => {
+    const video = document.createElement('video')
+    const normalizedPath = assetPath.replace(/\\/g, '/')
+    const src = normalizedPath.startsWith('/')
+      ? `file://${normalizedPath}`
+      : `file:///${normalizedPath}`
+    const timeout = window.setTimeout(() => {
+      cleanup()
+      reject(new Error('读取视频元数据超时'))
+    }, 8000)
+
+    const cleanup = () => {
+      window.clearTimeout(timeout)
+      video.removeEventListener('loadedmetadata', onLoaded)
+      video.removeEventListener('error', onError)
+      video.pause()
+      video.removeAttribute('src')
+      video.load()
+    }
+
+    const onLoaded = () => {
+      const duration = video.duration
+      cleanup()
+      if (!Number.isFinite(duration) || duration <= 0) {
+        reject(new Error('视频时长无效'))
+        return
+      }
+      videoDurationCache.value.set(assetPath, duration)
+      resolve(duration)
+    }
+
+    const onError = () => {
+      cleanup()
+      reject(new Error('视频元数据读取失败'))
+    }
+
+    video.preload = 'metadata'
+    video.addEventListener('loadedmetadata', onLoaded)
+    video.addEventListener('error', onError)
+    video.src = encodeURI(src)
+  })
+}
+
+// 获取视频分镜随机素材片段
+const getVideoSegments = async (options: { duration: number }) => {
+  if (options.duration <= 0 || !videoAssets.value.length) {
+    throw new Error(t('features.assets.errors.durationInsufficient'))
+  }
 
   // 搜集随机素材片段
   const segments: Pick<RenderVideoParams, 'videoFiles' | 'timeRanges'> = {
@@ -175,7 +209,14 @@ const getVideoSegments = (options: { duration: number }) => {
   let currentTotalDuration = 0
   let tempVideoAssets = structuredClone(toRaw(videoAssets.value))
   const trunc3 = (n: number) => ((n * 1e3) << 0) / 1e3
+  let attempts = 0
+  const maxAttempts = Math.max(videoAssets.value.length * 6, 60)
+
   while (currentTotalDuration < options.duration) {
+    if (attempts > maxAttempts) {
+      throw new Error(t('features.assets.errors.durationInsufficient'))
+    }
+
     // 如果素材库中没有剩余素材，时长还不够，重新来一轮
     if (tempVideoAssets.length === 0) {
       tempVideoAssets = structuredClone(toRaw(videoAssets.value))
@@ -184,24 +225,41 @@ const getVideoSegments = (options: { duration: number }) => {
 
     // 获取一个随机素材以及相关信息
     const randomAsset = random.choice(tempVideoAssets)!
-    const randomAssetIndex = videoAssets.value.findIndex((asset) => asset.path === randomAsset.path)
-    const randomAssetInfo = videoInfoList.value[randomAssetIndex]
+    const randomAssetIndex = tempVideoAssets.findIndex((asset) => asset.path === randomAsset.path)
+    if (randomAssetIndex < 0) {
+      attempts += 1
+      continue
+    }
 
     // 删除已选素材
     tempVideoAssets.splice(randomAssetIndex, 1)
 
+    attempts += 1
+
+    let randomAssetDuration = 0
+    try {
+      randomAssetDuration = await readVideoDuration(randomAsset.path)
+    } catch (error) {
+      console.warn('读取素材时长失败，跳过该素材：', randomAsset.path, error)
+      continue
+    }
+
+    if (!Number.isFinite(randomAssetDuration) || randomAssetDuration <= 0) {
+      continue
+    }
+
     // 如果素材时长小于最小片段时长，直接添加
-    if (randomAssetInfo.duration < minSegmentDuration) {
+    if (randomAssetDuration < minSegmentDuration) {
       segments.videoFiles.push(randomAsset.path)
-      segments.timeRanges.push([String(0), String(randomAssetInfo.duration)])
-      currentTotalDuration = trunc3(currentTotalDuration + randomAssetInfo.duration)
+      segments.timeRanges.push([String(0), String(trunc3(randomAssetDuration))])
+      currentTotalDuration = trunc3(currentTotalDuration + randomAssetDuration)
       continue
     }
 
     // 如果素材时长大于最小片段时长，随机一个片段
     let randomSegmentDuration = random.float(
       minSegmentDuration,
-      Math.min(maxSegmentDuration, randomAssetInfo.duration),
+      Math.min(maxSegmentDuration, randomAssetDuration),
     )
 
     // 处理最后一个片段时长超出规划时长情况
@@ -211,12 +269,12 @@ const getVideoSegments = (options: { duration: number }) => {
 
     // 处理最后一个片段时长小于最小片段时长情况
     if (options.duration - currentTotalDuration - randomSegmentDuration < minSegmentDuration) {
-      if (options.duration - currentTotalDuration < randomAssetInfo.duration) {
+      if (options.duration - currentTotalDuration < randomAssetDuration) {
         randomSegmentDuration = options.duration - currentTotalDuration
       }
     }
 
-    let randomSegmentStart = random.float(0, randomAssetInfo.duration - randomSegmentDuration)
+    const randomSegmentStart = random.float(0, randomAssetDuration - randomSegmentDuration)
 
     segments.videoFiles.push(randomAsset.path)
     segments.timeRanges.push([
@@ -228,7 +286,7 @@ const getVideoSegments = (options: { duration: number }) => {
     console.table([
       {
         素材名称: randomAsset.name,
-        素材时长: randomAssetInfo.duration,
+        素材时长: randomAssetDuration,
         片段开始: trunc3(randomSegmentStart),
         片段时长: trunc3(randomSegmentDuration),
       },

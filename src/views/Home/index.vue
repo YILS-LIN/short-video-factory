@@ -148,7 +148,7 @@ const handleRenderVideo = async () => {
       return
     }
     appStore.updateRenderStatus(RenderStatus.SegmentVideo)
-    const videoSegments = VideoManageInstance.value?.getVideoSegments({
+    const videoSegments = await VideoManageInstance.value?.getVideoSegments({
       duration: ttsResult.duration,
     })!
     await new Promise((resolve) => setTimeout(resolve, random.integer(1000, 3000)))
