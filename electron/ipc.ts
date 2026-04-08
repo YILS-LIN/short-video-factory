@@ -26,6 +26,54 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
   ? path.join(process.env.APP_ROOT, 'public')
   : RENDERER_DIST
 
+function canUsePath(folderPath?: string | null) {
+  if (!folderPath) {
+    return false
+  }
+
+  try {
+    fs.accessSync(folderPath, fs.constants.R_OK)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function tryGetElectronPath(name: Parameters<typeof app.getPath>[0]) {
+  try {
+    return app.getPath(name)
+  } catch (error: any) {
+    console.warn(`[select-folder] getPath(${name}) failed:`, error?.message ?? String(error))
+    return null
+  }
+}
+
+function resolveDefaultFolderPath(customPath?: string | null) {
+  if (canUsePath(customPath)) {
+    return customPath!
+  }
+
+  const fallbackPathKeys: Parameters<typeof app.getPath>[0][] = [
+    'downloads',
+    'desktop',
+    'documents',
+    'home',
+  ]
+
+  for (const key of fallbackPathKeys) {
+    const folderPath = tryGetElectronPath(key)
+    if (canUsePath(folderPath)) {
+      return folderPath
+    }
+  }
+
+  if (canUsePath(process.cwd())) {
+    return process.cwd()
+  }
+
+  return null
+}
+
 export default function initIPC() {
   // sqlite 查询
   ipcMain.handle('sqlite-query', (_event, params) => sqQuery(params))
@@ -75,11 +123,20 @@ export default function initIPC() {
       throw new Error('无法获取窗口')
     }
 
-    const result = await dialog.showOpenDialog(win, {
+    const defaultPath = resolveDefaultFolderPath(params?.defaultPath)
+
+    const dialogOptions: Electron.OpenDialogOptions = {
       properties: ['openDirectory'],
       title: params?.title || '选择文件夹',
-      defaultPath: params?.defaultPath || app.getPath('downloads'), // 默认打开 Downloads
-    })
+    }
+
+    if (defaultPath) {
+      dialogOptions.defaultPath = defaultPath
+    } else {
+      console.warn('[select-folder] all fallback defaultPath attempts unavailable')
+    }
+
+    const result = await dialog.showOpenDialog(win, dialogOptions)
     if (!result.canceled && result.filePaths.length > 0) {
       return result.filePaths[0] // 返回绝对路径
     }
