@@ -2,6 +2,7 @@ export function formatErrorForCopy(message: string, detail: string): string {
   const errorObj = {
     message,
     detail,
+    appVersion: __APP_VERSION__,
     timestamp: new Date().toISOString(),
   }
 
