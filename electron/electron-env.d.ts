@@ -30,6 +30,7 @@ interface Window {
     changeLanguage: (lng: string) => Promise<string>
   }
   electron: {
+    platform: NodeJS.Platform
     isWinMaxed: () => Promise<boolean>
     winMin: () => void
     winMax: () => void

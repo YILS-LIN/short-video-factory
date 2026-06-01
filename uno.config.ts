@@ -24,7 +24,7 @@ export default defineConfig({
         position: 'absolute',
         top: '0',
         right: '0',
-        width: '210px',
+        width: 'var(--window-control-mask-width, 210px)',
         height: '35px',
         '-webkit-app-region': 'no-drag',
       },

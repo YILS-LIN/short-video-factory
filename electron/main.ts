@@ -39,6 +39,8 @@ let win: BrowserWindow | null
 
 function createWindow() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize
+  const isMac = process.platform === 'darwin'
+
   win = new BrowserWindow({
     icon: path.join(process.env.VITE_PUBLIC, 'icon.png'),
     width: Math.ceil(width * 0.8),
@@ -47,7 +49,14 @@ function createWindow() {
     minHeight: 650,
     backgroundColor: '#F3F3F3',
     show: false,
-    frame: false,
+    ...(isMac
+      ? {
+          titleBarStyle: 'hiddenInset',
+          trafficLightPosition: { x: 12, y: 12 },
+        }
+      : {
+          frame: false,
+        }),
     webPreferences: {
       webSecurity: false,
       preload: path.join(__dirname, 'preload.js'),

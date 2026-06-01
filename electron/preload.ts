@@ -47,6 +47,7 @@ contextBridge.exposeInMainWorld('i18n', {
 })
 
 contextBridge.exposeInMainWorld('electron', {
+  platform: process.platform,
   isWinMaxed: () => ipcRenderer.invoke('is-win-maxed'),
   winMin: () => ipcRenderer.send('win-min'),
   winMax: () => ipcRenderer.send('win-max'),

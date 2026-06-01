@@ -1,5 +1,5 @@
 <template>
-  <div class="layout-container">
+  <div class="layout-container" :class="{ 'is-mac': isMac }" :style="layoutStyle">
     <div class="logo" v-if="!route.meta.hideAppIcon">
       <img src="/icon.png" alt="" />
       <span>{{ t('app.name') }}</span>
@@ -57,16 +57,18 @@
           </v-list>
         </v-menu>
       </div>
-      <div class="control-btn control-btn-min" @click="handleMin">
-        <v-icon icon="mdi-window-minimize" size="small" />
-      </div>
-      <div class="control-btn control-btn-max" @click="handleMax">
-        <v-icon icon="mdi-window-maximize" size="small" v-if="!windowIsMaxed" />
-        <v-icon icon="mdi-window-restore" size="small" v-else />
-      </div>
-      <div class="control-btn control-btn-close" @click="handleClose">
-        <v-icon icon="mdi-window-close" size="small" />
-      </div>
+      <template v-if="!isMac">
+        <div class="control-btn control-btn-min" @click="handleMin">
+          <v-icon icon="mdi-window-minimize" size="small" />
+        </div>
+        <div class="control-btn control-btn-max" @click="handleMax">
+          <v-icon icon="mdi-window-maximize" size="small" v-if="!windowIsMaxed" />
+          <v-icon icon="mdi-window-restore" size="small" v-else />
+        </div>
+        <div class="control-btn control-btn-close" @click="handleClose">
+          <v-icon icon="mdi-window-close" size="small" />
+        </div>
+      </template>
     </div>
     <RouterView />
   </div>
@@ -87,6 +89,10 @@ const appStore = useAppStore()
 document.title = t('app.name')
 
 const route = useRoute()
+const isMac = window.electron.platform === 'darwin'
+const layoutStyle = {
+  '--window-control-mask-width': isMac ? '84px' : '210px',
+}
 const windowIsMaxed = ref(false)
 
 const zoomDisplayOptions = appStore.zoomOptions.map((factor) => ({
@@ -154,6 +160,12 @@ const handleClose = () => {
     img {
       width: 20px;
       height: 20px;
+    }
+  }
+
+  &.is-mac {
+    .logo {
+      padding-left: 84px;
     }
   }
 
