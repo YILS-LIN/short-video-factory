@@ -31,6 +31,32 @@
           </v-list>
         </v-menu>
       </div>
+      <div class="window-no-drag">
+        <v-menu location="bottom right">
+          <template v-slot:activator="{ props }">
+            <div class="control-btn control-btn-zoom" v-bind="props">
+              <v-icon icon="mdi-magnify-plus-outline" />
+            </div>
+          </template>
+          <v-list
+            class="p-2 space-y-1"
+            activatable
+            :activated="[appStore.zoomFactor]"
+            @update:activated="handleChangeZoom"
+          >
+            <v-list-item
+              v-for="(item, index) in zoomDisplayOptions"
+              :key="index"
+              :value="item.value"
+              color="primary"
+              density="compact"
+              rounded
+            >
+              <v-list-item-title>{{ item.label }}</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-menu>
+      </div>
       <div class="control-btn control-btn-min" @click="handleMin">
         <v-icon icon="mdi-window-minimize" size="small" />
       </div>
@@ -47,12 +73,14 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTranslation } from 'i18next-vue'
 import { i18nLanguages } from '~/electron/i18n/common-options'
+import { useAppStore } from '@/store'
 
 const { i18next, t } = useTranslation()
+const appStore = useAppStore()
 // const lang = ref(i18next.language)
 // console.log('i18next.language', i18next.language)
 
@@ -61,12 +89,29 @@ document.title = t('app.name')
 const route = useRoute()
 const windowIsMaxed = ref(false)
 
+const zoomDisplayOptions = appStore.zoomOptions.map((factor) => ({
+  value: factor,
+  label: `${Math.round(factor * 100)}%`,
+}))
+
 const handleChangeLanguage = (lng: unknown) => {
   console.log('handleChangeLanguage', lng)
   if ((lng as string[])[0]) {
     window.i18n.changeLanguage((lng as string[])[0])
   }
 }
+
+const handleChangeZoom = (factor: unknown) => {
+  const zoomFactor = (factor as number[])[0]
+  if (zoomFactor) {
+    window.electron.setZoomFactor(zoomFactor)
+    appStore.updateZoomFactor(zoomFactor)
+  }
+}
+
+onMounted(() => {
+  window.electron.setZoomFactor(appStore.zoomFactor)
+})
 
 window.addEventListener('resize', async () => {
   windowIsMaxed.value = await window.electron.isWinMaxed()
@@ -131,6 +176,7 @@ const handleClose = () => {
       width: 42px;
       height: var(--title-bar-height);
       box-sizing: border-box;
+      -webkit-app-region: no-drag;
 
       &:hover {
         @apply bg-gray-200;
@@ -142,6 +188,7 @@ const handleClose = () => {
         }
       }
     }
+
   }
 }
 </style>

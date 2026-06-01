@@ -111,6 +111,12 @@ export default function initIPC() {
     win?.close()
   })
 
+  // 设置缩放倍率
+  ipcMain.on('set-zoom-factor', (event, factor: number) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    win?.webContents.setZoomFactor(factor)
+  })
+
   // 打开外部链接
   ipcMain.handle('open-external', (_event, params: OpenExternalParams) => {
     shell.openExternal(params.url)

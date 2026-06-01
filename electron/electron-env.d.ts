@@ -34,6 +34,7 @@ interface Window {
     winMin: () => void
     winMax: () => void
     winClose: () => void
+    setZoomFactor: (factor: number) => void
     openExternal: (params: import('./types').OpenExternalParams) => void
     selectFolder: (params: import('./types').SelectFolderParams) => Promise<string>
     listFilesFromFolder: (

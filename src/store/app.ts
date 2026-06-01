@@ -77,6 +77,13 @@ export const useAppStore = defineStore(
       renderStatus.value = newStatus
     }
 
+    // 缩放倍率配置
+    const zoomOptions = [0.5, 0.75, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0]
+    const zoomFactor = ref(1.0)
+    const updateZoomFactor = (factor: number) => {
+      zoomFactor.value = factor
+    }
+
     return {
       locale,
       updateLocale,
@@ -103,6 +110,10 @@ export const useAppStore = defineStore(
       renderStatus,
       updateRenderConfig,
       updateRenderStatus,
+
+      zoomOptions,
+      zoomFactor,
+      updateZoomFactor,
     }
   },
   {

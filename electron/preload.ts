@@ -51,6 +51,7 @@ contextBridge.exposeInMainWorld('electron', {
   winMin: () => ipcRenderer.send('win-min'),
   winMax: () => ipcRenderer.send('win-max'),
   winClose: () => ipcRenderer.send('win-close'),
+  setZoomFactor: (factor: number) => ipcRenderer.send('set-zoom-factor', factor),
   openExternal: (params: OpenExternalParams) => ipcRenderer.invoke('open-external', params),
   selectFolder: (params: SelectFolderParams) => ipcRenderer.invoke('select-folder', params),
   listFilesFromFolder: (params: ListFilesFromFolderParams) =>
