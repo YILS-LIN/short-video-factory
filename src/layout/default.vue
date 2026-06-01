@@ -166,6 +166,8 @@ const handleClose = () => {
   &.is-mac {
     .logo {
       padding-left: 84px;
+      pointer-events: none;
+      -webkit-app-region: no-drag;
     }
   }
 

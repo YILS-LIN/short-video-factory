@@ -1,7 +1,16 @@
 <template>
   <div class="w-full h-full flex flex-col">
-    <div class="w-full h-[40px] window-drag relative border-b">
-      <div class="window-control-bar-no-drag-mask"></div>
+    <div
+      class="w-full h-[40px] relative border-b"
+      :class="isMac ? 'title-bar' : 'window-drag'"
+      @mousedown="handleTitleBarMouseDown"
+      @dblclick="handleTitleBarDoubleClick"
+    >
+      <div
+        class="window-control-bar-no-drag-mask"
+        @mousedown.stop
+        @dblclick.stop
+      ></div>
     </div>
 
     <div class="w-full h-0 flex-1 flex box-border gap-2 py-2 px-3">
@@ -34,7 +43,7 @@ import VideoManage from './components/VideoManage.vue'
 import TtsControl from './components/TtsControl.vue'
 import VideoRender from './components/VideoRender.vue'
 
-import { h, ref } from 'vue'
+import { h, onBeforeUnmount, ref } from 'vue'
 import { RenderStatus, useAppStore } from '@/store'
 import { useTranslation } from 'i18next-vue'
 import { useToast } from 'vue-toastification'
@@ -46,6 +55,7 @@ import { formatErrorForCopy } from '@/lib/error-copy'
 const toast = useToast()
 const appStore = useAppStore()
 const { t } = useTranslation()
+const isMac = window.electron.platform === 'darwin'
 
 const buildStatPayload = (title: string) => ({
   title,
@@ -57,6 +67,96 @@ const buildStatPayload = (title: string) => ({
 const trackStat = (title: string) => {
   window.electron.statTrack(buildStatPayload(title)).catch(() => {})
 }
+
+let dragState:
+  | {
+      startMouseX: number
+      startMouseY: number
+      startClientX: number
+      startWindowX: number
+      startWindowY: number
+      dragging: boolean
+      preparing: boolean
+    }
+  | null = null
+
+const clearTitleBarDragListeners = () => {
+  window.removeEventListener('mousemove', handleTitleBarMouseMove)
+  window.removeEventListener('mouseup', handleTitleBarMouseUp)
+}
+
+const handleTitleBarMouseMove = async (event: MouseEvent) => {
+  if (!isMac || !dragState) return
+
+  const deltaX = event.screenX - dragState.startMouseX
+  const deltaY = event.screenY - dragState.startMouseY
+  if (!dragState.dragging && Math.hypot(deltaX, deltaY) < 2) return
+
+  if (!dragState.dragging) {
+    if (dragState.preparing) return
+    dragState.preparing = true
+
+    const dragInfo = await window.electron.prepareWindowDrag()
+    if (!dragState || !dragInfo) return
+
+    let initialX = dragInfo.bounds.x
+    let initialY = dragInfo.bounds.y
+    if (dragInfo.wasMaximized) {
+      const pointerRatio = dragState.startClientX / window.innerWidth
+      initialX = event.screenX - dragInfo.bounds.width * pointerRatio
+      initialY = Math.max(0, event.screenY - 20)
+      window.electron.setWindowPosition(initialX, initialY)
+    }
+
+    dragState.startMouseX = event.screenX
+    dragState.startMouseY = event.screenY
+    dragState.startWindowX = initialX
+    dragState.startWindowY = initialY
+  }
+
+  dragState.dragging = true
+  window.electron.setWindowPosition(
+    dragState.startWindowX + event.screenX - dragState.startMouseX,
+    dragState.startWindowY + event.screenY - dragState.startMouseY,
+  )
+}
+
+const handleTitleBarMouseUp = () => {
+  dragState = null
+  clearTitleBarDragListeners()
+}
+
+const handleTitleBarMouseDown = async (event: MouseEvent) => {
+  if (!isMac) return
+  if (event.button !== 0 || event.detail > 1) return
+
+  const bounds = await window.electron.getWindowBounds()
+  if (!bounds) return
+
+  dragState = {
+    startMouseX: event.screenX,
+    startMouseY: event.screenY,
+    startClientX: event.clientX,
+    startWindowX: bounds.x,
+    startWindowY: bounds.y,
+    dragging: false,
+    preparing: false,
+  }
+  clearTitleBarDragListeners()
+  window.addEventListener('mousemove', handleTitleBarMouseMove)
+  window.addEventListener('mouseup', handleTitleBarMouseUp)
+}
+
+const handleTitleBarDoubleClick = () => {
+  if (!isMac) return
+  dragState = null
+  clearTitleBarDragListeners()
+  window.electron.toggleWindowMaximize()
+}
+
+onBeforeUnmount(() => {
+  clearTitleBarDragListeners()
+})
 
 // 渲染合成视频
 const TextGenerateInstance = ref<InstanceType<typeof TextGenerate> | null>()
@@ -239,5 +339,7 @@ const handleCancelRender = () => {
 </script>
 
 <style lang="scss" scoped>
-//
+.title-bar {
+  user-select: none;
+}
 </style>

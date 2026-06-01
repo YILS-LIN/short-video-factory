@@ -35,6 +35,13 @@ interface Window {
     winMin: () => void
     winMax: () => void
     winClose: () => void
+    toggleWindowMaximize: () => void
+    prepareWindowDrag: () => Promise<{
+      bounds: import('electron').Rectangle
+      wasMaximized: boolean
+    } | null>
+    getWindowBounds: () => Promise<import('electron').Rectangle | undefined>
+    setWindowPosition: (x: number, y: number) => void
     setZoomFactor: (factor: number) => void
     openExternal: (params: import('./types').OpenExternalParams) => void
     selectFolder: (params: import('./types').SelectFolderParams) => Promise<string>

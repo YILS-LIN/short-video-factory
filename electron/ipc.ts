@@ -14,6 +14,7 @@ import { renderVideo } from './ffmpeg'
 import { sendStatEvent } from './lib/stat'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+let windowMaximizedByApp = false
 
 process.env.APP_ROOT = path.join(__dirname, '..')
 
@@ -89,7 +90,7 @@ export default function initIPC() {
   // 是否最大化
   ipcMain.handle('is-win-maxed', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender)
-    return win?.isMaximized()
+    return Boolean(win?.isMaximized() || windowMaximizedByApp)
   })
   //最小化
   ipcMain.on('win-min', (event) => {
@@ -99,11 +100,52 @@ export default function initIPC() {
   //最大化
   ipcMain.on('win-max', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender)
-    if (win?.isMaximized()) {
+    if (win?.isMaximized() || windowMaximizedByApp) {
       win?.restore()
+      windowMaximizedByApp = false
     } else {
       win?.maximize()
+      windowMaximizedByApp = true
     }
+  })
+  // 切换最大化/还原
+  ipcMain.on('toggle-window-maximize', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return
+
+    if (win.isMaximized() || windowMaximizedByApp) {
+      win.restore()
+      windowMaximizedByApp = false
+    } else {
+      win.maximize()
+      windowMaximizedByApp = true
+    }
+  })
+  // 拖拽前准备窗口状态：最大化时先还原，再返回还原后的窗口尺寸
+  ipcMain.handle('prepare-window-drag', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return null
+
+    const wasMaximized = win.isMaximized() || windowMaximizedByApp
+    if (wasMaximized) {
+      win.restore()
+      windowMaximizedByApp = false
+    }
+
+    return {
+      bounds: win.getBounds(),
+      wasMaximized,
+    }
+  })
+  // 获取窗口位置和大小
+  ipcMain.handle('get-window-bounds', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    return win?.getBounds()
+  })
+  // 设置窗口位置
+  ipcMain.on('set-window-position', (event, x: number, y: number) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    win?.setPosition(Math.round(x), Math.round(y))
   })
   //关闭程序
   ipcMain.on('win-close', (event) => {
