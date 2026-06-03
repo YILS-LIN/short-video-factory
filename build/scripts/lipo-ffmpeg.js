@@ -23,7 +23,7 @@ function run(cmd, opts = {}) {
 
 // 3. 开始干活
 const archs = ['x64', 'arm64']
-const ffmpegStaticDir = path.join(__dirname, '..', 'node_modules', 'ffmpeg-static')
+const ffmpegStaticDir = path.join(__dirname, '..', '..', 'node_modules', 'ffmpeg-static')
 
 // 移除原来的二进制文件
 run('rm -f ffmpeg', { cwd: ffmpegStaticDir })

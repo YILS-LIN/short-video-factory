@@ -10,12 +10,12 @@ const Arch = {
 }
 
 function copyNativeFileSync(sourceDir, targetDir) {
-  const sourcePath = path.join(__dirname, `../native/${sourceDir}`)
-  const targetPath = path.join(__dirname, `../dist-native/${targetDir}`)
+  const sourcePath = path.join(__dirname, `../../native/${sourceDir}`)
+  const targetPath = path.join(__dirname, `../../dist-native/${targetDir}`)
   if (!fs.existsSync(sourcePath)) {
     throw new Error(`Native binary not found at: ${sourcePath}`)
   }
-  if (!fs.existsSync(path.join(__dirname, `../dist-native`))) {
+  if (!fs.existsSync(path.join(__dirname, `../../dist-native`))) {
     fs.mkdirSync(path.dirname(targetPath), { recursive: true })
   }
   fs.copyFileSync(sourcePath, targetPath)

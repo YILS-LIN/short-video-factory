@@ -1,6 +1,5 @@
 const { execSync } = require('node:child_process')
 const ffmpeg = require('ffmpeg-static')
-const path = require('node:path')
 const fs = require('node:fs')
 
 console.log('Downloading ffmpeg...')
