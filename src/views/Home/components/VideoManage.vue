@@ -194,8 +194,12 @@ const readVideoDuration = (assetPath: string) => {
 
 // 获取视频分镜随机素材片段
 const getVideoSegments = async (options: { duration: number }) => {
-  if (options.duration <= 0 || !videoAssets.value.length) {
-    throw new Error(t('features.assets.errors.durationInsufficient'))
+  if (options.duration <= 0) {
+    throw new Error(t('features.assets.errors.audioDurationInvalid'))
+  }
+
+  if (!videoAssets.value.length) {
+    throw new Error(t('features.assets.errors.noVideoAssets'))
   }
 
   // 搜集随机素材片段

@@ -130,7 +130,9 @@
       "errors": {
         "loadFailed": "Failed to read assets. Please check if the folder exists",
         "noMp4InFolder": "No MP4 video files found in the selected folder",
-        "durationInsufficient": "Total assets duration is insufficient"
+        "audioDurationInvalid": "Audio duration is invalid. Please check the speech synthesis result or audio file",
+        "noVideoAssets": "No available video assets. Please select an assets folder containing MP4 videos",
+        "durationInsufficient": "Total available video assets duration is insufficient"
       },
       "success": {
         "loadSucceeded": "Assets loaded successfully"

@@ -130,7 +130,9 @@
       "errors": {
         "loadFailed": "素材读取失败，请检查文件夹是否存在",
         "noMp4InFolder": "选择的文件夹中不包含MP4视频文件",
-        "durationInsufficient": "素材总时长不足"
+        "audioDurationInvalid": "音频时长无效，请检查语音合成结果或音频文件是否正常",
+        "noVideoAssets": "没有可用的视频素材，请先选择包含 MP4 视频的素材文件夹",
+        "durationInsufficient": "可用视频素材总时长不足"
       },
       "success": {
         "loadSucceeded": "素材读取成功"
