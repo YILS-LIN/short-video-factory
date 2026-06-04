@@ -143,6 +143,8 @@
         "startLabel": "Start Rendering",
         "stopLabel": "Stop Rendering",
         "autoBatch": "Auto batch render",
+        "autoBatchOff": "Batch render is off",
+        "autoBatchOn": "Batch render is on",
         "bgmFolderLabel": "Background music folder (.mp3, pick randomly)",
         "output": {
           "width": "Output width",
@@ -160,6 +162,24 @@
         "rendering": "Rendering video",
         "success": "Rendered successfully, you can start the next one",
         "failed": "Render failed, please try again"
+      },
+      "statusShort": {
+        "idle": "Ready",
+        "generatingText": "Generating script",
+        "synthesizingSpeech": "Synthesizing speech",
+        "segmentingVideo": "Segmenting assets",
+        "rendering": "Rendering video",
+        "success": "Render done",
+        "failed": "Render failed"
+      },
+      "statusMini": {
+        "idle": "Idle",
+        "generatingText": "Text",
+        "synthesizingSpeech": "TTS",
+        "segmentingVideo": "Seg",
+        "rendering": "Render",
+        "success": "Done",
+        "failed": "Fail"
       },
       "errors": {
         "failed": "Video rendering failed. Please check all configurations",

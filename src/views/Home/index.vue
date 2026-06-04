@@ -6,11 +6,7 @@
       @mousedown="handleTitleBarMouseDown"
       @dblclick="handleTitleBarDoubleClick"
     >
-      <div
-        class="window-control-bar-no-drag-mask"
-        @mousedown.stop
-        @dblclick.stop
-      ></div>
+      <div class="window-control-bar-no-drag-mask" @mousedown.stop @dblclick.stop></div>
     </div>
 
     <div class="w-full h-0 flex-1 flex box-border gap-2 py-2 px-3">
@@ -26,12 +22,18 @@
           :disabled="appStore.renderStatus === RenderStatus.SegmentVideo"
         />
       </div>
-      <div class="w-1/3 h-full flex flex-col gap-3">
-        <TtsControl
-          ref="TtsControlInstance"
-          :disabled="appStore.renderStatus === RenderStatus.SynthesizedSpeech"
+      <div class="w-1/3 h-full min-w-0 min-h-0 flex flex-col gap-3">
+        <div class="h-0 flex-1 min-h-0">
+          <TtsControl
+            ref="TtsControlInstance"
+            :disabled="appStore.renderStatus === RenderStatus.SynthesizedSpeech"
+          />
+        </div>
+        <VideoRender
+          class="shrink-0"
+          @render-video="handleRenderVideo"
+          @cancel-render="handleCancelRender"
         />
-        <VideoRender @render-video="handleRenderVideo" @cancel-render="handleCancelRender" />
       </div>
     </div>
   </div>
@@ -68,17 +70,15 @@ const trackStat = (title: string) => {
   window.electron.statTrack(buildStatPayload(title)).catch(() => {})
 }
 
-let dragState:
-  | {
-      startMouseX: number
-      startMouseY: number
-      startClientX: number
-      startWindowX: number
-      startWindowY: number
-      dragging: boolean
-      preparing: boolean
-    }
-  | null = null
+let dragState: {
+  startMouseX: number
+  startMouseY: number
+  startClientX: number
+  startWindowX: number
+  startWindowY: number
+  dragging: boolean
+  preparing: boolean
+} | null = null
 
 const clearTitleBarDragListeners = () => {
   window.removeEventListener('mousemove', handleTitleBarMouseMove)

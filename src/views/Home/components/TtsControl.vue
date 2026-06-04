@@ -1,7 +1,7 @@
 <template>
-  <div>
-    <v-form :disabled="disabled">
-      <v-sheet class="h-fit p-2" border rounded>
+  <div class="h-full min-h-0">
+    <v-form class="h-full min-h-0" :disabled="disabled">
+      <v-sheet class="h-full min-h-0 p-2 overflow-y-auto" border rounded>
         <v-combobox
           v-model="appStore.language"
           density="comfortable"

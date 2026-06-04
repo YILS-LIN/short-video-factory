@@ -143,6 +143,8 @@
         "startLabel": "开始合成",
         "stopLabel": "停止合成",
         "autoBatch": "自动批量合成",
+        "autoBatchOff": "批量合成已关闭",
+        "autoBatchOn": "批量合成已开启",
         "bgmFolderLabel": "背景音乐文件夹（随机选取.mp3，为空则无背景音）",
         "output": {
           "width": "导出视频宽度",
@@ -160,6 +162,24 @@
         "rendering": "正在渲染视频",
         "success": "渲染成功，可以开始下一个",
         "failed": "渲染失败，请重新尝试"
+      },
+      "statusShort": {
+        "idle": "待开始",
+        "generatingText": "生成文案中",
+        "synthesizingSpeech": "合成语音中",
+        "segmentingVideo": "分镜处理中",
+        "rendering": "视频渲染中",
+        "success": "渲染完成",
+        "failed": "渲染失败"
+      },
+      "statusMini": {
+        "idle": "就绪",
+        "generatingText": "文案",
+        "synthesizingSpeech": "语音",
+        "segmentingVideo": "分镜",
+        "rendering": "渲染",
+        "success": "完成",
+        "failed": "失败"
       },
       "errors": {
         "failed": "视频合成失败，请检查各项配置是否正确",
