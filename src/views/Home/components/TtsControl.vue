@@ -72,13 +72,13 @@ defineProps<{
   disabled?: boolean
 }>()
 
-const configValid = () => {
+const configValid = (text?: string) => {
   if (!appStore.voice) {
     toast.warning(t('features.tts.config.selectVoiceWarning'))
     return false
   }
 
-  if (!appStore.tryListeningText) {
+  if (!text?.trim()) {
     toast.warning(t('features.tts.config.tryTextEmptyWarning'))
     return false
   }
@@ -89,7 +89,7 @@ const configValid = () => {
 const tryListeningLoading = ref(false)
 let currentAudio: HTMLAudioElement | null = null
 const handleTryListening = async () => {
-  if (!configValid()) return
+  if (!configValid(appStore.tryListeningText)) return
 
   if (currentAudio) {
     currentAudio.pause()
@@ -207,7 +207,7 @@ onUnmounted(() => {
 })
 
 const synthesizedSpeechToFile = async (option: { text: string; withCaption?: boolean }) => {
-  if (!configValid()) throw new Error(t('features.tts.errors.configInvalid'))
+  if (!configValid(option.text)) throw new Error(t('features.tts.errors.configInvalid'))
 
   try {
     const result = await window.electron.edgeTtsSynthesizeToFile({
