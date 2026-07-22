@@ -1,0 +1,32 @@
+name: Update Star History
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-star-history
+  cancel-in-progress: true
+
+jobs:
+  update:
+    name: Generate star history
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate star history
+        uses: carsteneu/mystarhistory@v1
+        with:
+          repos: ${{ github.repository }}
+          token: ${{ secrets.STAR_HISTORY_TOKEN }}
+          branch: star-history
+          output-dir: assets/my-star-history
+          themes: light,dark
+          commit-message: "chore: update star history [skip ci]"
