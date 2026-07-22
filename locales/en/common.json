@@ -83,6 +83,7 @@
         "modelName": "Model Name",
         "apiUrl": "API URL",
         "apiKey": "API Key",
+        "usePreset": "Use {{provider}}",
         "compatibleNote": "Compatible with any OpenAI-compatible API"
       },
       "errors": {
