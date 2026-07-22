@@ -165,23 +165,6 @@ Copyright © 2025 YILS.
 
 <p align="right">(<a href="#readme-top">返回顶部</a>)</p>
 
-<!-- 星标历史 -->
-
-## ⭐ 星标历史
-
-<picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="https://raw.githubusercontent.com/YILS-LIN/short-video-factory/star-history/assets/my-star-history/star-history-dark.svg"
-  >
-  <img
-    alt="Star history"
-    src="https://raw.githubusercontent.com/YILS-LIN/short-video-factory/star-history/assets/my-star-history/star-history-light.svg"
-  >
-</picture>
-
-<p align="right">(<a href="#readme-top">返回顶部</a>)</p>
-
 <!-- MARKDOWN链接和图片 -->
 
 [contributors-shield]: https://img.shields.io/github/contributors/YILS-LIN/short-video-factory.svg?color=c4f042&labelColor=black&style=flat-square
