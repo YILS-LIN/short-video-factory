@@ -19,6 +19,53 @@
           >
             {{ t('common.buttons.selectFolder') }}
           </v-btn>
+
+          <v-dialog v-model="tlConfigDialogShow" max-width="600" persistent>
+            <template v-slot:activator="{ props: activatorProps }">
+              <v-btn
+                v-bind="activatorProps"
+                class="mt-[2px]"
+                prepend-icon="mdi-movie-search"
+                :disabled="disabled"
+              >
+                {{ t('common.buttons.smartEditConfig') }}
+              </v-btn>
+            </template>
+
+            <v-card prepend-icon="mdi-movie-search" :title="t('features.twelvelabs.config.title')">
+              <v-card-text>
+                <v-text-field
+                  :label="t('features.twelvelabs.config.apiKey')"
+                  v-model="tlConfig.apiKey"
+                  type="password"
+                  clearable
+                ></v-text-field>
+                <v-text-field
+                  :label="t('features.twelvelabs.config.indexId')"
+                  v-model="tlConfig.indexId"
+                  clearable
+                ></v-text-field>
+                <small class="text-caption text-medium-emphasis">{{
+                  t('features.twelvelabs.config.note')
+                }}</small>
+              </v-card-text>
+              <v-divider></v-divider>
+              <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn
+                  :text="t('common.buttons.close')"
+                  variant="plain"
+                  @click="handleCloseTlDialog"
+                ></v-btn>
+                <v-btn
+                  color="primary"
+                  :text="t('common.buttons.save')"
+                  variant="tonal"
+                  @click="handleSaveTlConfig"
+                ></v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
         </div>
 
         <div class="flex-1 h-0 w-full border">
@@ -76,6 +123,18 @@ const { t } = useTranslation()
 defineProps<{
   disabled?: boolean
 }>()
+
+// TwelveLabs 智能剪辑配置（可选）
+const tlConfigDialogShow = ref(false)
+const tlConfig = ref(structuredClone(toRaw(appStore.twelveLabsConfig)))
+const handleCloseTlDialog = () => {
+  tlConfigDialogShow.value = false
+  tlConfig.value = structuredClone(toRaw(appStore.twelveLabsConfig))
+}
+const handleSaveTlConfig = () => {
+  appStore.updateTwelveLabsConfig(tlConfig.value)
+  tlConfigDialogShow.value = false
+}
 
 // 选择文件夹
 const handleSelectFolder = async () => {
@@ -192,8 +251,29 @@ const readVideoDuration = (assetPath: string) => {
   })
 }
 
-// 获取视频分镜随机素材片段
-const getVideoSegments = async (options: { duration: number }) => {
+// 通过 TwelveLabs（Marengo）按文案相关性对素材库排序
+// 仅在用户填写了 API Key 与索引 ID 时启用；任何失败都回退到随机，不阻塞剪辑
+const buildRelevanceOrder = async (query: string): Promise<string[]> => {
+  const { apiKey, indexId } = appStore.twelveLabsConfig
+  if (!apiKey || !indexId || !query.trim()) {
+    return []
+  }
+  try {
+    const { rankedFilenames } = await window.electron.twelvelabsMatchFootage({
+      apiKey,
+      indexId,
+      query,
+    })
+    return rankedFilenames
+  } catch (error) {
+    console.warn('TwelveLabs 素材匹配失败，回退到随机选取：', error)
+    return []
+  }
+}
+
+// 获取视频分镜素材片段
+// 默认随机选取；若配置了 TwelveLabs，则优先选取与文案语义最相关的镜头
+const getVideoSegments = async (options: { duration: number; query?: string }) => {
   if (options.duration <= 0) {
     throw new Error(t('features.assets.errors.audioDurationInvalid'))
   }
@@ -201,6 +281,11 @@ const getVideoSegments = async (options: { duration: number }) => {
   if (!videoAssets.value.length) {
     throw new Error(t('features.assets.errors.noVideoAssets'))
   }
+
+  // 相关性优先的文件名顺序（rank 越靠前越相关）；未配置时为空数组
+  const relevanceOrder = options.query ? await buildRelevanceOrder(options.query) : []
+  const relevanceRank = new Map<string, number>()
+  relevanceOrder.forEach((filename, index) => relevanceRank.set(filename, index))
 
   // 搜集随机素材片段
   const segments: Pick<RenderVideoParams, 'videoFiles' | 'timeRanges'> = {
@@ -227,8 +312,15 @@ const getVideoSegments = async (options: { duration: number }) => {
       continue
     }
 
-    // 获取一个随机素材以及相关信息
-    const randomAsset = random.choice(tempVideoAssets)!
+    // 选取素材：配置了 TwelveLabs 时优先选相关性最高的镜头，否则随机
+    const randomAsset = relevanceRank.size
+      ? tempVideoAssets.reduce((best, asset) =>
+          (relevanceRank.get(asset.name) ?? Number.MAX_SAFE_INTEGER) <
+          (relevanceRank.get(best.name) ?? Number.MAX_SAFE_INTEGER)
+            ? asset
+            : best,
+        )
+      : random.choice(tempVideoAssets)!
     const randomAssetIndex = tempVideoAssets.findIndex((asset) => asset.path === randomAsset.path)
     if (randomAssetIndex < 0) {
       attempts += 1

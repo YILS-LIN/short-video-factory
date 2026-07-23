@@ -49,7 +49,8 @@
       "test": "Test",
       "close": "Close",
       "refreshAssets": "Refresh Assets",
-      "copyErrorDetail": "Copy error details"
+      "copyErrorDetail": "Copy error details",
+      "smartEditConfig": "Smart Editing"
     },
     "states": {
       "noData": "No data"
@@ -194,6 +195,20 @@
       "info": {
         "batchNext": "Start next render",
         "canceled": "Video rendering canceled"
+      }
+    },
+    "twelvelabs": {
+      "config": {
+        "title": "TwelveLabs Smart Editing (optional)",
+        "apiKey": "TwelveLabs API Key",
+        "indexId": "Footage Index ID",
+        "note": "Optional. When set, footage is matched to your script via Marengo semantic search instead of random selection. Get a free key at https://twelvelabs.io"
+      },
+      "success": {
+        "connectionSucceeded": "TwelveLabs connection succeeded"
+      },
+      "errors": {
+        "connectionFailed": "TwelveLabs connection failed"
       }
     }
   }

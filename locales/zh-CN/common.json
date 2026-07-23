@@ -49,7 +49,8 @@
       "test": "测试",
       "close": "关闭",
       "refreshAssets": "刷新素材库",
-      "copyErrorDetail": "复制报错详细信息"
+      "copyErrorDetail": "复制报错详细信息",
+      "smartEditConfig": "智能剪辑"
     },
     "states": {
       "noData": "无数据"
@@ -194,6 +195,20 @@
       "info": {
         "batchNext": "开始合成下一个",
         "canceled": "视频合成已终止"
+      }
+    },
+    "twelvelabs": {
+      "config": {
+        "title": "TwelveLabs 智能剪辑（可选）",
+        "apiKey": "TwelveLabs API Key",
+        "indexId": "素材索引 ID",
+        "note": "可选。填写后将使用 Marengo 语义检索按文案匹配素材，替代随机选取。可在 https://twelvelabs.io 免费获取 Key"
+      },
+      "success": {
+        "connectionSucceeded": "TwelveLabs 连接成功"
+      },
+      "errors": {
+        "connectionFailed": "TwelveLabs 连接失败"
       }
     }
   }

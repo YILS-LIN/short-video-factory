@@ -55,6 +55,12 @@ interface Window {
     edgeTtsSynthesizeToFile: (
       params: import('./tts/types').EdgeTtsSynthesizeToFileParams,
     ) => Promise<import('./tts/types').EdgeTtsSynthesizeToFileResult>
+    twelvelabsAnalyzeHighlights: (
+      params: import('./twelvelabs/types').TwelveLabsAnalyzeParams,
+    ) => Promise<import('./twelvelabs/types').TwelveLabsAnalyzeResult>
+    twelvelabsMatchFootage: (
+      params: import('./twelvelabs/types').TwelveLabsMatchFootageParams,
+    ) => Promise<import('./twelvelabs/types').TwelveLabsMatchFootageResult>
     renderVideo: (
       params: import('./ffmpeg/types').RenderVideoParams,
     ) => Promise<import('./ffmpeg/types').ExecuteFFmpegResult>
