@@ -165,6 +165,18 @@ Copyright © 2025 YILS.
 
 <p align="right">(<a href="#readme-top">返回顶部</a>)</p>
 
+<!-- 星标历史 -->
+
+## ⭐ 星标历史
+
+<div align="center">
+  <a href="#">
+    <img src="./images/StarHistory.png" alt="Star History Chart" width="800">
+  </a>
+</div>
+
+<p align="right">(<a href="#readme-top">返回顶部</a>)</p>
+
 <!-- MARKDOWN链接和图片 -->
 
 [contributors-shield]: https://img.shields.io/github/contributors/YILS-LIN/short-video-factory.svg?color=c4f042&labelColor=black&style=flat-square
