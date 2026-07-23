@@ -83,6 +83,7 @@
         "modelName": "模型名称",
         "apiUrl": "API 地址",
         "apiKey": "API Key",
+        "usePreset": "使用 {{provider}}",
         "compatibleNote": "兼容任意 OpenAI 标准接口"
       },
       "errors": {

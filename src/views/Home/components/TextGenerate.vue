@@ -44,6 +44,19 @@
               :title="t('features.llm.config.configTitle')"
             >
               <v-card-text>
+                <div class="mb-3 flex flex-wrap gap-2">
+                  <v-btn
+                    v-for="preset in LLM_PROVIDER_PRESETS"
+                    :key="preset.id"
+                    size="small"
+                    variant="tonal"
+                    color="primary"
+                    prepend-icon="mdi-cloud-outline"
+                    @click="handleApplyProviderPreset(preset)"
+                  >
+                    {{ t('features.llm.config.usePreset', { provider: preset.label }) }}
+                  </v-btn>
+                </div>
                 <v-text-field
                   :label="t('features.llm.config.modelName')"
                   v-model="config.modelName"
@@ -116,6 +129,11 @@ import { useToast } from 'vue-toastification'
 import { useTranslation } from 'i18next-vue'
 import ActionToastEmbed from '@/components/ActionToastEmbed.vue'
 import { formatErrorForCopy } from '@/lib/error-copy'
+import {
+  LLM_PROVIDER_PRESETS,
+  applyLLMProviderPreset,
+  type LLMProviderPreset,
+} from '@/lib/llm-presets'
 
 const toast = useToast()
 const appStore = useAppStore()
@@ -202,6 +220,9 @@ const config = ref(structuredClone(toRaw(appStore.llmConfig)))
 const configDialogShow = ref(false)
 const resetConfigDialog = () => {
   config.value = structuredClone(toRaw(appStore.llmConfig))
+}
+const handleApplyProviderPreset = (preset: LLMProviderPreset) => {
+  config.value = applyLLMProviderPreset(config.value, preset)
 }
 const handleCloseDialog = () => {
   configDialogShow.value = false
