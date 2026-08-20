@@ -13,6 +13,7 @@ import {
   StatEventParams,
 } from './types'
 import { EdgeTtsSynthesizeCommonParams } from './tts/types'
+import { TwelveLabsAnalyzeParams, TwelveLabsMatchFootageParams } from './twelvelabs/types'
 import { RenderVideoParams } from './ffmpeg/types'
 
 // --------- 向界面渲染进程暴露某些API ---------
@@ -66,6 +67,10 @@ contextBridge.exposeInMainWorld('electron', {
     ipcRenderer.invoke('edge-tts-synthesize-to-base64', params),
   edgeTtsSynthesizeToFile: (params: EdgeTtsSynthesizeCommonParams) =>
     ipcRenderer.invoke('edge-tts-synthesize-to-file', params),
+  twelvelabsAnalyzeHighlights: (params: TwelveLabsAnalyzeParams) =>
+    ipcRenderer.invoke('twelvelabs-analyze-highlights', params),
+  twelvelabsMatchFootage: (params: TwelveLabsMatchFootageParams) =>
+    ipcRenderer.invoke('twelvelabs-match-footage', params),
   renderVideo: (params: RenderVideoParams) => ipcRenderer.invoke('render-video', params),
   statTrack: (params: StatEventParams) => ipcRenderer.invoke('stat-track', params),
 })

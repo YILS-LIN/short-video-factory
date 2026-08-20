@@ -10,6 +10,7 @@ import {
   StatEventParams,
 } from './types'
 import { edgeTtsGetVoiceList, edgeTtsSynthesizeToBase64, edgeTtsSynthesizeToFile } from './tts'
+import { twelvelabsAnalyzeHighlights, twelvelabsMatchFootage } from './twelvelabs'
 import { renderVideo } from './ffmpeg'
 import { sendStatEvent } from './lib/stat'
 
@@ -215,6 +216,14 @@ export default function initIPC() {
 
   // 保存语音合成到文件
   ipcMain.handle('edge-tts-synthesize-to-file', (_event, params) => edgeTtsSynthesizeToFile(params))
+
+  // TwelveLabs Pegasus 视频亮点分析（可选）
+  ipcMain.handle('twelvelabs-analyze-highlights', (_event, params) =>
+    twelvelabsAnalyzeHighlights(params),
+  )
+
+  // TwelveLabs Marengo 素材语义匹配（可选）
+  ipcMain.handle('twelvelabs-match-footage', (_event, params) => twelvelabsMatchFootage(params))
 
   // 渲染视频
   ipcMain.handle('render-video', (_event, params) => {

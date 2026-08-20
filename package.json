@@ -15,6 +15,7 @@
     "build": "vue-tsc && cross-env VITE_CJS_IGNORE_WARNING=true vite build && electron-builder",
     "preview": "vite preview",
     "format": "prettier --write .",
+    "test": "node --test --experimental-strip-types \"electron/**/*.test.ts\"",
     "preinstall": "npx only-allow pnpm",
     "postinstall": "node build/scripts/post-install.js",
     "lipo-ffmpeg": "node build/scripts/lipo-ffmpeg.js"

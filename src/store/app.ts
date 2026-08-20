@@ -36,6 +36,15 @@ export const useAppStore = defineStore(
     const videoAssetsFolder = ref('')
     const videoExportFolder = ref('')
 
+    // TwelveLabs 智能剪辑（可选）：留空则关闭，行为与未集成时完全一致
+    const twelveLabsConfig = ref({
+      apiKey: '',
+      indexId: '',
+    })
+    const updateTwelveLabsConfig = (newConfig: typeof twelveLabsConfig.value) => {
+      twelveLabsConfig.value = newConfig
+    }
+
     // 语音合成
     const originalVoicesList = ref<EdgeTTSVoice[]>([])
     const languageList = computed(() => {
@@ -94,6 +103,9 @@ export const useAppStore = defineStore(
 
       videoAssetsFolder,
       videoExportFolder,
+
+      twelveLabsConfig,
+      updateTwelveLabsConfig,
 
       originalVoicesList,
       languageList,
