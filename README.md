@@ -169,11 +169,13 @@ Copyright © 2025 YILS.
 
 ## ⭐ 星标历史
 
-<div align="center">
-  <a href="#">
-    <img src="./images/StarHistory.png" alt="Star History Chart" width="800">
-  </a>
-</div>
+<a href="https://star-history.dera.page/#YILS-LIN/short-video-factory">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://star-history.dera.page/svg?repos=YILS-LIN/short-video-factory&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://star-history.dera.page/svg?repos=YILS-LIN/short-video-factory" />
+   <img alt="Star History Chart" src="https://star-history.dera.page/svg?repos=YILS-LIN/short-video-factory" />
+ </picture>
+</a>
 
 <p align="right">(<a href="#readme-top">返回顶部</a>)</p>
 
