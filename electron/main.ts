@@ -10,6 +10,8 @@ import { changeAppLanguage, initI18n } from './i18n'
 import { i18nLanguages } from './i18n/common-options'
 import useCookieAllowCrossSite from './lib/cookie-allow-cross-site'
 import { sendStatEvent } from './lib/stat'
+import { initLogger, writeMainLog } from './logger'
+import { checkForUpdates, initUpdateChecker } from './updater'
 
 // 用于引入 CommonJS 模块的方法
 // import { createRequire } from 'node:module'
@@ -36,6 +38,41 @@ export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist')
 process.env.VITE_PUBLIC = isDev ? path.join(process.env.APP_ROOT, 'public') : RENDERER_DIST
 
 let win: BrowserWindow | null
+let mainConsoleHooked = false
+
+function setupMainConsoleLogging() {
+  if (mainConsoleHooked) return
+
+  const rawConsole = {
+    log: console.log.bind(console),
+    info: console.info.bind(console),
+    warn: console.warn.bind(console),
+    error: console.error.bind(console),
+    debug: console.debug.bind(console),
+  }
+
+  console.log = (...args: unknown[]) => {
+    rawConsole.log(...args)
+    writeMainLog('log', ...args)
+  }
+  console.info = (...args: unknown[]) => {
+    rawConsole.info(...args)
+    writeMainLog('info', ...args)
+  }
+  console.warn = (...args: unknown[]) => {
+    rawConsole.warn(...args)
+    writeMainLog('warn', ...args)
+  }
+  console.error = (...args: unknown[]) => {
+    rawConsole.error(...args)
+    writeMainLog('error', ...args)
+  }
+  console.debug = (...args: unknown[]) => {
+    rawConsole.debug(...args)
+    writeMainLog('debug', ...args)
+  }
+  mainConsoleHooked = true
+}
 
 function createWindow() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize
@@ -194,10 +231,19 @@ app.on('activate', () => {
 // app.disableHardwareAcceleration();
 
 app.whenReady().then(() => {
+  initLogger()
+  setupMainConsoleLogging()
   initSqlite()
   initI18n()
   initIPC()
   createWindow()
+
+  if (win) {
+    initUpdateChecker(win)
+    setTimeout(() => {
+      void checkForUpdates(app.getVersion())
+    }, 2000)
+  }
 
   i18next.on('languageChanged', () => {
     buildMenu()

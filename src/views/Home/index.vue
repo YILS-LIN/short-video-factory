@@ -9,7 +9,11 @@
       <div class="window-control-bar-no-drag-mask" @mousedown.stop @dblclick.stop></div>
     </div>
 
-    <div class="w-full h-0 flex-1 flex box-border gap-2 py-2 px-3">
+    <div class="w-full box-border pt-2 px-3">
+      <TopBar class="window-control-bar-no-drag" />
+    </div>
+
+    <div class="w-full h-0 flex-1 flex box-border gap-2 pt-1 pb-3 px-3">
       <div class="w-1/3 h-full">
         <TextGenerate
           ref="TextGenerateInstance"
@@ -44,6 +48,7 @@ import TextGenerate from './components/TextGenerate.vue'
 import VideoManage from './components/VideoManage.vue'
 import TtsControl from './components/TtsControl.vue'
 import VideoRender from './components/VideoRender.vue'
+import TopBar from './components/TopBar.vue'
 
 import { h, onBeforeUnmount, ref } from 'vue'
 import { RenderStatus, useAppStore } from '@/store'

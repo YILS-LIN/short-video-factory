@@ -12,6 +12,9 @@ import {
 import { edgeTtsGetVoiceList, edgeTtsSynthesizeToBase64, edgeTtsSynthesizeToFile } from './tts'
 import { renderVideo } from './ffmpeg'
 import { sendStatEvent } from './lib/stat'
+import { exportDiagnostics } from './diagnostics'
+import { AppLogLevel, writeRendererLog } from './logger'
+import { checkForUpdates } from './updater'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 let windowMaximizedByApp = false
@@ -76,6 +79,19 @@ function resolveDefaultFolderPath(customPath?: string | null) {
 }
 
 export default function initIPC() {
+  ipcMain.on('app-log', (_event, payload: { level: AppLogLevel; args: unknown[] }) => {
+    const level = payload?.level
+    const args = payload?.args
+    if (
+      !level ||
+      !Array.isArray(args) ||
+      !['log', 'info', 'warn', 'error', 'debug'].includes(level)
+    ) {
+      return
+    }
+    writeRendererLog(level, ...args)
+  })
+
   // sqlite 查询
   ipcMain.handle('sqlite-query', (_event, params) => sqQuery(params))
   // sqlite 插入
@@ -161,8 +177,14 @@ export default function initIPC() {
 
   // 打开外部链接
   ipcMain.handle('open-external', (_event, params: OpenExternalParams) => {
-    shell.openExternal(params.url)
+    return shell.openExternal(params.url)
   })
+
+  ipcMain.handle('export-diagnostics', (event) =>
+    exportDiagnostics(BrowserWindow.fromWebContents(event.sender)),
+  )
+
+  ipcMain.handle('check-for-updates', () => checkForUpdates(app.getVersion()))
 
   // 选择文件夹
   ipcMain.handle('select-folder', async (event, params?: SelectFolderParams) => {

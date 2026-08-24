@@ -14,6 +14,7 @@ import {
 } from './types'
 import { EdgeTtsSynthesizeCommonParams } from './tts/types'
 import { RenderVideoParams } from './ffmpeg/types'
+import type { AppLogLevel } from './logger'
 
 // --------- 向界面渲染进程暴露某些API ---------
 
@@ -68,6 +69,9 @@ contextBridge.exposeInMainWorld('electron', {
     ipcRenderer.invoke('edge-tts-synthesize-to-file', params),
   renderVideo: (params: RenderVideoParams) => ipcRenderer.invoke('render-video', params),
   statTrack: (params: StatEventParams) => ipcRenderer.invoke('stat-track', params),
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  exportDiagnostics: () => ipcRenderer.invoke('export-diagnostics'),
+  log: (level: AppLogLevel, ...args: unknown[]) => ipcRenderer.send('app-log', { level, args }),
 })
 
 contextBridge.exposeInMainWorld('sqlite', {

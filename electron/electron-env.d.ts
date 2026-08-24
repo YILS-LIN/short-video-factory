@@ -43,7 +43,7 @@ interface Window {
     getWindowBounds: () => Promise<import('electron').Rectangle | undefined>
     setWindowPosition: (x: number, y: number) => void
     setZoomFactor: (factor: number) => void
-    openExternal: (params: import('./types').OpenExternalParams) => void
+    openExternal: (params: import('./types').OpenExternalParams) => Promise<void>
     selectFolder: (params: import('./types').SelectFolderParams) => Promise<string>
     listFilesFromFolder: (
       params: import('./types').ListFilesFromFolderParams,
@@ -59,6 +59,9 @@ interface Window {
       params: import('./ffmpeg/types').RenderVideoParams,
     ) => Promise<import('./ffmpeg/types').ExecuteFFmpegResult>
     statTrack: (params: import('./types').StatEventParams) => Promise<void>
+    checkForUpdates: () => Promise<import('./updater').UpdateCheckResult>
+    exportDiagnostics: () => Promise<string | null>
+    log: (level: import('./logger').AppLogLevel, ...args: unknown[]) => void
   }
   sqlite: {
     query: (param: import('./sqlite/types').QueryParams) => Promise<any>

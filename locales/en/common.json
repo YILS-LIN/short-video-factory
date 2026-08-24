@@ -57,6 +57,9 @@
     "messages": {
       "success": {
         "copySuccess": "Copied to clipboard"
+      },
+      "error": {
+        "copyFailed": "Failed to copy"
       }
     }
   },
@@ -73,6 +76,29 @@
   },
   "footer": {
     "poweredBy": "Powered by YILS (Blog: https://yils.blog)"
+  },
+  "topBar": {
+    "poweredByHint": "Developed by YILS. Visit the author's blog",
+    "documentation": "Documentation",
+    "exportDiagnostics": "Export diagnostics",
+    "diagnosticsExported": "Diagnostics exported",
+    "diagnosticsExportFailed": "Failed to export diagnostics"
+  },
+  "version": {
+    "copy": "Copy version",
+    "checkUpdate": "Check for updates"
+  },
+  "update": {
+    "title": "Update available",
+    "currentVersion": "Current version",
+    "latestVersion": "Latest version",
+    "releaseDate": "Release date",
+    "releaseNotes": "What's new",
+    "checking": "Checking for updates",
+    "upToDate": "You're up to date",
+    "updateError": "Failed to check for updates. Please try again later.",
+    "updateLater": "Later",
+    "visitWebsite": "Visit website"
   },
   "features": {
     "llm": {

@@ -57,6 +57,9 @@
     "messages": {
       "success": {
         "copySuccess": "已复制到剪贴板"
+      },
+      "error": {
+        "copyFailed": "复制失败"
       }
     }
   },
@@ -73,6 +76,29 @@
   },
   "footer": {
     "poweredBy": "Powered by YILS（博客地址：https://yils.blog）"
+  },
+  "topBar": {
+    "poweredByHint": "由 YILS 开发，访问作者博客",
+    "documentation": "使用手册",
+    "exportDiagnostics": "导出诊断信息",
+    "diagnosticsExported": "诊断信息已导出",
+    "diagnosticsExportFailed": "导出诊断信息失败"
+  },
+  "version": {
+    "copy": "复制版本号",
+    "checkUpdate": "检查更新"
+  },
+  "update": {
+    "title": "发现新版本",
+    "currentVersion": "当前版本",
+    "latestVersion": "最新版本",
+    "releaseDate": "发布日期",
+    "releaseNotes": "更新内容",
+    "checking": "正在检查更新",
+    "upToDate": "当前已是最新版本",
+    "updateError": "检查更新失败，请稍后重试",
+    "updateLater": "稍后更新",
+    "visitWebsite": "前往官网下载"
   },
   "features": {
     "llm": {

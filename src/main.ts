@@ -20,6 +20,25 @@ import i18next from 'i18next'
 import I18NextVue from 'i18next-vue'
 import i18nInitialized from './lib/i18n.ts'
 
+function setupRendererConsoleLogging() {
+  const rawConsole = {
+    log: console.log.bind(console),
+    info: console.info.bind(console),
+    warn: console.warn.bind(console),
+    error: console.error.bind(console),
+    debug: console.debug.bind(console),
+  }
+
+  for (const level of Object.keys(rawConsole) as (keyof typeof rawConsole)[]) {
+    console[level] = (...args: unknown[]) => {
+      rawConsole[level](...args)
+      window.electron.log(level, ...args)
+    }
+  }
+}
+
+setupRendererConsoleLogging()
+
 const vuetify = createVuetify({
   components,
   directives,
