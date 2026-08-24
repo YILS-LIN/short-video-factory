@@ -29,6 +29,7 @@
     "i18next-fs-backend": "^2.3.2",
     "music-metadata": "^11.7.3",
     "subtitle": "4.2.2-alpha.0",
+    "systeminformation": "^5.27.7",
     "ws": "^8.18.3"
   },
   "devDependencies": {

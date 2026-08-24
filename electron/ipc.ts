@@ -180,9 +180,12 @@ export default function initIPC() {
     return shell.openExternal(params.url)
   })
 
-  ipcMain.handle('export-diagnostics', (event) =>
-    exportDiagnostics(BrowserWindow.fromWebContents(event.sender)),
-  )
+  ipcMain.handle('export-diagnostics', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    return exportDiagnostics(win, (phase) =>
+      event.sender.send('diagnostics-export-progress', phase),
+    )
+  })
 
   ipcMain.handle('check-for-updates', () => checkForUpdates(app.getVersion()))
 

@@ -82,7 +82,15 @@
     "documentation": "使用手册",
     "exportDiagnostics": "导出诊断信息",
     "diagnosticsExported": "诊断信息已导出",
-    "diagnosticsExportFailed": "导出诊断信息失败"
+    "diagnosticsExportFailed": "导出诊断信息失败",
+    "diagnosticsCollecting": "正在收集诊断信息...",
+    "diagnosticsArchiving": "正在整理日志文件...",
+    "workflow": {
+      "text": "文案",
+      "voice": "配音",
+      "assets": "素材",
+      "render": "合成"
+    }
   },
   "version": {
     "copy": "复制版本号",

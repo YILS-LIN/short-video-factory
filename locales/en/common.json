@@ -82,7 +82,15 @@
     "documentation": "Documentation",
     "exportDiagnostics": "Export diagnostics",
     "diagnosticsExported": "Diagnostics exported",
-    "diagnosticsExportFailed": "Failed to export diagnostics"
+    "diagnosticsExportFailed": "Failed to export diagnostics",
+    "diagnosticsCollecting": "Collecting diagnostics...",
+    "diagnosticsArchiving": "Preparing log archive...",
+    "workflow": {
+      "text": "Script",
+      "voice": "Voice",
+      "assets": "Assets",
+      "render": "Render"
+    }
   },
   "version": {
     "copy": "Copy version",
