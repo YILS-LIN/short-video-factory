@@ -59,7 +59,7 @@ export async function checkForUpdates(currentVersion: string): Promise<UpdateChe
       })
       const version = data.tag_name.replace(/^v/, '')
 
-      if (!version || compareVersions(currentVersion, version) >= 0) {
+      if (!version || compareVersions(currentVersion, version) <= 0) {
         return { status: 'up-to-date' }
       }
 
