@@ -6,7 +6,7 @@ const LATEST_RELEASE_URL =
 
 export interface UpdateInfo {
   version: string
-  releaseNotes: string
+  releaseNotes: Record<string, string>
   releaseDate: string
 }
 
@@ -23,6 +23,40 @@ interface GitHubLatestRelease {
 
 let mainWindow: BrowserWindow | null = null
 let checking: Promise<UpdateCheckResult> | null = null
+
+function parseReleaseNotes(body: string | null): Record<string, string> {
+  const notes = body || ''
+  const pattern = /<!-- i18n:([A-Za-z0-9-]+):start -->\s*([\s\S]*?)\s*<!-- i18n:\1:end -->/g
+  const parts: Array<{ locale?: string; content: string }> = []
+  const locales = new Set<string>()
+  let lastIndex = 0
+
+  for (const match of notes.matchAll(pattern)) {
+    const [, locale, content] = match
+    const startIndex = match.index ?? lastIndex
+    const commonContent = notes.slice(lastIndex, startIndex).trim()
+    if (commonContent) parts.push({ content: commonContent })
+    if (locale && content?.trim()) {
+      locales.add(locale)
+      parts.push({ locale, content: content.trim() })
+    }
+    lastIndex = startIndex + match[0].length
+  }
+
+  const commonContent = notes.slice(lastIndex).trim()
+  if (commonContent) parts.push({ content: commonContent })
+  if (locales.size === 0) return { en: notes }
+
+  return Object.fromEntries(
+    [...locales].map((locale) => [
+      locale,
+      parts
+        .filter((part) => !part.locale || part.locale === locale)
+        .map((part) => part.content)
+        .join('\n\n'),
+    ]),
+  )
+}
 
 function compareVersions(current: string, latest: string): number {
   const normalize = (version: string) => version.replace(/^v/, '').split('-')[0]
@@ -65,7 +99,7 @@ export async function checkForUpdates(currentVersion: string): Promise<UpdateChe
 
       const info: UpdateInfo = {
         version,
-        releaseNotes: data.body || '',
+        releaseNotes: parseReleaseNotes(data.body),
         releaseDate: data.published_at || '',
       }
       mainWindow?.webContents.send('update-available', info)

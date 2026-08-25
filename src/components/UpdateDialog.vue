@@ -22,9 +22,9 @@
           </div>
         </div>
 
-        <div v-if="updateInfo.releaseNotes" class="mb-2">
+        <div v-if="releaseNotes" class="mb-2">
           <div class="text-body-2 text-medium-emphasis mb-2">{{ t('update.releaseNotes') }}</div>
-          <div class="release-notes pa-3 rounded text-body-2" v-html="renderedReleaseNotes"></div>
+          <div class="release-notes pa-4 rounded text-body-2" v-html="renderedReleaseNotes"></div>
         </div>
       </v-card-text>
 
@@ -48,6 +48,7 @@ import { computed } from 'vue'
 import MarkdownIt from 'markdown-it'
 import { useTranslation } from 'i18next-vue'
 import type { UpdateInfo } from '~/electron/updater'
+import { useAppStore } from '@/store'
 
 const props = defineProps<{
   modelValue: boolean
@@ -59,6 +60,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useTranslation()
+const appStore = useAppStore()
 const currentVersion = __APP_VERSION__
 const md = new MarkdownIt({ html: false, linkify: true, breaks: true })
 
@@ -67,7 +69,13 @@ const dialogVisible = computed({
   set: (value: boolean) => emit('update:modelValue', value),
 })
 
-const renderedReleaseNotes = computed(() => md.render(props.updateInfo.releaseNotes))
+const releaseNotes = computed(() => {
+  const notes = props.updateInfo.releaseNotes
+  const locale = appStore.locale
+  return notes[locale] ?? notes[locale.split('-')[0]] ?? notes.en ?? Object.values(notes)[0] ?? ''
+})
+
+const renderedReleaseNotes = computed(() => md.render(releaseNotes.value))
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString)
@@ -87,10 +95,34 @@ const openWebsite = () => {
   line-height: 1.65;
 
   :deep(p) {
-    margin: 0 0 8px;
+    margin: 0 0 12px;
   }
 
   :deep(p:last-child) {
+    margin-bottom: 0;
+  }
+
+  :deep(h1),
+  :deep(h2),
+  :deep(h3),
+  :deep(h4),
+  :deep(h5),
+  :deep(h6) {
+    margin: 0 0 12px;
+    line-height: 1.35;
+  }
+
+  :deep(ul),
+  :deep(ol) {
+    margin: 0 0 12px;
+    padding-inline-start: 20px;
+  }
+
+  :deep(li + li) {
+    margin-top: 8px;
+  }
+
+  :deep(:last-child) {
     margin-bottom: 0;
   }
 }
