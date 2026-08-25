@@ -42,19 +42,7 @@
       </div>
     </div>
 
-    <div class="workflow-pill" :class="`is-${workflowState}`">
-      <div class="workflow-state">
-        <v-icon size="small">{{ workflowStatusIcon }}</v-icon>
-        <span>{{ workflowStatusText }}</span>
-      </div>
-      <template v-for="(step, index) in workflowSteps" :key="step.key">
-        <v-icon v-if="index" size="x-small" class="workflow-arrow">mdi-chevron-right</v-icon>
-        <div class="workflow-step" :class="{ active: currentWorkflowStep === step.key }">
-          <v-icon size="small">{{ step.icon }}</v-icon>
-          <span>{{ t(step.label) }}</span>
-        </div>
-      </template>
-    </div>
+    <div class="topbar-connector" aria-hidden="true"></div>
 
     <div
       class="flex items-center gap-1.5 bg-surface backdrop-blur-md border border-slate-200/60 dark:border-slate-700/60 rounded-full px-2 py-1.5"
@@ -105,75 +93,19 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useTranslation } from 'i18next-vue'
 import { useToast } from 'vue-toastification'
 import UpdateDialog from '@/components/UpdateDialog.vue'
 import type { UpdateInfo } from '~/electron/updater'
-import { RenderStatus, useAppStore } from '@/store'
 
 const version = __APP_VERSION__
 const { t } = useTranslation()
 const toast = useToast()
-const appStore = useAppStore()
 const showUpdateDialog = ref(false)
 const updateInfo = ref<UpdateInfo | null>(null)
 const diagnosticsExporting = ref(false)
 const diagnosticsExportPhase = ref<'collecting' | 'archiving' | null>(null)
-
-const workflowSteps = [
-  { key: 'text', icon: 'mdi-text-box-outline', label: 'topBar.workflow.text' },
-  { key: 'voice', icon: 'mdi-microphone-outline', label: 'topBar.workflow.voice' },
-  { key: 'assets', icon: 'mdi-folder-multiple-image', label: 'topBar.workflow.assets' },
-  { key: 'render', icon: 'mdi-movie-open-outline', label: 'topBar.workflow.render' },
-] as const
-
-const currentWorkflowStep = computed<(typeof workflowSteps)[number]['key'] | null>(() => {
-  switch (appStore.renderStatus) {
-    case RenderStatus.GenerateText:
-      return 'text'
-    case RenderStatus.SynthesizedSpeech:
-      return 'voice'
-    case RenderStatus.SegmentVideo:
-      return 'assets'
-    case RenderStatus.Rendering:
-      return 'render'
-    default:
-      return null
-  }
-})
-
-const workflowState = computed(() => {
-  if (appStore.renderStatus === RenderStatus.Completed) return 'success'
-  if (appStore.renderStatus === RenderStatus.Failed) return 'error'
-  return currentWorkflowStep.value ? 'active' : 'idle'
-})
-
-const workflowStatusText = computed(() => {
-  switch (appStore.renderStatus) {
-    case RenderStatus.GenerateText:
-      return t('features.render.statusMini.generatingText')
-    case RenderStatus.SynthesizedSpeech:
-      return t('features.render.statusMini.synthesizingSpeech')
-    case RenderStatus.SegmentVideo:
-      return t('features.render.statusMini.segmentingVideo')
-    case RenderStatus.Rendering:
-      return t('features.render.statusMini.rendering')
-    case RenderStatus.Completed:
-      return t('features.render.statusMini.success')
-    case RenderStatus.Failed:
-      return t('features.render.statusMini.failed')
-    default:
-      return t('features.render.statusMini.idle')
-  }
-})
-
-const workflowStatusIcon = computed(() => {
-  if (workflowState.value === 'success') return 'mdi-check-circle-outline'
-  if (workflowState.value === 'error') return 'mdi-alert-circle-outline'
-  if (workflowState.value === 'active') return 'mdi-progress-clock'
-  return 'mdi-circle-small'
-})
 
 const openExternal = (url: string) => {
   window.electron.openExternal({ url })
@@ -238,50 +170,29 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
-.workflow-pill {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border: 1px solid rgba(148, 163, 184, 0.35);
+.topbar-connector {
+  flex: 1;
+  height: 2px;
+  min-width: 64px;
+  margin: 0 20px;
   border-radius: 9999px;
-  background: rgba(var(--v-theme-surface), 0.72);
-  color: rgb(100, 116, 139);
-  font-size: 13px;
-  white-space: nowrap;
-
-  &.is-active .workflow-state {
-    color: rgb(var(--v-theme-primary));
-  }
-
-  &.is-success .workflow-state {
-    color: rgb(22, 163, 74);
-  }
-
-  &.is-error .workflow-state {
-    color: rgb(220, 38, 38);
-  }
+  background: linear-gradient(
+    90deg,
+    rgba(203, 213, 225, 0.2),
+    rgba(203, 213, 225, 0.8) 16%,
+    rgba(203, 213, 225, 0.8) 84%,
+    rgba(203, 213, 225, 0.2)
+  );
 }
 
-.workflow-state,
-.workflow-step {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.workflow-state {
-  padding-right: 4px;
-  font-weight: 700;
-}
-
-.workflow-step.active {
-  color: rgb(var(--v-theme-primary));
-  font-weight: 700;
-}
-
-.workflow-arrow {
-  color: rgb(148, 163, 184);
+:global(.v-theme--dark) .topbar-connector {
+  background: linear-gradient(
+    90deg,
+    rgba(71, 85, 105, 0.2),
+    rgba(71, 85, 105, 0.8) 16%,
+    rgba(71, 85, 105, 0.8) 84%,
+    rgba(71, 85, 105, 0.2)
+  );
 }
 
 .diagnostics-progress-card {
@@ -289,7 +200,7 @@ onUnmounted(() => {
 }
 
 @media (max-width: 1180px) {
-  .workflow-pill {
+  .topbar-connector {
     display: none;
   }
 }
