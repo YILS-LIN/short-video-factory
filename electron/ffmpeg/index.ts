@@ -168,7 +168,8 @@ export async function renderVideo(
     // console.log('执行命令:', args.join(' '))
 
     // 执行命令
-    const result = await executeFFmpeg(args, { onProgress, abortSignal })
+    const durationSeconds = outputDuration ? Number.parseFloat(outputDuration) : undefined
+    const result = await executeFFmpeg(args, { onProgress, abortSignal, durationSeconds })
 
     // 移除临时文件
     if (fs.existsSync(audioFiles.voice)) {
@@ -191,6 +192,7 @@ export async function executeFFmpeg(
     cwd?: string
     onProgress?: (progress: number) => void
     abortSignal?: AbortSignal
+    durationSeconds?: number
   },
 ): Promise<ExecuteFFmpegResult> {
   isWindows && validateExecutables()
@@ -206,19 +208,67 @@ export async function executeFFmpeg(
 
     let stdout = ''
     let stderr = ''
+    let stdoutBuffer = ''
     let progress = 0
 
+    const totalDuration = options?.durationSeconds
+    const pushProgressBySeconds = (seconds: number) => {
+      if (!totalDuration || !Number.isFinite(totalDuration) || totalDuration <= 0) {
+        return
+      }
+
+      const percent = Math.max(0, Math.min(99, Math.floor((seconds / totalDuration) * 100)))
+      if (percent > progress) {
+        progress = percent
+        options?.onProgress?.(progress)
+      }
+    }
+
+    const parseProgressFromStdout = (output: string) => {
+      stdoutBuffer += output
+      const lines = stdoutBuffer.split(/\r?\n/)
+      stdoutBuffer = lines.pop() || ''
+
+      for (const line of lines) {
+        const separator = line.indexOf('=')
+        if (separator <= 0) {
+          continue
+        }
+
+        const key = line.slice(0, separator)
+        const value = line.slice(separator + 1)
+        if (key === 'out_time_ms') {
+          const outTimeMs = Number(value)
+          if (Number.isFinite(outTimeMs) && outTimeMs >= 0) {
+            pushProgressBySeconds(outTimeMs / 1000000)
+          }
+        }
+      }
+    }
+
+    const parseProgressFromStderr = (output: string) => {
+      const matches = output.matchAll(/time=(\d{2}):(\d{2}):(\d{2}\.\d{2})/g)
+      for (const match of matches) {
+        const hours = Number.parseInt(match[1], 10)
+        const minutes = Number.parseInt(match[2], 10)
+        const seconds = Number.parseFloat(match[3])
+        if ([hours, minutes, seconds].some((value) => Number.isNaN(value))) {
+          continue
+        }
+        pushProgressBySeconds(hours * 3600 + minutes * 60 + seconds)
+      }
+    }
+
     child.stdout.on('data', (data) => {
-      stdout += data.toString()
-      // 处理进度信息
-      progress = parseProgress(data.toString()) ?? 0
-      options?.onProgress?.(progress >= 100 ? 99 : progress)
+      const chunk = data.toString()
+      stdout += chunk
+      parseProgressFromStdout(chunk)
     })
 
     child.stderr.on('data', (data) => {
-      stderr += data.toString()
-      // 实时输出进度信息
-      options?.onProgress?.(progress >= 100 ? 99 : progress)
+      const chunk = data.toString()
+      stderr += chunk
+      parseProgressFromStderr(chunk)
     })
 
     child.on('close', (code) => {
@@ -256,16 +306,4 @@ function validateExecutables() {
       throw new Error('FFmpeg executables do not have execute permissions')
     }
   }
-}
-
-function parseProgress(stderrLine: string) {
-  // 解析时间信息：frame=  123 fps= 45 q=25.0 size=    1024kB time=00:00:05.00 bitrate=1677.7kbits/s speed=1.5x
-  const timeMatch = stderrLine.match(/time=(\d{2}):(\d{2}):(\d{2}\.\d{2})/)
-  if (timeMatch) {
-    const hours = parseInt(timeMatch[1])
-    const minutes = parseInt(timeMatch[2])
-    const seconds = parseFloat(timeMatch[3])
-    return hours * 3600 + minutes * 60 + seconds
-  }
-  return null
 }
