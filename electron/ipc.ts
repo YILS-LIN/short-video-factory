@@ -15,6 +15,7 @@ import { sendStatEvent } from './lib/stat'
 import { exportDiagnostics } from './diagnostics'
 import { AppLogLevel, writeRendererLog } from './logger'
 import { checkForUpdates } from './updater'
+import { setupEffectRendererFrameWriter } from './effect-engine/export-task-manager'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 let windowMaximizedByApp = false
@@ -79,6 +80,7 @@ function resolveDefaultFolderPath(customPath?: string | null) {
 }
 
 export default function initIPC() {
+  setupEffectRendererFrameWriter()
   ipcMain.on('app-log', (_event, payload: { level: AppLogLevel; args: unknown[] }) => {
     const level = payload?.level
     const args = payload?.args

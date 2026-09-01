@@ -5,6 +5,10 @@ import { ExecuteFFmpegResult, RenderVideoParams } from './types'
 import { getTempTtsVoiceFilePath } from '../tts'
 import path from 'node:path'
 import { generateUniqueFileName } from '../lib/tools'
+import {
+  isEffectRenderCancelledError,
+  renderSubtitleFramesToPngSequence,
+} from '../effect-engine/subtitle-render-service'
 
 const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
 const isWindows = process.platform === 'win32'
@@ -29,6 +33,7 @@ export async function renderVideo(
     abortSignal?: AbortSignal
   },
 ): Promise<ExecuteFFmpegResult> {
+  let cleanupSubtitleFrames: (() => void) | undefined
   try {
     // 解构参数
     const { videoFiles, timeRanges, outputSize, outputDuration, onProgress, abortSignal } = params
@@ -47,6 +52,46 @@ export async function renderVideo(
         )
         .replace(/\\/g, '/')
 
+    const subtitleAsset =
+      params.subtitleAsset ??
+      (params.subtitleText?.trim()
+        ? {
+            srtText: params.subtitleText,
+            source: 'tts' as const,
+          }
+        : undefined)
+    let subtitleSequenceInputPath: string | undefined
+    let subtitleInputIndex: number | undefined
+    let subtitleRenderProgress = 0
+    let ffmpegProgress = 0
+    const emitProgress = () => {
+      if (!subtitleAsset) {
+        onProgress?.(ffmpegProgress)
+        return
+      }
+      onProgress?.(Math.round(subtitleRenderProgress * 0.35 + ffmpegProgress * 0.65))
+    }
+
+    if (subtitleAsset) {
+      const durationMs = Math.max(1, Math.floor(Number.parseFloat(outputDuration ?? '1') * 1000))
+      const subtitleRender = await renderSubtitleFramesToPngSequence({
+        subtitleAsset,
+        outputSize,
+        fps: 30,
+        durationMs,
+        style: params.subtitleStyle,
+        abortSignal,
+        onProgress: (progress) => {
+          subtitleRenderProgress = progress
+          emitProgress()
+        },
+      })
+      cleanupSubtitleFrames = subtitleRender.cleanup
+      subtitleSequenceInputPath = path
+        .join(subtitleRender.manifest.framesDir, subtitleRender.manifest.framePattern)
+        .replace(/\\/g, '/')
+    }
+
     // 输出路径默认配置
     if (!fs.existsSync(path.dirname(params.outputPath))) {
       throw new Error(`输出路径不存在`)
@@ -54,12 +99,18 @@ export async function renderVideo(
     const outputPath = generateUniqueFileName(params.outputPath)
 
     // 构建args指令
-    const args = []
+    const args: string[] = []
 
     // 添加所有视频输入
     videoFiles.forEach((file) => {
       args.push('-i', `${file}`)
     })
+
+    // 添加字幕序列输入
+    if (subtitleSequenceInputPath) {
+      subtitleInputIndex = args.filter((item) => item === '-i').length
+      args.push('-framerate', '30', '-start_number', '1', '-i', subtitleSequenceInputPath)
+    }
 
     // 添加音频输入
     // 语音音轨
@@ -90,12 +141,18 @@ export async function renderVideo(
     // 重置时间基、帧率、色彩空间
     filters.push(`[vconcat]fps=30,format=yuv420p,setpts=PTS-STARTPTS[vout]`)
 
-    // 在视频拼接后添加字幕
-    filters.push(`[vout]subtitles=${subtitleFile.replace(/\:/g, '\\\\:')}[with_subs]`)
+    // 字幕使用 Pixi 导出的透明 PNG 序列叠加，避免 FFmpeg/libass 换行差异。
+    if (subtitleInputIndex !== undefined) {
+      filters.push(
+        `[vout][${subtitleInputIndex}:v]overlay=0:0:shortest=1:eof_action=pass[with_subs]`,
+      )
+    } else {
+      filters.push(`[vout]subtitles=${subtitleFile.replace(/\:/g, '\\\\:')}[with_subs]`)
+    }
 
     // 音频处理：使用响度归一化(loudnorm)确保音量均衡
-    const voiceStreamIdx = videoFiles.length
-    const bgmStreamIdx = audioFiles?.bgm ? videoFiles.length + 1 : null
+    const voiceStreamIdx = videoFiles.length + (subtitleInputIndex === undefined ? 0 : 1)
+    const bgmStreamIdx = audioFiles?.bgm ? voiceStreamIdx + 1 : null
 
     if (outputDuration) {
       // 先对音频trim到目标时长，避免loudnorm导致的截断
@@ -169,7 +226,14 @@ export async function renderVideo(
 
     // 执行命令
     const durationSeconds = outputDuration ? Number.parseFloat(outputDuration) : undefined
-    const result = await executeFFmpeg(args, { onProgress, abortSignal, durationSeconds })
+    const result = await executeFFmpeg(args, {
+      onProgress: (progress) => {
+        ffmpegProgress = progress
+        emitProgress()
+      },
+      abortSignal,
+      durationSeconds,
+    })
 
     // 移除临时文件
     if (fs.existsSync(audioFiles.voice)) {
@@ -182,7 +246,16 @@ export async function renderVideo(
     // 返回结果
     return result
   } catch (error) {
+    if (isEffectRenderCancelledError(error) || params.abortSignal?.aborted) {
+      return {
+        stdout: '',
+        stderr: error instanceof Error ? error.message : String(error),
+        code: 255,
+      }
+    }
     throw error
+  } finally {
+    cleanupSubtitleFrames?.()
   }
 }
 

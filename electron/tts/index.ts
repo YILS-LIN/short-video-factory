@@ -57,8 +57,10 @@ export async function edgeTtsSynthesizeToFile(
   }
   result.toFile(outputPath)
 
-  if (withCaption) {
-    const srtString = result.getCaptionSrtString()
+  const srtText = withCaption ? result.getCaptionSrtString() : undefined
+
+  if (srtText) {
+    const srtString = srtText
     const srtPath = path.join(path.dirname(outputPath), path.basename(outputPath, '.mp3') + '.srt')
     if (fs.existsSync(srtPath)) {
       fs.unlinkSync(srtPath)
@@ -81,5 +83,6 @@ export async function edgeTtsSynthesizeToFile(
 
   return {
     duration,
+    srtText,
   }
 }

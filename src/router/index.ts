@@ -6,6 +6,10 @@ const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     {
+      path: '/effect-renderer',
+      component: () => import('@/views/EffectRenderer/index.vue'),
+    },
+    {
       path: '/',
       component: LayoutDefault,
       children: [

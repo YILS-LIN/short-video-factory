@@ -269,6 +269,7 @@ const handleRenderVideo = async () => {
       audioFiles: {
         bgm: randomBgm?.path,
       },
+      subtitleText: ttsResult.srtText,
       outputSize: {
         width: appStore.renderConfig.outputSize.width,
         height: appStore.renderConfig.outputSize.height,
