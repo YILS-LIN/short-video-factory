@@ -166,6 +166,7 @@
         "noMp4InFolder": "No MP4 video files found in the selected folder",
         "audioDurationInvalid": "Audio duration is invalid. Please check the speech synthesis result or audio file",
         "noVideoAssets": "No available video assets. Please select an assets folder containing MP4 videos",
+        "noUsableVideoAssets": "No readable video assets. Check whether the files are corrupted or use a supported codec",
         "durationInsufficient": "Total available video assets duration is insufficient"
       },
       "success": {

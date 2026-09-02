@@ -166,6 +166,7 @@
         "noMp4InFolder": "选择的文件夹中不包含MP4视频文件",
         "audioDurationInvalid": "音频时长无效，请检查语音合成结果或音频文件是否正常",
         "noVideoAssets": "没有可用的视频素材，请先选择包含 MP4 视频的素材文件夹",
+        "noUsableVideoAssets": "没有可读取的视频素材，请检查视频文件是否损坏或编码是否受支持",
         "durationInsufficient": "可用视频素材总时长不足"
       },
       "success": {
