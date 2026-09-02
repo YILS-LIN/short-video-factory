@@ -157,7 +157,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, toRaw, nextTick, computed, watch } from 'vue'
+import { ref, toRaw, nextTick, computed, watch, onUnmounted } from 'vue'
 import { useTranslation } from 'i18next-vue'
 import { RenderStatus, useAppStore } from '@/store'
 
@@ -178,8 +178,13 @@ const taskInProgress = computed(() => {
 })
 
 const renderProgress = ref(0)
-window.ipcRenderer.on('render-video-progress', (_, progress: number) => {
+const onRenderVideoProgress = (_: Electron.IpcRendererEvent, progress: number) => {
   renderProgress.value = Math.max(0, Math.min(100, progress))
+}
+window.ipcRenderer.on('render-video-progress', onRenderVideoProgress)
+
+onUnmounted(() => {
+  window.ipcRenderer.off('render-video-progress', onRenderVideoProgress)
 })
 
 watch(

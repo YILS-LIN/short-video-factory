@@ -252,11 +252,16 @@ export default function initIPC() {
 
     // 创建 AbortController
     const controller = new AbortController()
-    // 监听取消事件
-    ipcMain.once('cancel-render-video', () => {
-      controller.abort()
-    })
+    const onCancel = (event: Electron.IpcMainEvent) => {
+      if (event.sender === _event.sender) {
+        controller.abort()
+      }
+    }
 
-    return renderVideo({ ...params, onProgress, abortSignal: controller.signal })
+    ipcMain.on('cancel-render-video', onCancel)
+
+    return renderVideo({ ...params, onProgress, abortSignal: controller.signal }).finally(() => {
+      ipcMain.off('cancel-render-video', onCancel)
+    })
   })
 }
