@@ -93,10 +93,12 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, onUnmounted, ref } from 'vue'
+import { h, onMounted, onUnmounted, ref } from 'vue'
 import { useTranslation } from 'i18next-vue'
 import { useToast } from 'vue-toastification'
+import ActionToastEmbed from '@/components/ActionToastEmbed.vue'
 import UpdateDialog from '@/components/UpdateDialog.vue'
+import { copyErrorToClipboard } from '@/lib/error-copy'
 import type { UpdateInfo } from '~/electron/updater'
 
 const version = __APP_VERSION__
@@ -121,13 +123,42 @@ const copyVersion = async () => {
   }
 }
 
+const showUpdateError = (detail: string) => {
+  const errorDetail = detail || t('update.unknownError')
+  toast.error({
+    component: {
+      render: () =>
+        h(ActionToastEmbed, {
+          message: t('update.updateError'),
+          detail: errorDetail,
+          actionText: t('common.buttons.copyErrorDetail'),
+          onActionTirgger: async () => {
+            try {
+              await copyErrorToClipboard(t('update.updateError'), errorDetail)
+              toast.success(t('common.messages.success.copySuccess'))
+            } catch (error) {
+              console.error('Failed to copy update error details:', error)
+              toast.error(t('common.messages.error.copyFailed'))
+            }
+          },
+        }),
+    },
+  })
+}
+
 const handleCheckUpdate = async () => {
   toast.info(t('update.checking'))
-  const result = await window.electron.checkForUpdates()
-  if (result.status === 'up-to-date') {
-    toast.success(t('update.upToDate'))
-  } else if (result.status === 'error') {
-    toast.error(t('update.updateError'))
+  try {
+    const result = await window.electron.checkForUpdates()
+    if (result.status === 'up-to-date') {
+      toast.success(t('update.upToDate'))
+    } else if (result.status === 'error') {
+      showUpdateError(result.message)
+    }
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error)
+    console.error('Failed to check for updates:', error)
+    showUpdateError(reason)
   }
 }
 

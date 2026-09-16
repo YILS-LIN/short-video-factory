@@ -104,7 +104,8 @@
     "releaseNotes": "更新内容",
     "checking": "正在检查更新",
     "upToDate": "当前已是最新版本",
-    "updateError": "检查更新失败，请稍后重试",
+    "updateError": "检查更新失败",
+    "unknownError": "未知错误，请稍后重试",
     "updateLater": "稍后更新",
     "visitWebsite": "前往官网下载"
   },

@@ -104,7 +104,8 @@
     "releaseNotes": "What's new",
     "checking": "Checking for updates",
     "upToDate": "You're up to date",
-    "updateError": "Failed to check for updates. Please try again later.",
+    "updateError": "Failed to check for updates",
+    "unknownError": "Unknown error. Please try again later.",
     "updateLater": "Later",
     "visitWebsite": "Visit website"
   },

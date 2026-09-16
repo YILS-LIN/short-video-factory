@@ -17,6 +17,10 @@ release
 *.db
 *.db-journal
 
+# Local agent instructions and documentation
+/AGENTS.md
+/docs/
+
 # Editor directories and files
 .DS_Store
 *.suo
