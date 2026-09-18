@@ -58,7 +58,7 @@
 </template>
 
 <script lang="ts" setup>
-import { h, onMounted, ref, toRaw } from 'vue'
+import { h, onMounted, ref } from 'vue'
 import { useTranslation } from 'i18next-vue'
 import { useAppStore } from '@/store'
 import { useToast } from 'vue-toastification'
@@ -215,31 +215,26 @@ const getVideoSegments = async (options: { duration: number }) => {
   const maxSegmentDurationMs = 15000
 
   let currentTotalDurationMs = 0
-  let tempVideoAssets = structuredClone(toRaw(videoAssets.value))
+  let tempVideoAssets = [...videoAssets.value]
   const unreadableAssetPaths = new Set<string>()
   const formatTimestamp = (milliseconds: number) => (milliseconds / 1000).toFixed(3)
 
   while (currentTotalDurationMs < targetDurationMs) {
     // 如果素材库中没有剩余素材，时长还不够，重新来一轮
     if (tempVideoAssets.length === 0) {
-      tempVideoAssets = structuredClone(toRaw(videoAssets.value)).filter(
-        (asset) => !unreadableAssetPaths.has(asset.path),
-      )
+      tempVideoAssets = videoAssets.value.filter((asset) => !unreadableAssetPaths.has(asset.path))
       if (!tempVideoAssets.length) {
         throw new Error(t('features.assets.errors.noUsableVideoAssets'))
       }
       continue
     }
 
-    // 获取一个随机素材以及相关信息
-    const randomAsset = random.choice(tempVideoAssets)!
-    const randomAssetIndex = tempVideoAssets.findIndex((asset) => asset.path === randomAsset.path)
-    if (randomAssetIndex < 0) {
+    // 直接从当前随机索引选取素材，避免每轮都做 O(n) 的 findIndex 扫描和克隆
+    const randomAssetIndex = random.int(0, tempVideoAssets.length - 1)
+    const [randomAsset] = tempVideoAssets.splice(randomAssetIndex, 1)
+    if (!randomAsset) {
       continue
     }
-
-    // 删除已选素材
-    tempVideoAssets.splice(randomAssetIndex, 1)
 
     let randomAssetDurationMs = 0
     try {
