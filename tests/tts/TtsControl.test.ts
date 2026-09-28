@@ -85,6 +85,7 @@ describe('TtsControl synthesis cancellation bridge', () => {
     const deferred = createDeferred<{ duration: number; srtText: string }>()
     const invoke = vi.fn((..._args: unknown[]) => deferred.promise)
     const send = vi.fn()
+    const consoleInfo = vi.spyOn(console, 'info').mockImplementation(() => undefined)
     Object.defineProperty(window, 'electron', {
       configurable: true,
       value: {
@@ -106,6 +107,7 @@ describe('TtsControl synthesis cancellation bridge', () => {
         abortSignal: controller.signal,
       })
       await flushPromises()
+      expect(consoleInfo).toHaveBeenCalledWith('EdgeTTS语音列表已更新', { voiceCount: 1 })
 
       const requestId = (invoke.mock.calls[0][0] as { requestId: string }).requestId
       expect(requestId).toMatch(/^tts-\d+-\d+$/)

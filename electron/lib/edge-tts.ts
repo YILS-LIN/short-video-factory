@@ -182,6 +182,13 @@ export class EdgeTTSError extends Error {
 
 const MAX_RETRIES = 3
 const RETRY_DELAYS_MS = [1000, 3000, 7000]
+const DIAGNOSTIC_MESSAGE_TYPES = new Set([
+  'turn.start',
+  'response',
+  'audio.metadata',
+  'audio',
+  'turn.end',
+])
 const MAX_MP3_HEADER_SCAN_BYTES = 16 * 1024
 const MIN_VALID_AUDIO_BYTES = 512
 const WEBSOCKET_HANDSHAKE_TIMEOUT_MS = 15_000
@@ -764,8 +771,10 @@ export class EdgeTTS {
 
       const recordMessage = (path: string | undefined) => {
         if (!path) return
-        diagnostics.messageTypes.push(path)
-        diagnostics.messageCounts[path] = (diagnostics.messageCounts[path] ?? 0) + 1
+        const messageType = DIAGNOSTIC_MESSAGE_TYPES.has(path) ? path : 'other'
+        if (!diagnostics.messageTypes.includes(messageType))
+          diagnostics.messageTypes.push(messageType)
+        diagnostics.messageCounts[messageType] = (diagnostics.messageCounts[messageType] ?? 0) + 1
       }
 
       const finishWithError = (
@@ -787,6 +796,7 @@ export class EdgeTTS {
           audioBytes: diagnostics.audioBytes,
           closeCode: diagnostics.closeCode,
           messageTypes: diagnostics.messageTypes,
+          messageCounts: diagnostics.messageCounts,
           cause: diagnostics.error,
         })
         const error = new EdgeTTSError(
@@ -875,7 +885,6 @@ export class EdgeTTS {
         cleanup()
         diagnostics.elapsedMs = Date.now() - startedAt
         diagnostics.audioBytes = buffer.length
-        console.debug('[EdgeTTS] synthesis-attempt-completed', diagnostics)
         resolve(result)
       })
 

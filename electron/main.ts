@@ -12,6 +12,7 @@ import useCookieAllowCrossSite from './lib/cookie-allow-cross-site'
 import { sendStatEvent } from './lib/stat'
 import { initLogger, writeMainLog } from './logger'
 import { checkForUpdates, initUpdateChecker } from './updater'
+import { getMainWindowSize } from './lib/window-size'
 
 // 用于引入 CommonJS 模块的方法
 // import { createRequire } from 'node:module'
@@ -75,15 +76,12 @@ function setupMainConsoleLogging() {
 }
 
 function createWindow() {
-  const { width, height } = screen.getPrimaryDisplay().workAreaSize
+  const windowSize = getMainWindowSize(screen.getPrimaryDisplay().workAreaSize)
   const isMac = process.platform === 'darwin'
 
   win = new BrowserWindow({
     icon: path.join(process.env.VITE_PUBLIC, 'icon.png'),
-    width: Math.ceil(width * 0.8),
-    height: Math.ceil(height * 0.8),
-    minWidth: 800,
-    minHeight: 650,
+    ...windowSize,
     backgroundColor: '#F3F3F3',
     show: false,
     ...(isMac

@@ -166,7 +166,7 @@ const speedItems = computed(() => {
 const fetchVoices = async () => {
   try {
     appStore.originalVoicesList = await window.electron.edgeTtsGetVoiceList()
-    console.log('EdgeTTS语音列表更新：', appStore.originalVoicesList)
+    console.info('EdgeTTS语音列表已更新', { voiceCount: appStore.originalVoicesList.length })
   } catch (error: any) {
     console.log('获取EdgeTTS语音列表失败', error)
     const errorMessage = error?.error?.message || error?.message || error

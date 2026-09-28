@@ -190,13 +190,15 @@ const handleRenderVideo = async () => {
           folderPath: appStore.renderConfig.bgmPath.replace(/\\/g, '/'),
         })
       ).filter((asset) => asset.name.toLowerCase().endsWith('.mp3'))
-      console.log('获取到的背景音乐列表', bgmList)
       if (bgmList.length > 0) {
         randomBgm = random.choice(bgmList)
-        console.log('随机选取的背景音乐', randomBgm)
       }
+      console.debug('背景音乐素材读取完成', {
+        mp3Count: bgmList.length,
+        selected: randomBgm?.name,
+      })
     } catch (error: any) {
-      console.log('获取背景音乐列表失败', error)
+      console.warn('获取背景音乐列表失败', error)
       const errorMessage = error?.error?.message || error?.message || error
       toast.error({
         component: {

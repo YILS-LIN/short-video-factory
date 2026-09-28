@@ -146,11 +146,17 @@ describe('VideoManage asset filtering and segment selection', () => {
       'file:///C:/video%20assets/scene%20one.MP4': 12,
       'file:///C:/video%20assets/scene%20two.mp4': 20,
     })
+    const consoleInfo = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    const consoleDebug = vi.spyOn(console, 'debug').mockImplementation(() => undefined)
     const { wrapper, listFilesFromFolder, getVideoSegments } = createHost(assets)
 
     try {
       await flushPromises()
       expect(listFilesFromFolder).toHaveBeenCalledWith({ folderPath: 'C:/video assets' })
+      expect(consoleInfo).toHaveBeenCalledWith('素材库刷新完成', {
+        assetCount: 3,
+        mp4Count: 2,
+      })
       expect(mocks.toast.success).toHaveBeenCalledWith('features.assets.success.loadSucceeded')
 
       const segments = await getVideoSegments({ duration: 2 })
@@ -161,6 +167,10 @@ describe('VideoManage asset filtering and segment selection', () => {
       expect(metadata.videos).toHaveLength(1)
       expect(metadata.videos[0].pause).toHaveBeenCalled()
       expect(metadata.videos[0].removeEventListener).toHaveBeenCalledTimes(2)
+      expect(consoleDebug).toHaveBeenCalledWith('随机素材片段生成完成', {
+        segmentCount: 1,
+        totalDurationSeconds: '2.000',
+      })
     } finally {
       wrapper.unmount()
       metadata.createElement.mockRestore()
@@ -234,7 +244,11 @@ describe('VideoManage asset filtering and segment selection', () => {
         'features.assets.errors.noUsableVideoAssets',
       )
       expect(metadata.videos).toHaveLength(2)
-      expect(consoleWarn).toHaveBeenCalledTimes(2)
+      expect(consoleWarn).toHaveBeenCalledTimes(1)
+      expect(consoleWarn).toHaveBeenCalledWith('部分视频素材不可用，已跳过', {
+        count: 2,
+        samples: ['missing.mp4: 视频元数据读取失败', 'invalid.mp4: 视频时长无效'],
+      })
     } finally {
       wrapper.unmount()
       metadata.createElement.mockRestore()

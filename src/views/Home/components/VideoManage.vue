@@ -103,8 +103,8 @@ const refreshAssets = async () => {
     const assets = await window.electron.listFilesFromFolder({
       folderPath: appStore.videoAssetsFolder,
     })
-    console.log(`素材库刷新:`, assets)
     const mp4Assets = assets.filter((asset) => asset.name.toLowerCase().endsWith('.mp4'))
+    console.info('素材库刷新完成', { assetCount: assets.length, mp4Count: mp4Assets.length })
     videoDurationCache.value.clear()
     if (!mp4Assets.length) {
       if (assets.length) {
@@ -217,13 +217,30 @@ const getVideoSegments = async (options: { duration: number }) => {
   let currentTotalDurationMs = 0
   let tempVideoAssets = [...videoAssets.value]
   const unreadableAssetPaths = new Set<string>()
+  let unreadableAssetCount = 0
+  const unreadableAssetSamples: string[] = []
   const formatTimestamp = (milliseconds: number) => (milliseconds / 1000).toFixed(3)
+  const recordUnreadableAsset = (assetName: string, reason: string) => {
+    unreadableAssetCount += 1
+    if (unreadableAssetSamples.length < 3) {
+      unreadableAssetSamples.push(`${assetName}: ${reason.slice(0, 100)}`)
+    }
+  }
+  const reportUnreadableAssets = () => {
+    if (unreadableAssetCount > 0) {
+      console.warn('部分视频素材不可用，已跳过', {
+        count: unreadableAssetCount,
+        samples: unreadableAssetSamples,
+      })
+    }
+  }
 
   while (currentTotalDurationMs < targetDurationMs) {
     // 如果素材库中没有剩余素材，时长还不够，重新来一轮
     if (tempVideoAssets.length === 0) {
       tempVideoAssets = videoAssets.value.filter((asset) => !unreadableAssetPaths.has(asset.path))
       if (!tempVideoAssets.length) {
+        reportUnreadableAssets()
         throw new Error(t('features.assets.errors.noUsableVideoAssets'))
       }
       continue
@@ -241,12 +258,16 @@ const getVideoSegments = async (options: { duration: number }) => {
       randomAssetDurationMs = Math.floor((await readVideoDuration(randomAsset.path)) * 1000)
     } catch (error) {
       unreadableAssetPaths.add(randomAsset.path)
-      console.warn('读取素材时长失败，跳过该素材：', randomAsset.path, error)
+      recordUnreadableAsset(
+        randomAsset.name,
+        error instanceof Error ? error.message : String(error),
+      )
       continue
     }
 
     if (randomAssetDurationMs <= 0) {
       unreadableAssetPaths.add(randomAsset.path)
+      recordUnreadableAsset(randomAsset.name, '视频时长无效')
       continue
     }
 
@@ -275,19 +296,13 @@ const getVideoSegments = async (options: { duration: number }) => {
       formatTimestamp(randomSegmentStartMs + randomSegmentDurationMs),
     ])
     currentTotalDurationMs += randomSegmentDurationMs
-
-    console.table([
-      {
-        素材名称: randomAsset.name,
-        素材时长: formatTimestamp(randomAssetDurationMs),
-        片段开始: formatTimestamp(randomSegmentStartMs),
-        片段时长: formatTimestamp(randomSegmentDurationMs),
-      },
-    ])
   }
 
-  console.log('随机素材片段总时长:', formatTimestamp(currentTotalDurationMs))
-  console.log('随机素材片段汇总:', segments)
+  reportUnreadableAssets()
+  console.debug('随机素材片段生成完成', {
+    segmentCount: segments.videoFiles.length,
+    totalDurationSeconds: formatTimestamp(currentTotalDurationMs),
+  })
 
   return segments
 }

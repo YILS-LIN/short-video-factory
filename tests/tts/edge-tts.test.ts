@@ -94,4 +94,64 @@ describe('EdgeTTS cancellation', () => {
       vi.useRealTimers()
     }
   })
+
+  it('keeps failure diagnostics bounded when the upstream sends many repeated messages', async () => {
+    const edgeTts = new EdgeTTS()
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const operation = edgeTts.synthesize('hello', 'en-US-Test')
+
+    await vi.waitFor(() => expect(mocks.instances).toHaveLength(1))
+    const socket = mocks.instances[0]
+    const audioMessage = Buffer.from('Path:audio\r\n\r\ndata')
+    const metadataMessage = Buffer.from(
+      `Path:audio.metadata\r\n\r\n${JSON.stringify({ Metadata: [] })}`,
+    )
+    for (let index = 0; index < 250; index += 1) socket.emit('message', audioMessage)
+    for (let index = 0; index < 100; index += 1) socket.emit('message', metadataMessage)
+    for (let index = 0; index < 50; index += 1) {
+      socket.emit('message', Buffer.from(`Path:unrecognized-type-${index}\r\n\r\ndata`))
+    }
+    socket.emit('message', Buffer.from('Path:audio.metadata\r\n\r\n{'))
+
+    const error = await operation.catch((reason: unknown) => reason)
+    expect(error).toMatchObject({
+      name: 'EdgeTTSError',
+      diagnostics: {
+        messageTypes: ['audio', 'audio.metadata', 'other'],
+        messageCounts: { audio: 250, 'audio.metadata': 101, other: 50 },
+      },
+    })
+    expect(consoleError).toHaveBeenCalledTimes(1)
+    const loggedDiagnostics = consoleError.mock.calls[0][1] as {
+      diagnostics: { messageTypes: string[]; messageCounts: Record<string, number> }
+    }
+    expect(loggedDiagnostics.diagnostics.messageTypes).toHaveLength(3)
+    expect(Object.keys(loggedDiagnostics.diagnostics.messageCounts)).toHaveLength(3)
+    expect(loggedDiagnostics.diagnostics.messageCounts).toMatchObject({
+      audio: 250,
+      'audio.metadata': 101,
+      other: 50,
+    })
+  })
+
+  it('does not emit a verbose diagnostic object for successful synthesis', async () => {
+    const edgeTts = new EdgeTTS()
+    const consoleDebug = vi.spyOn(console, 'debug').mockImplementation(() => undefined)
+    const operation = edgeTts.synthesize('hello', 'en-US-Test')
+
+    await vi.waitFor(() => expect(mocks.instances).toHaveLength(1))
+    const socket = mocks.instances[0]
+    socket.emit('open')
+
+    const audioChunk = Buffer.alloc(4)
+    audioChunk.set([0xff, 0xfb, 0x90, 0x64])
+    for (let index = 0; index < 160; index += 1) {
+      socket.emit('message', Buffer.concat([Buffer.from('Path:audio\r\n\r\n'), audioChunk]))
+    }
+    socket.emit('message', Buffer.from('Path:turn.end\r\n\r\n'))
+    socket.emit('close', 1000, Buffer.from(''))
+
+    await expect(operation).resolves.toMatchObject({ getSize: expect.any(Function) })
+    expect(consoleDebug).not.toHaveBeenCalled()
+  })
 })
