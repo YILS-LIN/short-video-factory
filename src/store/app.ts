@@ -134,6 +134,24 @@ export const useAppStore = defineStore(
   {
     persist: {
       omit: ['genderList', 'speedList', 'autoBatch', 'renderStatus', 'copywritingStatus'],
+      beforeHydrate: (context) => {
+        // Pinia merges persisted state into default state before afterHydrate, so an old record
+        // without protocol would otherwise inherit the new openai-compatible default. Seed the
+        // migration target first; the subsequent nested patch keeps this protocol value.
+        try {
+          const serializedState = window.localStorage.getItem(context.store.$id)
+          const persistedState = serializedState ? JSON.parse(serializedState) : undefined
+          if (
+            persistedState?.llmConfig &&
+            typeof persistedState.llmConfig === 'object' &&
+            !('protocol' in persistedState.llmConfig)
+          ) {
+            context.store.llmConfig.protocol = 'openai-chat'
+          }
+        } catch {
+          // Let the persistence plugin retain its default state if legacy storage is malformed.
+        }
+      },
       afterHydrate: (context) => {
         context.store.updateLLMConfig(context.store.llmConfig)
         context.store.updateCopywritingConfig(context.store.copywritingConfig)

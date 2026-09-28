@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "types": ["node"]
+  },
+  "include": [
+    "electron/electron-env.d.ts",
+    "src/global.d.ts",
+    "src/vite-env.d.ts",
+    "tests/**/*.ts",
+    "vitest.config.ts"
+  ]
+}

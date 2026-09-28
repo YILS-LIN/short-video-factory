@@ -7,6 +7,21 @@ export type LlmProtocol =
 export type AnthropicAuthMode = 'api-key' | 'bearer'
 export type InstructionDelivery = 'standard' | 'user-message'
 export type SystemPromptMode = 'builtin' | 'custom' | 'off'
+export type RequestUrlIssue = 'invalid' | 'full-endpoint'
+export type CustomHeaderIssue =
+  | 'invalid-name'
+  | 'invalid-value'
+  | 'protected-name'
+  | 'duplicate-name'
+export type LlmConfigIssue =
+  | 'api-url-required'
+  | 'model-name-required'
+  | 'invalid-api-url'
+  | 'full-endpoint-api-url'
+  | 'invalid-protocol'
+  | 'invalid-timeout'
+  | 'invalid-max-output-tokens'
+  | CustomHeaderIssue
 
 export type CopywritingStatus =
   | 'idle'

@@ -12,7 +12,7 @@ import {
   SelectFolderParams,
   StatEventParams,
 } from './types'
-import { EdgeTtsSynthesizeCommonParams } from './tts/types'
+import { EdgeTtsSynthesizeCommonParams, EdgeTtsSynthesizeToFileParams } from './tts/types'
 import { RenderVideoParams } from './ffmpeg/types'
 import type { AppLogLevel } from './logger'
 
@@ -63,7 +63,7 @@ contextBridge.exposeInMainWorld('electron', {
   edgeTtsGetVoiceList: () => ipcRenderer.invoke('edge-tts-get-voice-list'),
   edgeTtsSynthesizeToBase64: (params: EdgeTtsSynthesizeCommonParams) =>
     ipcRenderer.invoke('edge-tts-synthesize-to-base64', params),
-  edgeTtsSynthesizeToFile: (params: EdgeTtsSynthesizeCommonParams) =>
+  edgeTtsSynthesizeToFile: (params: EdgeTtsSynthesizeToFileParams) =>
     ipcRenderer.invoke('edge-tts-synthesize-to-file', params),
   renderVideo: (params: RenderVideoParams) => ipcRenderer.invoke('render-video', params),
   statTrack: (params: StatEventParams) => ipcRenderer.invoke('stat-track', params),

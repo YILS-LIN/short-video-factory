@@ -130,6 +130,13 @@
         "protocolResponses": "OpenAI Responses",
         "protocolAnthropic": "Anthropic Messages/兼容接口",
         "requestUrl": "最终请求地址",
+        "apiUrlRequired": "请输入 API 基础地址",
+        "modelNameRequired": "请输入模型名称",
+        "invalidApiUrl": "API 基础地址无效。请使用 http:// 或 https://，并移除查询参数、片段和嵌入式凭据。",
+        "fullEndpointApiUrl": "请填写 API 基础地址，不要包含完整的 API 端点路径。",
+        "invalidProtocol": "请选择受支持的 API 协议。",
+        "invalidTimeoutSeconds": "超时时间必须为正整数秒。",
+        "invalidMaxOutputTokens": "最大输出 Token 必须为正整数，也可以留空。",
         "anthropicAuthMode": "认证方式",
         "copywritingRules": "文案规则",
         "systemPromptMode": "系统提示词",
@@ -151,7 +158,11 @@
         "replacePromptConfirm": "这会覆盖当前自定义提示词，是否继续？",
         "customHeaders": "自定义请求头",
         "headerName": "名称",
-        "headerValue": "值"
+        "headerValue": "值",
+        "invalidHeaderName": "请求头名称无效，请使用标准 HTTP 请求头名称。",
+        "invalidHeaderValue": "请求头值不能包含控制字符或换行符。",
+        "protectedHeaderName": "该请求头由协议或认证方式管理，不能作为自定义请求头。",
+        "duplicateHeaderName": "请求头名称不能重复。"
       },
       "errors": {
         "promptRequired": "提示词不能为空",

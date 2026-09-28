@@ -87,6 +87,7 @@ const configValid = (text?: string) => {
 }
 
 const tryListeningLoading = ref(false)
+let synthesisRequestSequence = 0
 let currentAudio: HTMLAudioElement | null = null
 const handleTryListening = async () => {
   if (!configValid(appStore.tryListeningText)) return
@@ -206,8 +207,21 @@ onUnmounted(() => {
   }
 })
 
-const synthesizedSpeechToFile = async (option: { text: string; withCaption?: boolean }) => {
+const synthesizedSpeechToFile = async (option: {
+  text: string
+  withCaption?: boolean
+  abortSignal?: AbortSignal
+}) => {
   if (!configValid(option.text)) throw new Error(t('features.tts.errors.configInvalid'))
+  if (option.abortSignal?.aborted) {
+    const error = new Error('语音合成已取消')
+    error.name = 'AbortError'
+    throw error
+  }
+
+  const requestId = `tts-${Date.now()}-${++synthesisRequestSequence}`
+  const onAbort = () => window.ipcRenderer.send('cancel-edge-tts-synthesis', requestId)
+  option.abortSignal?.addEventListener('abort', onAbort, { once: true })
 
   try {
     const result = await window.electron.edgeTtsSynthesizeToFile({
@@ -217,11 +231,24 @@ const synthesizedSpeechToFile = async (option: { text: string; withCaption?: boo
         rate: appStore.speed,
       },
       withCaption: option?.withCaption,
+      requestId,
     })
+    if (option.abortSignal?.aborted) {
+      const error = new Error('语音合成已取消')
+      error.name = 'AbortError'
+      throw error
+    }
     return result
   } catch (error) {
+    if (option.abortSignal?.aborted || (error as { name?: string })?.name === 'AbortError') {
+      const abortError = new Error('语音合成已取消')
+      abortError.name = 'AbortError'
+      throw abortError
+    }
     console.log('语音合成失败', error)
     throw new Error(t('features.tts.errors.synthesisFailed') + ' ' + String(error))
+  } finally {
+    option.abortSignal?.removeEventListener('abort', onAbort)
   }
 }
 

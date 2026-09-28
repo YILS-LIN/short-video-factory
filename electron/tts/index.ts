@@ -14,6 +14,12 @@ const edgeTts = new EdgeTTS()
 const setupTime = new Date().getTime()
 const EDGE_TTS_CBR_BITS_PER_SECOND = 48_000
 
+const createAbortError = () => {
+  const error = new Error('EdgeTTS synthesis cancelled')
+  error.name = 'AbortError'
+  return error
+}
+
 function getCbrDuration(buffer: Buffer): number | undefined {
   if (buffer.length === 0 || !hasMp3FrameHeader(buffer)) return undefined
 
@@ -51,10 +57,13 @@ export async function edgeTtsSynthesizeToBase64(params: EdgeTtsSynthesizeCommonP
 }
 
 export async function edgeTtsSynthesizeToFile(
-  params: EdgeTtsSynthesizeToFileParams,
+  params: EdgeTtsSynthesizeToFileParams & { abortSignal?: AbortSignal },
 ): Promise<EdgeTtsSynthesizeToFileResult> {
   const { text, voice, options, withCaption } = params
-  const result = await edgeTts.synthesize(text, voice, options)
+  if (params.abortSignal?.aborted) throw createAbortError()
+
+  const result = await edgeTts.synthesize(text, voice, options, params.abortSignal)
+  if (params.abortSignal?.aborted) throw createAbortError()
   const audioBuffer = result.getBuffer()
 
   if (audioBuffer.length === 0) {
@@ -94,28 +103,39 @@ export async function edgeTtsSynthesizeToFile(
     }
   }
 
-  let outputPath = params.outputPath ?? getTempTtsVoiceFilePath()
-  if (fs.existsSync(outputPath)) {
-    fs.unlinkSync(outputPath)
+  if (params.abortSignal?.aborted) throw createAbortError()
+
+  const outputPath = params.outputPath ?? getTempTtsVoiceFilePath()
+  const outputAudioPath = outputPath.endsWith('.mp3') ? outputPath : `${outputPath}.mp3`
+  const srtPath = path.join(path.dirname(outputPath), path.basename(outputPath, '.mp3') + '.srt')
+  for (const previousOutputPath of [outputAudioPath, srtPath]) {
+    if (fs.existsSync(previousOutputPath)) fs.unlinkSync(previousOutputPath)
   }
   if (!fs.existsSync(path.dirname(outputPath))) {
     fs.mkdirSync(path.dirname(outputPath), { recursive: true })
   }
-  await result.toFile(outputPath)
 
-  const srtText = withCaption ? result.getCaptionSrtString() : undefined
+  try {
+    await result.toFile(outputPath)
+    if (params.abortSignal?.aborted) throw createAbortError()
 
-  if (srtText) {
-    const srtString = srtText
-    const srtPath = path.join(path.dirname(outputPath), path.basename(outputPath, '.mp3') + '.srt')
-    if (fs.existsSync(srtPath)) {
-      fs.unlinkSync(srtPath)
+    const srtText = withCaption ? result.getCaptionSrtString() : undefined
+    if (srtText) {
+      fs.writeFileSync(srtPath, srtText)
     }
-    fs.writeFileSync(srtPath, srtString)
-  }
 
-  return {
-    duration,
-    srtText,
+    return {
+      duration,
+      srtText,
+    }
+  } catch (error) {
+    for (const partialOutputPath of [outputAudioPath, srtPath]) {
+      try {
+        if (fs.existsSync(partialOutputPath)) fs.unlinkSync(partialOutputPath)
+      } catch (cleanupError) {
+        console.warn('清理语音合成部分输出失败:', partialOutputPath, cleanupError)
+      }
+    }
+    throw error
   }
 }

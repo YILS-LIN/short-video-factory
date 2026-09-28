@@ -34,21 +34,36 @@ export async function renderVideo(
   },
 ): Promise<ExecuteFFmpegResult> {
   let cleanupSubtitleFrames: (() => void) | undefined
+  const tempTtsVoiceFilePath = getTempTtsVoiceFilePath()
+  const cleanupTtsFilePaths = [
+    params.audioFiles?.voice ? undefined : tempTtsVoiceFilePath,
+    params.subtitleFile
+      ? undefined
+      : path
+          .join(
+            path.dirname(tempTtsVoiceFilePath),
+            path.basename(tempTtsVoiceFilePath, '.mp3') + '.srt',
+          )
+          .replace(/\\/g, '/'),
+  ].filter((filePath): filePath is string => !!filePath)
+
   try {
     // 解构参数
     const { videoFiles, timeRanges, outputSize, outputDuration, onProgress, abortSignal } = params
 
     // 音频默认配置
-    const audioFiles = params.audioFiles ?? {}
-    audioFiles.voice = params.audioFiles?.voice ?? getTempTtsVoiceFilePath()
+    const audioFiles = {
+      ...params.audioFiles,
+      voice: params.audioFiles?.voice ?? tempTtsVoiceFilePath,
+    }
 
     // 字幕默认配置
     const subtitleFile =
       params.subtitleFile ??
       path
         .join(
-          path.dirname(getTempTtsVoiceFilePath()),
-          path.basename(getTempTtsVoiceFilePath(), '.mp3') + '.srt',
+          path.dirname(tempTtsVoiceFilePath),
+          path.basename(tempTtsVoiceFilePath, '.mp3') + '.srt',
         )
         .replace(/\\/g, '/')
 
@@ -235,14 +250,6 @@ export async function renderVideo(
       durationSeconds,
     })
 
-    // 移除临时文件
-    if (fs.existsSync(audioFiles.voice)) {
-      fs.unlinkSync(audioFiles.voice)
-    }
-    if (fs.existsSync(subtitleFile)) {
-      fs.unlinkSync(subtitleFile)
-    }
-
     // 返回结果
     return result
   } catch (error) {
@@ -256,6 +263,13 @@ export async function renderVideo(
     throw error
   } finally {
     cleanupSubtitleFrames?.()
+    for (const filePath of cleanupTtsFilePaths) {
+      try {
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
+      } catch (error) {
+        console.warn('清理语音合成临时文件失败:', filePath, error)
+      }
+    }
   }
 }
 
@@ -268,16 +282,32 @@ export async function executeFFmpeg(
     durationSeconds?: number
   },
 ): Promise<ExecuteFFmpegResult> {
+  if (options?.abortSignal?.aborted) {
+    throw new Error('FFmpeg execution cancelled')
+  }
+
   isWindows && validateExecutables()
 
   return new Promise((resolve, reject) => {
     const defaultOptions = {
-      cwd: process.cwd(),
+      cwd: options?.cwd ?? process.cwd(),
       env: process.env,
-      ...options,
     }
 
     const child = spawn(ffmpegPath, args, defaultOptions)
+    let settled = false
+    const cleanupAbortListener = () => {
+      options?.abortSignal?.removeEventListener('abort', onAbort)
+    }
+    const settle = (handler: () => void) => {
+      if (settled) return
+      settled = true
+      cleanupAbortListener()
+      handler()
+    }
+    const onAbort = () => {
+      if (!settled) child.kill('SIGTERM')
+    }
 
     let stdout = ''
     let stderr = ''
@@ -346,22 +376,23 @@ export async function executeFFmpeg(
 
     child.on('close', (code) => {
       if (code === 0) {
-        options?.onProgress?.(100)
-        resolve({ stdout, stderr, code })
+        settle(() => {
+          options?.onProgress?.(100)
+          resolve({ stdout, stderr, code })
+        })
       } else {
-        reject(new Error(`FFmpeg exited with code ${code}: ${stderr}`))
+        settle(() => reject(new Error(`FFmpeg exited with code ${code}: ${stderr}`)))
       }
     })
 
     child.on('error', (error) => {
-      reject(new Error(`Failed to start FFmpeg: ${error.message}`))
+      settle(() => reject(new Error(`Failed to start FFmpeg: ${error.message}`)))
     })
 
     // 提供取消功能
     if (options?.abortSignal) {
-      options.abortSignal.addEventListener('abort', () => {
-        child.kill('SIGTERM')
-      })
+      options.abortSignal.addEventListener('abort', onAbort, { once: true })
+      if (options.abortSignal.aborted) onAbort()
     }
   })
 }

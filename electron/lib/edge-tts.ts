@@ -227,6 +227,12 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
+function createAbortError(): Error {
+  const error = new Error('EdgeTTS synthesis cancelled')
+  error.name = 'AbortError'
+  return error
+}
+
 function getRetryDelayMs(retryIndex: number): number {
   const baseDelay = RETRY_DELAYS_MS[retryIndex] ?? RETRY_DELAYS_MS[RETRY_DELAYS_MS.length - 1]
   // Keep retries from forming a predictable request burst across clients.
@@ -234,8 +240,24 @@ function getRetryDelayMs(retryIndex: number): number {
   return Math.max(0, baseDelay + jitter)
 }
 
-function wait(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+function wait(ms: number, abortSignal?: AbortSignal): Promise<void> {
+  if (abortSignal?.aborted) return Promise.reject(createAbortError())
+
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      cleanup()
+      resolve()
+    }, ms)
+    const onAbort = () => {
+      clearTimeout(timer)
+      cleanup()
+      reject(createAbortError())
+    }
+    const cleanup = () => abortSignal?.removeEventListener('abort', onAbort)
+
+    abortSignal?.addEventListener('abort', onAbort, { once: true })
+    if (abortSignal?.aborted) onAbort()
+  })
 }
 
 const INCOMPATIBLE_CODE_RANGES = [
@@ -582,8 +604,13 @@ export class EdgeTTS {
     text: string,
     voice: string = 'en-US-AnaNeural',
     options: SynthesisOptions = {},
+    abortSignal?: AbortSignal,
   ): Promise<SynthesisResult> {
-    return this.enqueue(() => this.synthesizeQueued(text, voice, options))
+    if (abortSignal?.aborted) throw createAbortError()
+    return this.enqueue(() => {
+      if (abortSignal?.aborted) throw createAbortError()
+      return this.synthesizeQueued(text, voice, options, abortSignal)
+    })
   }
 
   private async enqueue<T>(operation: () => Promise<T>): Promise<T> {
@@ -600,19 +627,22 @@ export class EdgeTTS {
     text: string,
     voice: string,
     options: SynthesisOptions,
+    abortSignal?: AbortSignal,
   ): Promise<SynthesisResult> {
+    if (abortSignal?.aborted) throw createAbortError()
     const cleanedText = removeIncompatibleCharacters(text)
     const textChunks = splitTextByByteLength(cleanedText, 4096)
 
     if (textChunks.length === 1) {
-      return this.synthesizeSingleWithRetry(text, voice, options)
+      return this.synthesizeSingleWithRetry(text, voice, options, abortSignal)
     }
 
     const allAudioData: Buffer[] = []
     const allWordList: WordBoundary[] = []
     let offsetCompensation = 0
     for (const chunk of textChunks) {
-      const result = await this.synthesizeSingleWithRetry(chunk, voice, options)
+      if (abortSignal?.aborted) throw createAbortError()
+      const result = await this.synthesizeSingleWithRetry(chunk, voice, options, abortSignal)
       const audioData = result.getBuffer()
       if (audioData.length > 0) {
         allAudioData.push(audioData)
@@ -633,13 +663,17 @@ export class EdgeTTS {
     text: string,
     voice: string,
     options: SynthesisOptions,
+    abortSignal?: AbortSignal,
   ): Promise<SynthesisResult> {
     let lastError: unknown
     for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
       try {
-        return await this.synthesizeSingle(text, voice, options, attempt)
+        return await this.synthesizeSingle(text, voice, options, attempt, abortSignal)
       } catch (error) {
         lastError = error
+        if (abortSignal?.aborted || (error as { name?: string })?.name === 'AbortError') {
+          throw error
+        }
         const retryable = error instanceof EdgeTTSError && error.retryable
         if (!retryable || attempt > MAX_RETRIES) {
           throw error
@@ -653,7 +687,7 @@ export class EdgeTTS {
           delayMs,
           diagnostics: error.diagnostics,
         })
-        await wait(delayMs)
+        await wait(delayMs, abortSignal)
       }
     }
     throw lastError
@@ -664,7 +698,9 @@ export class EdgeTTS {
     voice: string,
     options: SynthesisOptions,
     attempt: number,
+    abortSignal?: AbortSignal,
   ): Promise<SynthesisResult> {
+    if (abortSignal?.aborted) throw createAbortError()
     // Validate local SSML inputs before opening a network connection.
     const ssmlText = this.getSSML(text, voice, options)
 
@@ -704,6 +740,19 @@ export class EdgeTTS {
         }
       }
 
+      const cleanup = () => {
+        clearIdleTimeout()
+        abortSignal?.removeEventListener('abort', onAbort)
+      }
+
+      const onAbort = () => {
+        if (settled) return
+        settled = true
+        cleanup()
+        reject(createAbortError())
+        ws.terminate()
+      }
+
       const resetIdleTimeout = () => {
         if (settled) return
         clearIdleTimeout()
@@ -727,7 +776,7 @@ export class EdgeTTS {
       ) => {
         if (settled) return
         settled = true
-        clearIdleTimeout()
+        cleanup()
         diagnostics.elapsedMs = Date.now() - startedAt
         diagnostics.audioBytes = audioStream.reduce((total, chunk) => total + chunk.length, 0)
         diagnostics.error = cause ? getErrorMessage(cause) : message
@@ -823,7 +872,7 @@ export class EdgeTTS {
           return
         }
         settled = true
-        clearIdleTimeout()
+        cleanup()
         diagnostics.elapsedMs = Date.now() - startedAt
         diagnostics.audioBytes = buffer.length
         console.debug('[EdgeTTS] synthesis-attempt-completed', diagnostics)
@@ -834,6 +883,9 @@ export class EdgeTTS {
         finishWithError('WEBSOCKET_CONNECTION_FAILED', 'WebSocket 连接异常', true, error)
         ws.terminate()
       })
+
+      abortSignal?.addEventListener('abort', onAbort, { once: true })
+      if (abortSignal?.aborted) onAbort()
     })
   }
 

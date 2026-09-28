@@ -1,6 +1,7 @@
 import { streamText } from 'ai'
-import { buildPrompt, cleanGeneratedText, getSystemPrompt } from './prompts'
-import { createLanguageModel } from './providers'
+import { getLlmConfigIssue } from './config'
+import { buildPrompt, cleanGeneratedText, getSystemPrompt } from './prompts.ts'
+import { createLanguageModel } from './providers.ts'
 import type { CopywritingConfig, GenerationResult, LlmConfig } from './types'
 
 export interface GenerateCopywritingOptions {
@@ -11,43 +12,71 @@ export interface GenerateCopywritingOptions {
   onTextDelta?: (text: string) => void
 }
 
-const isAbortError = (error: unknown) =>
-  error instanceof DOMException
-    ? error.name === 'AbortError'
-    : (error as { name?: string })?.name === 'AbortError'
+const isAbortError = (error: unknown) => (error as { name?: string })?.name === 'AbortError'
+const handledAbortReasons = new WeakSet<object>()
 
-const isTruncated = (reason: string | undefined) =>
-  ['length', 'max_tokens', 'max_output_tokens', 'content-filter'].includes(reason ?? '')
+if (typeof globalThis.addEventListener === 'function') {
+  globalThis.addEventListener('unhandledrejection', (event) => {
+    // Chromium 108 can surface the fetch-body rejection for a cancelled SDK stream after it has
+    // already emitted its abort part. Ignore only the exact reason from this request's controller.
+    if (
+      typeof event.reason === 'object' &&
+      event.reason !== null &&
+      handledAbortReasons.has(event.reason)
+    )
+      event.preventDefault()
+  })
+}
+
+const getStatus = (text: string, finishReason: string | undefined): GenerationResult['status'] => {
+  if (!text) return 'failed'
+  if (finishReason === 'stop') return 'completed'
+  if (finishReason === 'error') return 'failed'
+  return 'truncated'
+}
 
 export async function generateCopywriting(
   options: GenerateCopywritingOptions,
 ): Promise<GenerationResult> {
   const { llmConfig, copywritingConfig, prompt, abortSignal, onTextDelta } = options
+  const configIssue = getLlmConfigIssue(llmConfig)
+  if (configIssue) throw new Error(`Invalid model configuration: ${configIssue}`)
   const instructions = getSystemPrompt(copywritingConfig)
   const input = buildPrompt(prompt, instructions, llmConfig.instructionDelivery)
   const model = createLanguageModel(llmConfig)
   const maxOutputTokens =
     llmConfig.maxOutputTokens ?? (llmConfig.protocol === 'anthropic-messages' ? 4096 : undefined)
   const requestController = new AbortController()
-  let timedOut = false
-  const handleAbort = () => requestController.abort()
+  let terminationReason: 'cancelled' | 'timeout' | undefined
+  const terminate = (reason: 'cancelled' | 'timeout') => {
+    if (terminationReason) return
+    terminationReason = reason
+    requestController.abort()
+    const abortReason = requestController.signal.reason
+    if (typeof abortReason === 'object' && abortReason !== null)
+      handledAbortReasons.add(abortReason)
+  }
+  const handleAbort = () => terminate('cancelled')
   if (abortSignal.aborted) {
     handleAbort()
   } else {
     abortSignal.addEventListener('abort', handleAbort, { once: true })
   }
   const timeoutId = globalThis.setTimeout(() => {
-    timedOut = true
-    requestController.abort()
+    terminate('timeout')
   }, llmConfig.timeoutSeconds * 1000)
   const signal = requestController.signal
   let text = ''
+  let finishReason: string | undefined
+  let rawFinishReason: string | undefined
 
   try {
     const result = streamText({
       model,
       ...input,
       abortSignal: signal,
+      maxRetries: 2,
+      onError: () => undefined,
       ...(maxOutputTokens ? { maxOutputTokens } : {}),
     })
     for await (const part of result.stream) {
@@ -57,22 +86,38 @@ export async function generateCopywriting(
       }
       if (part.type === 'error') throw part.error
       if (part.type === 'abort') {
-        if (timedOut) throw new Error(`Request timed out after ${llmConfig.timeoutSeconds} seconds`)
-        return { text: cleanGeneratedText(text), status: 'cancelled' }
+        if (terminationReason === 'timeout')
+          throw new Error(`Request timed out after ${llmConfig.timeoutSeconds} seconds`)
+        if (terminationReason === 'cancelled') {
+          continue
+        }
+        throw new Error(part.reason || 'The model stream was aborted unexpectedly')
+      }
+      if (part.type === 'finish') {
+        finishReason = part.finishReason
+        rawFinishReason = part.rawFinishReason
       }
     }
-    const finishReason = await result.rawFinishReason
+    if (terminationReason === 'timeout')
+      throw new Error(`Request timed out after ${llmConfig.timeoutSeconds} seconds`)
+    if (terminationReason === 'cancelled')
+      return { text: cleanGeneratedText(text), status: 'cancelled' }
+    finishReason ??= await result.finishReason
+    rawFinishReason ??= await result.rawFinishReason
     text = cleanGeneratedText(text)
     return {
       text,
-      finishReason,
-      status: !text ? 'failed' : isTruncated(finishReason) ? 'truncated' : 'completed',
+      finishReason: rawFinishReason ?? finishReason,
+      status: getStatus(text, finishReason),
     }
   } catch (error) {
-    if (timedOut) {
+    if (terminationReason === 'timeout') {
       throw new Error(`Request timed out after ${llmConfig.timeoutSeconds} seconds`)
     }
-    if ((isAbortError(error) || signal.aborted) && abortSignal.aborted) {
+    if (
+      terminationReason === 'cancelled' &&
+      (isAbortError(error) || signal.aborted || abortSignal.aborted)
+    ) {
       return { text: cleanGeneratedText(text), status: 'cancelled' }
     }
     throw error

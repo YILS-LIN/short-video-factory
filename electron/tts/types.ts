@@ -9,6 +9,8 @@ export interface EdgeTtsSynthesizeCommonParams {
 export interface EdgeTtsSynthesizeToFileParams extends EdgeTtsSynthesizeCommonParams {
   withCaption?: boolean
   outputPath?: string
+  /** Request identifier used to route renderer cancellation to the active synthesis. */
+  requestId?: string
 }
 
 export interface EdgeTtsSynthesizeToFileResult {

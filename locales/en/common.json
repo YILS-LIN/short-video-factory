@@ -130,6 +130,13 @@
         "protocolResponses": "OpenAI Responses",
         "protocolAnthropic": "Anthropic Messages/compatible API",
         "requestUrl": "Final request URL",
+        "apiUrlRequired": "Enter an API base URL",
+        "modelNameRequired": "Enter a model name",
+        "invalidApiUrl": "Invalid API base URL. Use http:// or https:// and remove query strings, fragments, and embedded credentials.",
+        "fullEndpointApiUrl": "Enter the API base URL without the complete API endpoint path.",
+        "invalidProtocol": "Select a supported API protocol.",
+        "invalidTimeoutSeconds": "Timeout must be a positive whole number of seconds.",
+        "invalidMaxOutputTokens": "Maximum output tokens must be a positive whole number or left empty.",
         "anthropicAuthMode": "Authentication",
         "copywritingRules": "Copywriting rules",
         "systemPromptMode": "System prompt",
@@ -151,7 +158,11 @@
         "replacePromptConfirm": "This will replace the current custom prompt. Continue?",
         "customHeaders": "Custom headers",
         "headerName": "Name",
-        "headerValue": "Value"
+        "headerValue": "Value",
+        "invalidHeaderName": "Invalid header name. Use a standard HTTP header name.",
+        "invalidHeaderValue": "Header values cannot contain control characters or line breaks.",
+        "protectedHeaderName": "This header is managed by the protocol or authentication and cannot be customized.",
+        "duplicateHeaderName": "Header names must be unique."
       },
       "errors": {
         "promptRequired": "Prompt cannot be empty",

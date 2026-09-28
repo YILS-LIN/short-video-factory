@@ -167,6 +167,7 @@ onBeforeUnmount(() => {
 const TextGenerateInstance = ref<InstanceType<typeof TextGenerate> | null>()
 const VideoManageInstance = ref<InstanceType<typeof VideoManage> | null>()
 const TtsControlInstance = ref<InstanceType<typeof TtsControl> | null>()
+let activeTtsSynthesisController: AbortController | null = null
 const handleRenderVideo = async () => {
   if (!appStore.renderConfig.outputFileName) {
     toast.warning(t('features.render.errors.outputFileNameRequired'))
@@ -235,10 +236,18 @@ const handleRenderVideo = async () => {
       return
     }
     appStore.updateRenderStatus(RenderStatus.SynthesizedSpeech)
-    const ttsResult = await TtsControlInstance.value?.synthesizedSpeechToFile({
-      text,
-      withCaption: true,
-    })
+    const ttsController = new AbortController()
+    activeTtsSynthesisController = ttsController
+    let ttsResult
+    try {
+      ttsResult = await TtsControlInstance.value?.synthesizedSpeechToFile({
+        text,
+        withCaption: true,
+        abortSignal: ttsController.signal,
+      })
+    } finally {
+      if (activeTtsSynthesisController === ttsController) activeTtsSynthesisController = null
+    }
     if (ttsResult?.duration === undefined) {
       throw new Error(t('features.tts.errors.fileCorrupt'))
     }
@@ -263,7 +272,7 @@ const handleRenderVideo = async () => {
       return
     }
     appStore.updateRenderStatus(RenderStatus.Rendering)
-    await window.electron.renderVideo({
+    const renderResult = await window.electron.renderVideo({
       ...videoSegments,
       audioFiles: {
         bgm: randomBgm?.path,
@@ -281,6 +290,12 @@ const handleRenderVideo = async () => {
         appStore.renderConfig.outputFileExt,
     })
 
+    // 取消会让主进程返回 code 255；不能将它当作完成并继续自动批处理。
+    if (appStore.renderStatus !== RenderStatus.Rendering) return
+    if (renderResult.code !== 0) {
+      throw new Error(renderResult.stderr || `FFmpeg exited with code ${renderResult.code}`)
+    }
+
     toast.success(t('features.render.success.succeeded'))
     trackStat('视频渲染成功')
     appStore.updateRenderStatus(RenderStatus.Completed)
@@ -291,9 +306,9 @@ const handleRenderVideo = async () => {
       handleRenderVideo()
     }
   } catch (error: any) {
+    if (appStore.renderStatus === RenderStatus.None) return
     console.error('视频合成失败:', error)
     trackStat('视频渲染失败')
-    if (appStore.renderStatus === RenderStatus.None) return
     const errorMessage = error?.error?.message || error?.message || error
     toast.error({
       component: {
@@ -326,6 +341,7 @@ const handleCancelRender = () => {
       break
 
     case RenderStatus.SynthesizedSpeech:
+      activeTtsSynthesisController?.abort()
       break
 
     case RenderStatus.SegmentVideo:

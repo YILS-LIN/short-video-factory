@@ -10,6 +10,7 @@ import {
   StatEventParams,
 } from './types'
 import { edgeTtsGetVoiceList, edgeTtsSynthesizeToBase64, edgeTtsSynthesizeToFile } from './tts'
+import type { EdgeTtsSynthesizeToFileParams } from './tts/types'
 import { renderVideo } from './ffmpeg'
 import { sendStatEvent } from './lib/stat'
 import { exportDiagnostics } from './diagnostics'
@@ -80,6 +81,7 @@ function resolveDefaultFolderPath(customPath?: string | null) {
 }
 
 export default function initIPC() {
+  const activeTtsSynthesisControllers = new Map<string, AbortController>()
   setupEffectRendererFrameWriter()
   ipcMain.on('app-log', (_event, payload: { level: AppLogLevel; args: unknown[] }) => {
     const level = payload?.level
@@ -241,7 +243,24 @@ export default function initIPC() {
   )
 
   // 保存语音合成到文件
-  ipcMain.handle('edge-tts-synthesize-to-file', (_event, params) => edgeTtsSynthesizeToFile(params))
+  ipcMain.on('cancel-edge-tts-synthesis', (event, requestId: unknown) => {
+    if (typeof requestId !== 'string' || !requestId) return
+    activeTtsSynthesisControllers.get(`${event.sender.id}:${requestId}`)?.abort()
+  })
+  ipcMain.handle('edge-tts-synthesize-to-file', (event, params: EdgeTtsSynthesizeToFileParams) => {
+    const requestId = params?.requestId
+    if (!requestId) return edgeTtsSynthesizeToFile(params)
+
+    const requestKey = `${event.sender.id}:${requestId}`
+    const controller = new AbortController()
+    activeTtsSynthesisControllers.set(requestKey, controller)
+
+    return edgeTtsSynthesizeToFile({ ...params, abortSignal: controller.signal }).finally(() => {
+      if (activeTtsSynthesisControllers.get(requestKey) === controller) {
+        activeTtsSynthesisControllers.delete(requestKey)
+      }
+    })
+  })
 
   // 渲染视频
   ipcMain.handle('render-video', (_event, params) => {

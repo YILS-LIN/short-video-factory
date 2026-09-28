@@ -1,4 +1,6 @@
-import type { CopywritingConfig, CustomHeader, LlmConfig } from './types'
+import type { CopywritingConfig, CustomHeader, CustomHeaderIssue, LlmConfig } from './types'
+import type { LlmConfigIssue } from './types'
+import { getRequestUrlIssue } from './providers'
 
 export const defaultLlmConfig = (): LlmConfig => ({
   protocol: 'openai-compatible',
@@ -23,6 +25,23 @@ const protocols = new Set<LlmConfig['protocol']>([
   'anthropic-messages',
 ])
 
+export const protectedHeaderNames = new Set([
+  'accept',
+  'anthropic-version',
+  'authorization',
+  'content-length',
+  'content-type',
+  'host',
+  'user-agent',
+  'x-api-key',
+])
+
+const headerNamePattern = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/
+const headerValuePattern = /^[\t\x20-\x7E\x80-\xFF]*$/
+
+export const isValidCustomHeaderName = (name: string) => headerNamePattern.test(name.trim())
+export const isValidCustomHeaderValue = (value: string) => headerValuePattern.test(value)
+
 const isHeader = (value: unknown): value is CustomHeader => {
   if (!value || typeof value !== 'object') return false
   const header = value as CustomHeader
@@ -37,6 +56,20 @@ export function normalizeLlmConfig(value: unknown): LlmConfig {
   const isLegacy = !('protocol' in config)
   const headers = Array.isArray(config.customHeaders) ? config.customHeaders.filter(isHeader) : []
   const usedNames = new Set<string>()
+  const customHeaders = headers.reduce<CustomHeader[]>((result, header) => {
+    const name = header.name.trim()
+    const normalizedName = name.toLowerCase()
+    if (
+      !isValidCustomHeaderName(name) ||
+      !isValidCustomHeaderValue(header.value) ||
+      protectedHeaderNames.has(normalizedName) ||
+      usedNames.has(normalizedName)
+    )
+      return result
+    usedNames.add(normalizedName)
+    result.push({ name, value: header.value })
+    return result
+  }, [])
 
   return {
     ...defaults,
@@ -45,9 +78,9 @@ export function normalizeLlmConfig(value: unknown): LlmConfig {
       : isLegacy
         ? 'openai-chat'
         : defaults.protocol,
-    apiUrl: typeof config.apiUrl === 'string' ? config.apiUrl : '',
+    apiUrl: typeof config.apiUrl === 'string' ? config.apiUrl.trim() : '',
     apiKey: typeof config.apiKey === 'string' ? config.apiKey : '',
-    modelName: typeof config.modelName === 'string' ? config.modelName : '',
+    modelName: typeof config.modelName === 'string' ? config.modelName.trim() : '',
     timeoutSeconds:
       Number.isInteger(config.timeoutSeconds) && (config.timeoutSeconds ?? 0) > 0
         ? config.timeoutSeconds!
@@ -59,13 +92,52 @@ export function normalizeLlmConfig(value: unknown): LlmConfig {
     anthropicAuthMode: config.anthropicAuthMode === 'bearer' ? 'bearer' : 'api-key',
     instructionDelivery:
       config.instructionDelivery === 'user-message' ? 'user-message' : 'standard',
-    customHeaders: headers.filter((header) => {
-      const name = header.name.trim().toLowerCase()
-      if (usedNames.has(name)) return false
-      usedNames.add(name)
-      return !['authorization', 'x-api-key', 'anthropic-version'].includes(name)
-    }),
+    customHeaders,
   }
+}
+
+export function getCustomHeaderIssue(headers: unknown): CustomHeaderIssue | undefined {
+  if (!Array.isArray(headers)) return headers == null ? undefined : 'invalid-name'
+  const usedNames = new Set<string>()
+  for (const value of headers) {
+    if (!isHeader(value)) return 'invalid-name'
+    const header: CustomHeader = value
+    const name = header.name.trim()
+    const normalizedName = name.toLowerCase()
+    if (!isValidCustomHeaderName(name)) return 'invalid-name'
+    if (!isValidCustomHeaderValue(header.value)) return 'invalid-value'
+    if (protectedHeaderNames.has(normalizedName)) return 'protected-name'
+    if (usedNames.has(normalizedName)) return 'duplicate-name'
+    usedNames.add(normalizedName)
+  }
+  return undefined
+}
+
+export function getLlmConfigIssue(value: unknown): LlmConfigIssue | undefined {
+  if (!value || typeof value !== 'object') return 'api-url-required'
+  const config = value as Partial<LlmConfig>
+  if (typeof config.apiUrl !== 'string' || !config.apiUrl.trim()) return 'api-url-required'
+  if (typeof config.modelName !== 'string' || !config.modelName.trim()) return 'model-name-required'
+  if (!protocols.has(config.protocol as LlmConfig['protocol'])) return 'invalid-protocol'
+
+  const normalizedConfig = normalizeLlmConfig(config)
+  const requestUrlIssue = getRequestUrlIssue(normalizedConfig)
+  if (requestUrlIssue === 'invalid') return 'invalid-api-url'
+  if (requestUrlIssue === 'full-endpoint') return 'full-endpoint-api-url'
+
+  if (!Number.isInteger(config.timeoutSeconds) || (config.timeoutSeconds ?? 0) < 1)
+    return 'invalid-timeout'
+
+  const maxOutputTokens = config.maxOutputTokens as unknown
+  if (
+    maxOutputTokens !== undefined &&
+    maxOutputTokens !== null &&
+    maxOutputTokens !== '' &&
+    (!Number.isInteger(maxOutputTokens) || (maxOutputTokens as number) < 1)
+  )
+    return 'invalid-max-output-tokens'
+
+  return getCustomHeaderIssue(config.customHeaders)
 }
 
 export function normalizeCopywritingConfig(value: unknown): CopywritingConfig {

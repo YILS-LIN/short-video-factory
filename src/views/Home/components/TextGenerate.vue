@@ -60,6 +60,15 @@
                         <div v-if="requestUrlHint" class="text-caption text-medium-emphasis mt-1">
                           {{ t('features.llm.config.requestUrl') }}: {{ requestUrlHint }}
                         </div>
+                        <div v-if="requestUrlIssue" class="text-caption text-error mt-1">
+                          {{
+                            t(
+                              requestUrlIssue === 'full-endpoint'
+                                ? 'features.llm.config.fullEndpointApiUrl'
+                                : 'features.llm.config.invalidApiUrl',
+                            )
+                          }}
+                        </div>
                       </div>
                       <v-text-field
                         v-model="config.apiKey"
@@ -183,19 +192,35 @@
                         @click="addHeader"
                         >{{ t('common.buttons.add') }}</v-btn
                       >
+                      <div v-if="customHeaderIssue" class="text-caption text-error">
+                        {{
+                          t(
+                            customHeaderIssue === 'invalid-name'
+                              ? 'features.llm.config.invalidHeaderName'
+                              : customHeaderIssue === 'invalid-value'
+                                ? 'features.llm.config.invalidHeaderValue'
+                                : customHeaderIssue === 'protected-name'
+                                  ? 'features.llm.config.protectedHeaderName'
+                                  : 'features.llm.config.duplicateHeaderName',
+                          )
+                        }}
+                      </div>
                     </div>
                   </v-window-item>
                 </v-window>
               </v-card-text>
               <v-divider />
               <v-card-actions>
-                <v-btn
-                  :text="testAbortController ? t('common.buttons.stop') : t('common.buttons.test')"
-                  variant="tonal"
-                  color="success"
-                  :loading="testLoading"
-                  @click="handleTestConnection"
-                />
+                <v-btn variant="tonal" color="success" @click="handleTestConnection">
+                  <v-progress-circular
+                    v-if="testLoading"
+                    class="mr-2"
+                    indeterminate
+                    size="16"
+                    width="2"
+                  />
+                  {{ testAbortController ? t('common.buttons.stop') : t('common.buttons.test') }}
+                </v-btn>
                 <v-spacer />
                 <v-btn
                   :text="t('common.buttons.close')"
@@ -230,16 +255,22 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, h, nextTick, ref, toRaw, watch } from 'vue'
+import { computed, h, nextTick, onBeforeUnmount, ref, toRaw, watch } from 'vue'
 import { useTranslation } from 'i18next-vue'
 import { useToast } from 'vue-toastification'
 import ActionToastEmbed from '@/components/ActionToastEmbed.vue'
 import { copyErrorToClipboard } from '@/lib/error-copy'
-import { defaultCopywritingConfig, normalizeLlmConfig } from '@/lib/llm/config'
+import {
+  defaultCopywritingConfig,
+  getCustomHeaderIssue,
+  getLlmConfigIssue,
+  normalizeLlmConfig,
+} from '@/lib/llm/config'
 import { generateCopywriting } from '@/lib/llm/generate'
 import { builtinSystemPrompt } from '@/lib/llm/prompts'
-import { getRequestUrlHint } from '@/lib/llm/providers'
-import type { LlmConfig } from '@/lib/llm/types'
+import { getRequestUrlHint, getRequestUrlIssue } from '@/lib/llm/providers'
+import { getErrorDetail } from '@/lib/llm/security'
+import type { LlmConfig, LlmConfigIssue } from '@/lib/llm/types'
 import { useAppStore } from '@/store'
 
 type ConfigTab = 'connection' | 'copywriting' | 'advanced'
@@ -260,6 +291,8 @@ const testLoading = ref(false)
 const testResult = ref<'success' | 'error'>()
 const configTab = ref<ConfigTab>('connection')
 const requestId = ref(0)
+const testRequestId = ref(0)
+let configDialogRevision = 0
 const protocolItems = computed(() => [
   { title: t('features.llm.config.protocolCompatible'), value: 'openai-compatible' },
   { title: t('features.llm.config.protocolChat'), value: 'openai-chat' },
@@ -279,13 +312,32 @@ const promptModeItems = computed(() => [
   { title: t('features.llm.config.custom'), value: 'custom' },
   { title: t('features.llm.config.off'), value: 'off' },
 ])
-const requestUrlHint = computed(() => getRequestUrlHint(normalizeLlmConfig(config.value)))
+const normalizedConfig = computed(() => normalizeLlmConfig(config.value))
+const requestUrlHint = computed(() => getRequestUrlHint(normalizedConfig.value))
+const requestUrlIssue = computed(() =>
+  normalizedConfig.value.apiUrl ? getRequestUrlIssue(normalizedConfig.value) : undefined,
+)
+const customHeaderIssue = computed(() => getCustomHeaderIssue(config.value.customHeaders))
 const statusLabel = computed(() => t(`features.llm.status.${appStore.copywritingStatus}`))
 const systemPromptDescription = computed(() =>
   t(`features.llm.config.${copyConfig.value.systemPromptMode}Description`),
 )
 
-watch(config, () => (testResult.value = undefined), { deep: true })
+const cancelTestConnection = () => {
+  testRequestId.value += 1
+  testAbortController.value?.abort()
+  testAbortController.value = null
+  testLoading.value = false
+}
+
+watch(
+  config,
+  () => {
+    testResult.value = undefined
+    if (testAbortController.value) cancelTestConnection()
+  },
+  { deep: true, flush: 'sync' },
+)
 watch(
   () => copyConfig.value.systemPromptMode,
   (mode, previous) => {
@@ -294,8 +346,8 @@ watch(
   },
 )
 
-const showError = (message: string, error: unknown) => {
-  const detail = String((error as { message?: string })?.message || error)
+const showError = (message: string, error: unknown, llmConfig?: LlmConfig) => {
+  const detail = getErrorDetail(error, llmConfig)
   toast.error({
     component: {
       render: () =>
@@ -321,15 +373,17 @@ const handleGenerate = async (options?: { noToast?: boolean; throwOnError?: bool
   }
   if (appStore.copywritingStatus === 'generating') return ''
   const currentRequestId = ++requestId.value
-  abortController.value = new AbortController()
+  const controller = new AbortController()
+  abortController.value = controller
+  const requestConfig = structuredClone(toRaw(appStore.llmConfig))
   outputText.value = ''
   appStore.updateCopywritingStatus('generating')
   try {
     const result = await generateCopywriting({
-      llmConfig: structuredClone(toRaw(appStore.llmConfig)),
+      llmConfig: requestConfig,
       copywritingConfig: structuredClone(toRaw(appStore.copywritingConfig)),
       prompt: appStore.prompt,
-      abortSignal: abortController.value.signal,
+      abortSignal: controller.signal,
       onTextDelta: (delta) => {
         if (currentRequestId === requestId.value) outputText.value += delta
       },
@@ -339,19 +393,20 @@ const handleGenerate = async (options?: { noToast?: boolean; throwOnError?: bool
     appStore.updateCopywritingStatus(result.status)
     if (result.status !== 'completed') {
       const error = new Error(t(`features.llm.errors.${result.status}`) as string)
-      if (result.status !== 'cancelled' && !options?.noToast) {
-        showError(t('features.llm.errors.generateFailed') as string, error)
-      }
       if (options?.throwOnError) throw error
+      if (result.status !== 'cancelled' && !options?.noToast)
+        showError(t('features.llm.errors.generateFailed') as string, error, requestConfig)
       return ''
     }
     return result.text
   } catch (error) {
-    if (currentRequestId === requestId.value && String(appStore.copywritingStatus) === 'generating')
+    if (currentRequestId !== requestId.value) return ''
+    if (String(appStore.copywritingStatus) === 'generating')
       appStore.updateCopywritingStatus('failed')
+    const sanitizedError = new Error(getErrorDetail(error, requestConfig))
     if (!options?.noToast && appStore.copywritingStatus !== 'cancelled')
-      showError(t('features.llm.errors.generateFailed') as string, error)
-    if (options?.throwOnError) throw error
+      showError(t('features.llm.errors.generateFailed') as string, sanitizedError, requestConfig)
+    if (options?.throwOnError) throw sanitizedError
     return ''
   } finally {
     if (currentRequestId === requestId.value) abortController.value = null
@@ -380,9 +435,56 @@ const resetConfigDialog = () => {
   configTab.value = 'connection'
 }
 const handleCloseDialog = () => {
-  if (testAbortController.value) testAbortController.value.abort()
   configDialogShow.value = false
-  nextTick(resetConfigDialog)
+}
+watch(
+  configDialogShow,
+  (isOpen, wasOpen) => {
+    if (isOpen) {
+      configDialogRevision += 1
+      return
+    }
+    if (!wasOpen) return
+
+    cancelTestConnection()
+    const revision = ++configDialogRevision
+    nextTick(() => {
+      if (!configDialogShow.value && configDialogRevision === revision) resetConfigDialog()
+    })
+  },
+  { flush: 'sync' },
+)
+onBeforeUnmount(() => {
+  requestId.value += 1
+  abortController.value?.abort()
+  cancelTestConnection()
+})
+const validateConfigBeforeRequest = () => {
+  const issue = getLlmConfigIssue(config.value)
+  if (!issue) return true
+
+  const issueKeys: Record<LlmConfigIssue, string> = {
+    'api-url-required': 'apiUrlRequired',
+    'model-name-required': 'modelNameRequired',
+    'invalid-api-url': 'invalidApiUrl',
+    'full-endpoint-api-url': 'fullEndpointApiUrl',
+    'invalid-protocol': 'invalidProtocol',
+    'invalid-timeout': 'invalidTimeoutSeconds',
+    'invalid-max-output-tokens': 'invalidMaxOutputTokens',
+    'invalid-name': 'invalidHeaderName',
+    'invalid-value': 'invalidHeaderValue',
+    'protected-name': 'protectedHeaderName',
+    'duplicate-name': 'duplicateHeaderName',
+  }
+  configTab.value =
+    issue === 'invalid-name' ||
+    issue === 'invalid-value' ||
+    issue === 'protected-name' ||
+    issue === 'duplicate-name'
+      ? 'advanced'
+      : 'connection'
+  toast.warning(t(`features.llm.config.${issueKeys[issue]}`))
+  return false
 }
 const handleSaveConfig = () => {
   if (
@@ -392,6 +494,7 @@ const handleSaveConfig = () => {
     toast.warning(t('features.llm.errors.customPromptRequired'))
     return
   }
+  if (!validateConfigBeforeRequest()) return
   appStore.updateLLMConfig(normalizeLlmConfig(config.value))
   appStore.updateCopywritingConfig(copyConfig.value)
   handleCloseDialog()
@@ -408,31 +511,38 @@ const removeHeader = (index: number) => config.value.customHeaders.splice(index,
 const handleTestConnection = async () => {
   configTab.value = 'connection'
   if (testAbortController.value) {
-    testAbortController.value.abort()
+    cancelTestConnection()
     return
   }
-  testLoading.value = true
   testResult.value = undefined
-  testAbortController.value = new AbortController()
+  if (!validateConfigBeforeRequest()) return
+  const currentTestRequestId = ++testRequestId.value
+  const controller = new AbortController()
+  const requestConfig = structuredClone(toRaw(normalizeLlmConfig(config.value)))
+  testLoading.value = true
+  testAbortController.value = controller
   try {
     const result = await generateCopywriting({
-      llmConfig: structuredClone(toRaw(normalizeLlmConfig(config.value))),
+      llmConfig: requestConfig,
       copywritingConfig: structuredClone(
         toRaw(appStore.copywritingConfig ?? defaultCopywritingConfig()),
       ),
       prompt: '请写一句简短、自然的口播开场白。',
-      abortSignal: testAbortController.value.signal,
+      abortSignal: controller.signal,
     })
+    if (currentTestRequestId !== testRequestId.value || controller.signal.aborted) return
     if (result.status !== 'completed') throw new Error(result.status)
     testResult.value = 'success'
   } catch (error) {
-    if (!testAbortController.value?.signal.aborted) {
+    if (currentTestRequestId === testRequestId.value && !controller.signal.aborted) {
       testResult.value = 'error'
-      showError(t('features.llm.errors.connectionFailed') as string, error)
+      showError(t('features.llm.errors.connectionFailed') as string, error, requestConfig)
     }
   } finally {
-    testLoading.value = false
-    testAbortController.value = null
+    if (currentTestRequestId === testRequestId.value) {
+      testLoading.value = false
+      testAbortController.value = null
+    }
   }
 }
 defineExpose({

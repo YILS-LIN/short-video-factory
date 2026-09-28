@@ -60,6 +60,9 @@ export async function executeEffectExportTask(params: {
 }): Promise<SubtitleRendererManifest> {
   const { renderWindow, context, onProgress, abortSignal } = params
   const { task } = context
+  if (abortSignal?.aborted) {
+    throw new EffectRendererCancelledError()
+  }
 
   return new Promise((resolve, reject) => {
     let done = false
