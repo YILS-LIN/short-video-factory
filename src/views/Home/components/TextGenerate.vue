@@ -134,6 +134,44 @@
                           counter
                         />
                       </template>
+                      <v-divider />
+                      <v-switch
+                        v-model="copyConfig.diversityEnabled"
+                        color="primary"
+                        hide-details
+                        :label="t('features.llm.config.diversityEnabled')"
+                      />
+                      <div class="text-caption text-medium-emphasis">
+                        {{ t('features.llm.config.diversityDescription') }}
+                      </div>
+                      <template v-if="copyConfig.diversityEnabled">
+                        <v-switch
+                          v-model="copyConfig.rewriteOnSimilarity"
+                          color="primary"
+                          hide-details
+                          :label="t('features.llm.config.rewriteOnSimilarity')"
+                        />
+                        <div class="text-caption text-medium-emphasis">
+                          {{ t('features.llm.config.rewriteDescription') }}
+                        </div>
+                        <div class="flex items-center justify-between">
+                          <span class="text-caption text-medium-emphasis">
+                            {{
+                              t('features.llm.config.historyCount', {
+                                count: historyTaskCount,
+                              })
+                            }}
+                          </span>
+                          <v-btn
+                            size="small"
+                            variant="text"
+                            :disabled="historyTaskCount === 0"
+                            @click="handleClearHistory"
+                          >
+                            {{ t('features.llm.config.clearHistory') }}
+                          </v-btn>
+                        </div>
+                      </template>
                     </div>
                   </v-window-item>
                   <v-window-item value="advanced" class="px-1 py-1">
@@ -160,6 +198,42 @@
                           hide-details
                           :label="t('features.llm.config.maxOutputTokens')"
                         />
+                      </div>
+                      <div class="text-subtitle-2">
+                        {{ t('features.llm.config.sampling') }}
+                      </div>
+                      <div class="grid grid-cols-2 gap-3">
+                        <v-text-field
+                          v-model.number="config.temperature"
+                          type="number"
+                          min="0"
+                          max="2"
+                          step="0.1"
+                          clearable
+                          hide-details
+                          :label="t('features.llm.config.temperature')"
+                        />
+                        <v-text-field
+                          v-model.number="config.topP"
+                          type="number"
+                          min="0"
+                          max="1"
+                          step="0.05"
+                          clearable
+                          hide-details
+                          :label="t('features.llm.config.topP')"
+                        />
+                      </div>
+                      <div class="text-caption text-medium-emphasis">
+                        {{ t('features.llm.config.samplingDescription') }}
+                      </div>
+                      <v-alert type="info" density="compact" variant="tonal">
+                        {{ t('features.llm.config.samplingCompatibilityUnknown') }}
+                      </v-alert>
+                      <div class="flex justify-end">
+                        <v-btn size="small" variant="text" @click="resetSamplingSettings">
+                          {{ t('features.llm.config.restoreSamplingDefaults') }}
+                        </v-btn>
                       </div>
                       <div class="text-subtitle-2 mb-2">
                         {{ t('features.llm.config.customHeaders') }}
@@ -249,6 +323,24 @@
           no-resize
           @update:model-value="handleOutputEdited"
         />
+        <v-alert
+          v-if="generationPhase === 'rewriting'"
+          class="mt-2"
+          type="info"
+          density="compact"
+          variant="tonal"
+        >
+          {{ t('features.llm.info.rewritingSimilarCopy') }}
+        </v-alert>
+        <v-alert
+          v-else-if="generationPhase === 'checking'"
+          class="mt-2"
+          type="info"
+          density="compact"
+          variant="tonal"
+        >
+          {{ t('features.llm.info.checkingSimilarity') }}
+        </v-alert>
       </v-sheet>
     </v-form>
   </div>
@@ -267,10 +359,15 @@ import {
   normalizeLlmConfig,
 } from '@/lib/llm/config'
 import { generateCopywriting } from '@/lib/llm/generate'
+import { generateDiverseCopywriting, type GenerationPhase } from '@/lib/llm/generate-diverse'
 import { builtinSystemPrompt } from '@/lib/llm/prompts'
 import { getRequestUrlHint, getRequestUrlIssue } from '@/lib/llm/providers'
 import { getErrorDetail } from '@/lib/llm/security'
 import type { LlmConfig, LlmConfigIssue } from '@/lib/llm/types'
+import {
+  clearCopywritingHistory,
+  getCopywritingHistoryTaskCount,
+} from '@/store/copywriting-history'
 import { useAppStore } from '@/store'
 
 type ConfigTab = 'connection' | 'copywriting' | 'advanced'
@@ -292,6 +389,8 @@ const testResult = ref<'success' | 'error'>()
 const configTab = ref<ConfigTab>('connection')
 const requestId = ref(0)
 const testRequestId = ref(0)
+const generationPhase = ref<GenerationPhase | null>(null)
+const historyRevision = ref(0)
 let configDialogRevision = 0
 const protocolItems = computed(() => [
   { title: t('features.llm.config.protocolCompatible'), value: 'openai-compatible' },
@@ -319,6 +418,10 @@ const requestUrlIssue = computed(() =>
 )
 const customHeaderIssue = computed(() => getCustomHeaderIssue(config.value.customHeaders))
 const statusLabel = computed(() => t(`features.llm.status.${appStore.copywritingStatus}`))
+const historyTaskCount = computed(() => {
+  historyRevision.value
+  return getCopywritingHistoryTaskCount()
+})
 const systemPromptDescription = computed(() =>
   t(`features.llm.config.${copyConfig.value.systemPromptMode}Description`),
 )
@@ -364,6 +467,21 @@ const showError = (message: string, error: unknown, llmConfig?: LlmConfig) => {
   })
 }
 
+const handleClearHistory = () => {
+  if (!window.confirm(t('features.llm.config.clearHistoryConfirm') as string)) return
+  if (clearCopywritingHistory()) {
+    historyRevision.value += 1
+    toast.success(t('features.llm.success.historyCleared'))
+  } else {
+    toast.warning(t('features.llm.errors.historyClearFailed'))
+  }
+}
+
+const resetSamplingSettings = () => {
+  config.value.temperature = undefined
+  config.value.topP = undefined
+}
+
 const handleGenerate = async (options?: { noToast?: boolean; throwOnError?: boolean }) => {
   if (!appStore.prompt.trim()) {
     const error = new Error(t('features.llm.errors.promptRequired') as string)
@@ -379,11 +497,14 @@ const handleGenerate = async (options?: { noToast?: boolean; throwOnError?: bool
   outputText.value = ''
   appStore.updateCopywritingStatus('generating')
   try {
-    const result = await generateCopywriting({
+    const result = await generateDiverseCopywriting({
       llmConfig: requestConfig,
       copywritingConfig: structuredClone(toRaw(appStore.copywritingConfig)),
       prompt: appStore.prompt,
       abortSignal: controller.signal,
+      onPhase: (phase) => {
+        if (currentRequestId === requestId.value) generationPhase.value = phase
+      },
       onTextDelta: (delta) => {
         if (currentRequestId === requestId.value) outputText.value += delta
       },
@@ -391,6 +512,15 @@ const handleGenerate = async (options?: { noToast?: boolean; throwOnError?: bool
     if (currentRequestId !== requestId.value) return ''
     outputText.value = result.text
     appStore.updateCopywritingStatus(result.status)
+    historyRevision.value += 1
+    if (result.similarityWarning && !options?.noToast)
+      toast.warning(
+        t(
+          result.rewriteFailed
+            ? 'features.llm.info.similarityRewriteFailed'
+            : 'features.llm.info.similarityRemains',
+        ),
+      )
     if (result.status !== 'completed') {
       const error = new Error(t(`features.llm.errors.${result.status}`) as string)
       if (options?.throwOnError) throw error
@@ -409,7 +539,10 @@ const handleGenerate = async (options?: { noToast?: boolean; throwOnError?: bool
     if (options?.throwOnError) throw sanitizedError
     return ''
   } finally {
-    if (currentRequestId === requestId.value) abortController.value = null
+    if (currentRequestId === requestId.value) {
+      abortController.value = null
+      generationPhase.value = null
+    }
   }
 }
 const handleStopGenerate = () => abortController.value?.abort()
@@ -471,6 +604,8 @@ const validateConfigBeforeRequest = () => {
     'invalid-protocol': 'invalidProtocol',
     'invalid-timeout': 'invalidTimeoutSeconds',
     'invalid-max-output-tokens': 'invalidMaxOutputTokens',
+    'invalid-temperature': 'invalidTemperature',
+    'invalid-top-p': 'invalidTopP',
     'invalid-name': 'invalidHeaderName',
     'invalid-value': 'invalidHeaderValue',
     'protected-name': 'protectedHeaderName',

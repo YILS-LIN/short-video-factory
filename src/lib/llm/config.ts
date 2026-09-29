@@ -16,6 +16,8 @@ export const defaultLlmConfig = (): LlmConfig => ({
 export const defaultCopywritingConfig = (): CopywritingConfig => ({
   systemPromptMode: 'builtin',
   customSystemPrompt: '',
+  diversityEnabled: false,
+  rewriteOnSimilarity: true,
 })
 
 const protocols = new Set<LlmConfig['protocol']>([
@@ -89,6 +91,11 @@ export function normalizeLlmConfig(value: unknown): LlmConfig {
       Number.isInteger(config.maxOutputTokens) && (config.maxOutputTokens ?? 0) > 0
         ? config.maxOutputTokens
         : undefined,
+    temperature:
+      typeof config.temperature === 'number' && Number.isFinite(config.temperature)
+        ? config.temperature
+        : undefined,
+    topP: typeof config.topP === 'number' && Number.isFinite(config.topP) ? config.topP : undefined,
     anthropicAuthMode: config.anthropicAuthMode === 'bearer' ? 'bearer' : 'api-key',
     instructionDelivery:
       config.instructionDelivery === 'user-message' ? 'user-message' : 'standard',
@@ -137,6 +144,27 @@ export function getLlmConfigIssue(value: unknown): LlmConfigIssue | undefined {
   )
     return 'invalid-max-output-tokens'
 
+  const temperature = config.temperature as unknown
+  if (
+    temperature !== undefined &&
+    temperature !== null &&
+    temperature !== '' &&
+    (typeof temperature !== 'number' ||
+      !Number.isFinite(temperature) ||
+      temperature < 0 ||
+      temperature > 2)
+  )
+    return 'invalid-temperature'
+
+  const topP = config.topP as unknown
+  if (
+    topP !== undefined &&
+    topP !== null &&
+    topP !== '' &&
+    (typeof topP !== 'number' || !Number.isFinite(topP) || topP < 0 || topP > 1)
+  )
+    return 'invalid-top-p'
+
   return getCustomHeaderIssue(config.customHeaders)
 }
 
@@ -148,5 +176,7 @@ export function normalizeCopywritingConfig(value: unknown): CopywritingConfig {
       : 'builtin',
     customSystemPrompt:
       typeof config.customSystemPrompt === 'string' ? config.customSystemPrompt : '',
+    diversityEnabled: config.diversityEnabled === true,
+    rewriteOnSimilarity: config.rewriteOnSimilarity !== false,
   }
 }

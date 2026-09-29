@@ -149,12 +149,27 @@
         "customPrompt": "自定义提示词",
         "customPromptHint": "自定义内容将完整替换内置提示词。",
         "fillBuiltin": "填入内置内容",
+        "diversityEnabled": "增强文案多样性",
+        "diversityDescription": "轮换创作角度，并参考近期文案，尽量避免相同开头和结构；不改变用户明确要求。有限历史仅保存在本机，生成时会将少量文案片段发送给当前服务商。",
+        "rewriteOnSimilarity": "检测到高度相似时自动重写一次",
+        "rewriteDescription": "通常最多增加一次模型生成调用；网络重试可能让实际请求次数更多，并增加费用和等待时间。",
+        "historyCount": "近期创作任务记录：{{count}}",
+        "clearHistory": "清除近期记录",
+        "clearHistoryConfirm": "确定清除本机保存的近期文案及策略轮换记录吗？",
         "advanced": "高级连接设置",
         "instructionDelivery": "系统指令发送方式",
         "standardDelivery": "标准方式（推荐）",
         "userMessageDelivery": "合并到用户消息",
         "timeoutSeconds": "请求超时（秒）",
         "maxOutputTokens": "最大输出 Token",
+        "sampling": "采样参数（可选）",
+        "temperature": "Temperature（0–2）",
+        "topP": "Top P（0–1）",
+        "samplingDescription": "留空时使用模型默认值。通常只调整 Temperature 或 Top P 其中一项；不同模型支持范围可能不同。",
+        "samplingCompatibilityUnknown": "兼容性无法仅由接口类型判断，请确认具体服务商和模型文档；不支持的参数可能导致请求失败。",
+        "restoreSamplingDefaults": "恢复模型默认采样参数",
+        "invalidTemperature": "Temperature 必须是 0 到 2 之间的有限数值，或留空。具体模型可能支持更窄范围。",
+        "invalidTopP": "Top P 必须是 0 到 1 之间的有限数值，或留空。",
         "replacePromptConfirm": "这会覆盖当前自定义提示词，是否继续？",
         "customHeaders": "自定义请求头",
         "headerName": "名称",
@@ -172,10 +187,18 @@
         "cancelled": "文案生成已取消",
         "failed": "未收到有效文案",
         "truncated": "文案生成不完整",
-        "textNotReady": "当前文案未完成，无法用于语音合成"
+        "textNotReady": "当前文案未完成，无法用于语音合成",
+        "historyClearFailed": "清除近期记录失败，请检查本地存储是否可用"
       },
       "success": {
-        "connectionSucceeded": "大模型连接成功"
+        "connectionSucceeded": "大模型连接成功",
+        "historyCleared": "近期创作记录已清除"
+      },
+      "info": {
+        "checkingSimilarity": "正在检查文案与近期创作的相似度…",
+        "rewritingSimilarCopy": "文案与近期创作较相似，正在尝试不同角度重写…",
+        "similarityRemains": "文案仍与近期创作较相似，可调整提示词或手动修改。",
+        "similarityRewriteFailed": "差异化重写未能完成，已保留首稿。"
       },
       "status": {
         "idle": "待生成",

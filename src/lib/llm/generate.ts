@@ -9,6 +9,7 @@ export interface GenerateCopywritingOptions {
   copywritingConfig: CopywritingConfig
   prompt: string
   abortSignal: AbortSignal
+  preparedInput?: { prompt: string; instructions?: string }
   onTextDelta?: (text: string) => void
 }
 
@@ -42,7 +43,8 @@ export async function generateCopywriting(
   const configIssue = getLlmConfigIssue(llmConfig)
   if (configIssue) throw new Error(`Invalid model configuration: ${configIssue}`)
   const instructions = getSystemPrompt(copywritingConfig)
-  const input = buildPrompt(prompt, instructions, llmConfig.instructionDelivery)
+  const input =
+    options.preparedInput ?? buildPrompt(prompt, instructions, llmConfig.instructionDelivery)
   const model = createLanguageModel(llmConfig)
   const maxOutputTokens =
     llmConfig.maxOutputTokens ?? (llmConfig.protocol === 'anthropic-messages' ? 4096 : undefined)
@@ -78,6 +80,8 @@ export async function generateCopywriting(
       maxRetries: 2,
       onError: () => undefined,
       ...(maxOutputTokens ? { maxOutputTokens } : {}),
+      ...(llmConfig.temperature !== undefined ? { temperature: llmConfig.temperature } : {}),
+      ...(llmConfig.topP !== undefined ? { topP: llmConfig.topP } : {}),
     })
     for await (const part of result.stream) {
       if (part.type === 'text-delta') {

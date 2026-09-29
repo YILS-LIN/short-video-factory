@@ -24,6 +24,9 @@ vi.mock('@/store', () => ({ useAppStore: () => mocks.appStore }))
 vi.mock('@/lib/llm/generate', () => ({
   generateCopywriting: (...args: unknown[]) => mocks.generateCopywriting(...args),
 }))
+vi.mock('@/lib/llm/generate-diverse', () => ({
+  generateDiverseCopywriting: (...args: unknown[]) => mocks.generateCopywriting(...args),
+}))
 vi.mock('i18next-vue', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }))
@@ -219,6 +222,34 @@ describe('TextGenerate configuration and request lifecycle', () => {
         .findAllComponents({ name: 'VTextField' })
         .find((field) => String(field.props('label')).includes('features.llm.config.modelName'))
       expect(reopenedModelField?.props('modelValue')).toBe('saved-model')
+    } finally {
+      wrapper.unmount()
+      document.body.innerHTML = ''
+    }
+  })
+
+  it('provides optional sampling controls and restores model defaults', async () => {
+    const { wrapper, storeState, findDialogButton } = createHost()
+    try {
+      findDialogButton('common.buttons.config')!.click()
+      await flushPromises()
+      findDialogButton('features.llm.config.advancedTab')!.click()
+      await flushPromises()
+
+      const temperatureField = wrapper
+        .findAllComponents({ name: 'VTextField' })
+        .find((field) => String(field.props('label')).includes('features.llm.config.temperature'))
+      expect(temperatureField?.props('modelValue')).toBeUndefined()
+      await temperatureField!.setValue('0.7')
+      expect(temperatureField!.props('modelValue')).toBe(0.7)
+
+      findDialogButton('features.llm.config.restoreSamplingDefaults')!.click()
+      await flushPromises()
+      expect(temperatureField!.props('modelValue')).toBeUndefined()
+
+      findDialogButton('common.buttons.save')!.click()
+      expect(storeState.llmConfig.temperature).toBeUndefined()
+      expect(storeState.llmConfig.topP).toBeUndefined()
     } finally {
       wrapper.unmount()
       document.body.innerHTML = ''

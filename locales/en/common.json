@@ -149,12 +149,27 @@
         "customPrompt": "Custom prompt",
         "customPromptHint": "The custom content completely replaces the built-in prompt.",
         "fillBuiltin": "Use built-in content",
+        "diversityEnabled": "Enhance copy diversity",
+        "diversityDescription": "Rotate creative angles and refer to recent scripts to vary openings and structure. Explicit user requirements remain authoritative. Limited history stays on this device; a few text excerpts are sent to the selected provider during generation.",
+        "rewriteOnSimilarity": "Rewrite once when highly similar copy is detected",
+        "rewriteDescription": "A rewrite usually adds one generation call; network retries may make the actual request count higher, increasing cost and latency.",
+        "historyCount": "Recent task records: {{count}}",
+        "clearHistory": "Clear recent records",
+        "clearHistoryConfirm": "Clear locally stored recent scripts and strategy rotation history?",
         "advanced": "Advanced connection settings",
         "instructionDelivery": "Instruction delivery",
         "standardDelivery": "Standard (recommended)",
         "userMessageDelivery": "Merge into user message",
         "timeoutSeconds": "Request timeout (seconds)",
         "maxOutputTokens": "Maximum output tokens",
+        "sampling": "Sampling parameters (optional)",
+        "temperature": "Temperature (0–2)",
+        "topP": "Top P (0–1)",
+        "samplingDescription": "Leave empty to use model defaults. Usually adjust either Temperature or Top P, not both. Supported ranges vary by model.",
+        "samplingCompatibilityUnknown": "Compatibility cannot be inferred from protocol alone. Check the provider and model documentation; unsupported parameters may cause request failures.",
+        "restoreSamplingDefaults": "Restore model sampling defaults",
+        "invalidTemperature": "Temperature must be a finite number from 0 to 2, or empty. A specific model may support a narrower range.",
+        "invalidTopP": "Top P must be a finite number from 0 to 1, or empty.",
         "replacePromptConfirm": "This will replace the current custom prompt. Continue?",
         "customHeaders": "Custom headers",
         "headerName": "Name",
@@ -172,10 +187,18 @@
         "cancelled": "Generation was cancelled",
         "failed": "No valid text was received",
         "truncated": "Generation is incomplete",
-        "textNotReady": "The current script is not ready for speech synthesis"
+        "textNotReady": "The current script is not ready for speech synthesis",
+        "historyClearFailed": "Could not clear recent records. Check local storage availability."
       },
       "success": {
-        "connectionSucceeded": "LLM connected successfully"
+        "connectionSucceeded": "LLM connected successfully",
+        "historyCleared": "Recent copy history cleared"
+      },
+      "info": {
+        "checkingSimilarity": "Checking similarity with recent copy…",
+        "rewritingSimilarCopy": "This script is similar to recent copy. Trying a different angle…",
+        "similarityRemains": "The script is still similar to recent copy. Consider changing the prompt or editing it.",
+        "similarityRewriteFailed": "The diversity rewrite did not finish; the first draft was kept."
       },
       "status": {
         "idle": "Ready",

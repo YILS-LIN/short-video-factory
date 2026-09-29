@@ -54,7 +54,7 @@ describe('SDK provider requests', () => {
       const server = await startSseServer((_request, response) => writeSse(response, events))
       try {
         const result = await generateCopywriting({
-          llmConfig: createConfig(server.baseUrl, { protocol }),
+          llmConfig: createConfig(server.baseUrl, { protocol, temperature: 0.4, topP: 0.8 }),
           copywritingConfig: { systemPromptMode: 'custom', customSystemPrompt: '只写口播正文' },
           prompt: '写一句欢迎语',
           abortSignal: new AbortController().signal,
@@ -69,6 +69,8 @@ describe('SDK provider requests', () => {
         expect(request.headers['x-trace']).toBe('trace-123')
         expect(body.model).toBe('test-model')
         expect(body.stream).toBe(true)
+        expect(body.temperature).toBe(0.4)
+        expect(body.top_p).toBe(0.8)
 
         if (protocol === 'openai-compatible' || protocol === 'openai-chat') {
           const messages = body.messages as Array<{ role: string; content: string }>

@@ -21,6 +21,8 @@ export type LlmConfigIssue =
   | 'invalid-protocol'
   | 'invalid-timeout'
   | 'invalid-max-output-tokens'
+  | 'invalid-temperature'
+  | 'invalid-top-p'
   | CustomHeaderIssue
 
 export type CopywritingStatus =
@@ -44,6 +46,8 @@ export interface LlmConfig {
   modelName: string
   timeoutSeconds: number
   maxOutputTokens?: number
+  temperature?: number
+  topP?: number
   anthropicAuthMode: AnthropicAuthMode
   instructionDelivery: InstructionDelivery
   customHeaders: CustomHeader[]
@@ -52,10 +56,14 @@ export interface LlmConfig {
 export interface CopywritingConfig {
   systemPromptMode: SystemPromptMode
   customSystemPrompt: string
+  diversityEnabled?: boolean
+  rewriteOnSimilarity?: boolean
 }
 
 export interface GenerationResult {
   text: string
   status: Extract<CopywritingStatus, 'completed' | 'cancelled' | 'failed' | 'truncated'>
   finishReason?: string
+  similarityWarning?: boolean
+  rewriteFailed?: boolean
 }

@@ -117,10 +117,32 @@ describe('LLM configuration', () => {
     expect(getLlmConfigIssue(config)).toBeUndefined()
   })
 
+  it('keeps optional sampling settings empty by default and validates their ranges', () => {
+    expect(defaultLlmConfig().temperature).toBeUndefined()
+    expect(defaultLlmConfig().topP).toBeUndefined()
+    expect(getLlmConfigIssue(createConfig('https://example.com/v1', { temperature: 0 }))).toBe(
+      undefined,
+    )
+    expect(getLlmConfigIssue(createConfig('https://example.com/v1', { topP: 1 }))).toBeUndefined()
+    expect(getLlmConfigIssue(createConfig('https://example.com/v1', { temperature: 2.1 }))).toBe(
+      'invalid-temperature',
+    )
+    expect(getLlmConfigIssue(createConfig('https://example.com/v1', { topP: 0 }))).toBeUndefined()
+    expect(getLlmConfigIssue(createConfig('https://example.com/v1', { topP: 1.1 }))).toBe(
+      'invalid-top-p',
+    )
+    expect(normalizeLlmConfig({ ...defaultLlmConfig(), temperature: 0, topP: 0.8 })).toMatchObject({
+      temperature: 0,
+      topP: 0.8,
+    })
+  })
+
   it('normalizes prompt modes and keeps standard and merged delivery semantics', () => {
     expect(normalizeCopywritingConfig({ systemPromptMode: 'invalid' })).toEqual({
       systemPromptMode: 'builtin',
       customSystemPrompt: '',
+      diversityEnabled: false,
+      rewriteOnSimilarity: true,
     })
     expect(getSystemPrompt({ systemPromptMode: 'off', customSystemPrompt: '' })).toBeUndefined()
     expect(getSystemPrompt({ systemPromptMode: 'custom', customSystemPrompt: '  rules  ' })).toBe(

@@ -55,6 +55,8 @@ describe('app store persisted state', () => {
       expect(store.copywritingConfig).toEqual({
         systemPromptMode: 'builtin',
         customSystemPrompt: '',
+        diversityEnabled: false,
+        rewriteOnSimilarity: true,
       })
       expect(store.renderConfig).toMatchObject({
         outputPath: 'C:/render output',

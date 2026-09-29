@@ -39,6 +39,32 @@ describe('copywriting stream lifecycle', () => {
     }
   })
 
+  it('omits sampling parameters by default and forwards explicitly configured values', async () => {
+    const server = await startSseServer((_request, response) =>
+      writeSse(response, createOpenAiEvents()),
+    )
+    try {
+      await generateCopywriting({
+        llmConfig: createConfig(server.baseUrl),
+        copywritingConfig: { systemPromptMode: 'off', customSystemPrompt: '' },
+        prompt: '写一句欢迎语',
+        abortSignal: new AbortController().signal,
+      })
+      expect(server.requests[0].body).not.toHaveProperty('temperature')
+      expect(server.requests[0].body).not.toHaveProperty('top_p')
+
+      await generateCopywriting({
+        llmConfig: createConfig(server.baseUrl, { temperature: 0, topP: 0.8 }),
+        copywritingConfig: { systemPromptMode: 'off', customSystemPrompt: '' },
+        prompt: '写一句欢迎语',
+        abortSignal: new AbortController().signal,
+      })
+      expect(server.requests[1].body).toMatchObject({ temperature: 0, top_p: 0.8 })
+    } finally {
+      await server.close()
+    }
+  })
+
   it('keeps text but marks length-limited and unknown finish reasons as truncated', async () => {
     for (const finishReason of ['length', 'future_reason']) {
       const server = await startSseServer((_request, response) =>
