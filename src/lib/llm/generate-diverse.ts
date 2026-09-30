@@ -50,7 +50,15 @@ export async function generateDiverseCopywriting(
 ): Promise<GenerationResult> {
   const { llmConfig, copywritingConfig, prompt, abortSignal, onTextDelta, onPhase } = options
   if (!copywritingConfig.diversityEnabled)
-    return generateCopywriting({ llmConfig, copywritingConfig, prompt, abortSignal, onTextDelta })
+    return generateCopywriting({
+      llmConfig,
+      copywritingConfig,
+      prompt,
+      abortSignal,
+      onTextDelta,
+      onRequestStart: options.onRequestStart,
+      onUsage: options.onUsage,
+    })
   if (abortSignal.aborted) return { text: '', status: 'cancelled' }
 
   const baseInstructions = getSystemPrompt(copywritingConfig)
@@ -81,6 +89,8 @@ export async function generateDiverseCopywriting(
       preparedInput: firstRequest.input,
       abortSignal: firstController.signal,
       onTextDelta,
+      onRequestStart: options.onRequestStart,
+      onUsage: options.onUsage,
     })
 
     if (first.status !== 'completed') {
@@ -114,6 +124,8 @@ export async function generateDiverseCopywriting(
             prompt: rewriteRequest.input.prompt,
             preparedInput: rewriteRequest.input,
             abortSignal: firstController.signal,
+            onRequestStart: options.onRequestStart,
+            onUsage: options.onUsage,
           })
           if (abortSignal.aborted || firstController.signal.aborted) {
             if (timedOut) {

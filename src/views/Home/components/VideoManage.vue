@@ -68,6 +68,7 @@ import VideoAutoPreview from '@/components/VideoAutoPreview.vue'
 import ActionToastEmbed from '@/components/ActionToastEmbed.vue'
 import random from 'random'
 import { formatErrorForCopy } from '@/lib/error-copy'
+import { trackAnalytics } from '@/lib/analytics'
 
 const toast = useToast()
 const appStore = useAppStore()
@@ -86,7 +87,7 @@ const handleSelectFolder = async () => {
   console.log('用户选择分镜素材文件夹，绝对路径：', folderPath)
   if (folderPath) {
     appStore.videoAssetsFolder = folderPath
-    refreshAssets()
+    refreshAssets(true)
   }
 }
 
@@ -94,7 +95,15 @@ const handleSelectFolder = async () => {
 const videoAssets = ref<ListFilesFromFolderRecord[]>([])
 const videoDurationCache = ref(new Map<string, number>())
 const refreshAssetsLoading = ref(false)
-const refreshAssets = async () => {
+const getAssetCountBucket = (count: number) => {
+  if (count === 0) return '0'
+  if (count === 1) return '1'
+  if (count <= 5) return '2–5'
+  if (count <= 20) return '6–20'
+  return '21+'
+}
+
+const refreshAssets = async (trackSelection = false) => {
   if (!appStore.videoAssetsFolder) {
     return
   }
@@ -104,6 +113,13 @@ const refreshAssets = async () => {
       folderPath: appStore.videoAssetsFolder,
     })
     const mp4Assets = assets.filter((asset) => asset.name.toLowerCase().endsWith('.mp4'))
+    if (trackSelection) {
+      trackAnalytics('media_import_finished', {
+        outcome: 'success',
+        media_type: 'video',
+        count_bucket: getAssetCountBucket(mp4Assets.length),
+      })
+    }
     console.info('素材库刷新完成', { assetCount: assets.length, mp4Count: mp4Assets.length })
     videoDurationCache.value.clear()
     if (!mp4Assets.length) {
@@ -119,6 +135,9 @@ const refreshAssets = async () => {
     videoAssets.value = mp4Assets
     toast.success(t('features.assets.success.loadSucceeded'))
   } catch (error: any) {
+    if (trackSelection) {
+      trackAnalytics('media_import_finished', { outcome: 'failed', media_type: 'video' })
+    }
     console.dir(error)
     const errorMessage = error?.error?.message || error?.message || error
     toast.error({

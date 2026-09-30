@@ -6,12 +6,8 @@ import {
   DeleteParams,
   BulkInsertOrUpdateParams,
 } from './sqlite/types'
-import {
-  ListFilesFromFolderParams,
-  OpenExternalParams,
-  SelectFolderParams,
-  StatEventParams,
-} from './types'
+import { ListFilesFromFolderParams, OpenExternalParams, SelectFolderParams } from './types'
+import type { AnalyticsContextParams, AnalyticsTrackParams } from './analytics-types'
 import { EdgeTtsSynthesizeCommonParams, EdgeTtsSynthesizeToFileParams } from './tts/types'
 import { RenderVideoParams } from './ffmpeg/types'
 import type { AppLogLevel } from './logger'
@@ -66,7 +62,11 @@ contextBridge.exposeInMainWorld('electron', {
   edgeTtsSynthesizeToFile: (params: EdgeTtsSynthesizeToFileParams) =>
     ipcRenderer.invoke('edge-tts-synthesize-to-file', params),
   renderVideo: (params: RenderVideoParams) => ipcRenderer.invoke('render-video', params),
-  statTrack: (params: StatEventParams) => ipcRenderer.invoke('stat-track', params),
+  analyticsTrack: (params: AnalyticsTrackParams) => ipcRenderer.invoke('analytics-track', params),
+  analyticsSetContext: (params: AnalyticsContextParams) =>
+    ipcRenderer.invoke('analytics-set-context', params),
+  analyticsMarkActive: (durationMs: number) =>
+    ipcRenderer.invoke('analytics-mark-active', durationMs),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   exportDiagnostics: () => ipcRenderer.invoke('export-diagnostics'),
   log: (level: AppLogLevel, ...args: unknown[]) => ipcRenderer.send('app-log', { level, args }),

@@ -11,6 +11,8 @@ export interface GenerateCopywritingOptions {
   abortSignal: AbortSignal
   preparedInput?: { prompt: string; instructions?: string }
   onTextDelta?: (text: string) => void
+  onRequestStart?: () => void
+  onUsage?: (usage: { inputTokens?: number; outputTokens?: number }) => void
 }
 
 const isAbortError = (error: unknown) => (error as { name?: string })?.name === 'AbortError'
@@ -73,6 +75,7 @@ export async function generateCopywriting(
   let rawFinishReason: string | undefined
 
   try {
+    options.onRequestStart?.()
     const result = streamText({
       model,
       ...input,
@@ -101,6 +104,15 @@ export async function generateCopywriting(
         finishReason = part.finishReason
         rawFinishReason = part.rawFinishReason
       }
+    }
+    try {
+      const usage = await result.usage
+      options.onUsage?.({
+        ...(usage.inputTokens !== undefined ? { inputTokens: usage.inputTokens } : {}),
+        ...(usage.outputTokens !== undefined ? { outputTokens: usage.outputTokens } : {}),
+      })
+    } catch {
+      // Usage is optional telemetry; a provider's usage parsing must not affect generation.
     }
     if (terminationReason === 'timeout')
       throw new Error(`Request timed out after ${llmConfig.timeoutSeconds} seconds`)

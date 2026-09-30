@@ -99,6 +99,7 @@ import { useToast } from 'vue-toastification'
 import ActionToastEmbed from '@/components/ActionToastEmbed.vue'
 import UpdateDialog from '@/components/UpdateDialog.vue'
 import { copyErrorToClipboard } from '@/lib/error-copy'
+import { trackAnalytics } from '@/lib/analytics'
 import type { UpdateInfo } from '~/electron/updater'
 
 const version = __APP_VERSION__
@@ -147,15 +148,28 @@ const showUpdateError = (detail: string) => {
 }
 
 const handleCheckUpdate = async () => {
+  const startedAt = performance.now()
   toast.info(t('update.checking'))
   try {
     const result = await window.electron.checkForUpdates()
+    trackAnalytics('update_check_finished', {
+      outcome: result.status === 'error' ? 'failed' : 'success',
+      has_update: result.status === 'available',
+      trigger: 'manual',
+      duration_ms: Math.max(0, Math.floor(performance.now() - startedAt)),
+    })
     if (result.status === 'up-to-date') {
       toast.success(t('update.upToDate'))
     } else if (result.status === 'error') {
       showUpdateError(result.message)
     }
   } catch (error) {
+    trackAnalytics('update_check_finished', {
+      outcome: 'failed',
+      has_update: false,
+      trigger: 'manual',
+      duration_ms: Math.max(0, Math.floor(performance.now() - startedAt)),
+    })
     const reason = error instanceof Error ? error.message : String(error)
     console.error('Failed to check for updates:', error)
     showUpdateError(reason)

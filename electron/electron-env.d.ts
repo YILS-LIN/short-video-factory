@@ -58,7 +58,11 @@ interface Window {
     renderVideo: (
       params: import('./ffmpeg/types').RenderVideoParams,
     ) => Promise<import('./ffmpeg/types').ExecuteFFmpegResult>
-    statTrack: (params: import('./types').StatEventParams) => Promise<void>
+    analyticsTrack: (params: import('./analytics-types').AnalyticsTrackParams) => Promise<void>
+    analyticsSetContext: (
+      params: import('./analytics-types').AnalyticsContextParams,
+    ) => Promise<void>
+    analyticsMarkActive: (durationMs: number) => Promise<void>
     checkForUpdates: () => Promise<import('./updater').UpdateCheckResult>
     exportDiagnostics: () => Promise<string | null>
     log: (level: import('./logger').AppLogLevel, ...args: unknown[]) => void
@@ -70,4 +74,12 @@ interface Window {
     delete: (param: import('./sqlite/types').DeleteParams) => Promise<void>
     bulkInsertOrUpdate: (param: import('./sqlite/types').BulkInsertOrUpdateParams) => Promise<void>
   }
+}
+
+declare const __APP_ANALYTICS_BUILD_INFO__: {
+  productName: string
+  appId: string
+  packageName: string
+  buildId: string
+  distributionChannel: string
 }

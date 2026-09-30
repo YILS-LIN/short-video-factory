@@ -63,6 +63,7 @@ import { useToast } from 'vue-toastification'
 import { useTranslation } from 'i18next-vue'
 import ActionToastEmbed from '@/components/ActionToastEmbed.vue'
 import { formatErrorForCopy } from '@/lib/error-copy'
+import { createAnalyticsOperationId, trackAnalytics } from '@/lib/analytics'
 
 const toast = useToast()
 const appStore = useAppStore()
@@ -99,6 +100,9 @@ const handleTryListening = async () => {
   }
 
   tryListeningLoading.value = true
+  const startedAt = performance.now()
+  const operationId = createAnalyticsOperationId()
+  let analyticsReported = false
   try {
     const speech = await window.electron.edgeTtsSynthesizeToBase64({
       text: appStore.tryListeningText,
@@ -107,10 +111,26 @@ const handleTryListening = async () => {
         rate: appStore.speed,
       },
     })
+    trackAnalytics('tts_preview_finished', {
+      operation_id: operationId,
+      outcome: 'success',
+      duration_ms: Math.max(0, Math.floor(performance.now() - startedAt)),
+      tts_characters: appStore.tryListeningText.length,
+    })
+    analyticsReported = true
     currentAudio = new Audio(`data:audio/mp3;base64,${speech}`)
     currentAudio.play()
     toast.info(t('features.tts.info.playTryAudio'))
   } catch (error: any) {
+    if (!analyticsReported) {
+      trackAnalytics('tts_preview_finished', {
+        operation_id: operationId,
+        outcome: 'failed',
+        duration_ms: Math.max(0, Math.floor(performance.now() - startedAt)),
+        tts_characters: appStore.tryListeningText.length,
+        error_code: 'unknown',
+      })
+    }
     console.log('试听语音合成失败', error)
     const errorMessage = error?.error?.message || error?.message || error
     toast.error({

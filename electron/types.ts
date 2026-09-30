@@ -16,10 +16,8 @@ export interface ListFilesFromFolderRecord {
   path: string
 }
 
-export interface StatEventParams {
-  title: string
-  screen?: string
-  language?: string
-  url?: string
-  userAgent?: string
-}
+export type {
+  AnalyticsContextParams,
+  AnalyticsEventName,
+  AnalyticsTrackParams,
+} from './analytics-types'

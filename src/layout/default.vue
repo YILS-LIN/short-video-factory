@@ -75,18 +75,26 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTranslation } from 'i18next-vue'
 import { i18nLanguages } from '~/electron/i18n/common-options'
 import { useAppStore } from '@/store'
+import { initializeAnalyticsActivityTracking, setAnalyticsContext } from '@/lib/analytics'
 
 const { i18next, t } = useTranslation()
 const appStore = useAppStore()
 // const lang = ref(i18next.language)
 // console.log('i18next.language', i18next.language)
 
-document.title = t('app.name')
+const syncAnalyticsContext = () => {
+  const title = String(t('app.name'))
+  document.title = title
+  setAnalyticsContext({
+    title,
+    locale: appStore.locale || i18next.resolvedLanguage || i18next.language || 'zh-CN',
+  })
+}
 
 const route = useRoute()
 const isMac = window.electron.platform === 'darwin'
@@ -117,7 +125,11 @@ const handleChangeZoom = (factor: unknown) => {
 
 onMounted(() => {
   window.electron.setZoomFactor(appStore.zoomFactor)
+  initializeAnalyticsActivityTracking()
+  syncAnalyticsContext()
 })
+
+watch(() => appStore.locale, syncAnalyticsContext)
 
 window.addEventListener('resize', async () => {
   windowIsMaxed.value = await window.electron.isWinMaxed()
@@ -202,7 +214,6 @@ const handleClose = () => {
         }
       }
     }
-
   }
 }
 </style>

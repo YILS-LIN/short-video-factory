@@ -369,6 +369,8 @@ import {
   getCopywritingHistoryTaskCount,
 } from '@/store/copywriting-history'
 import { useAppStore } from '@/store'
+import type { GenerationUsageSummary } from '~/electron/analytics-types'
+import { createAnalyticsOperationId, trackAnalytics } from '@/lib/analytics'
 
 type ConfigTab = 'connection' | 'copywriting' | 'advanced'
 
@@ -384,6 +386,12 @@ const configDialogShow = ref(false)
 const config = ref<LlmConfig>(structuredClone(toRaw(appStore.llmConfig)))
 const copyConfig = ref(structuredClone(toRaw(appStore.copywritingConfig)))
 const showApiKey = ref(false)
+const latestGenerationAnalytics = ref<GenerationUsageSummary>({
+  source: 'unknown',
+  providerCategory: 'unknown',
+  callCount: 0,
+  usageComplete: false,
+})
 const testLoading = ref(false)
 const testResult = ref<'success' | 'error'>()
 const configTab = ref<ConfigTab>('connection')
@@ -482,7 +490,38 @@ const resetSamplingSettings = () => {
   config.value.topP = undefined
 }
 
-const handleGenerate = async (options?: { noToast?: boolean; throwOnError?: boolean }) => {
+const getProviderCategory = (protocol: LlmConfig['protocol']) =>
+  protocol === 'anthropic-messages'
+    ? 'anthropic'
+    : protocol === 'openai-compatible'
+      ? 'compatible'
+      : 'openai'
+
+const getErrorCode = (error: unknown) => {
+  const candidate = error as { name?: string; code?: string; message?: string }
+  const value =
+    `${candidate?.name ?? ''} ${candidate?.code ?? ''} ${candidate?.message ?? ''}`.toLowerCase()
+  if (/timed out|timeout|etimedout/.test(value)) return 'network_timeout'
+  if (/enotfound|econnrefused|networkerror|failed to fetch/.test(value))
+    return 'network_unreachable'
+  if (/401|403|unauthorized|forbidden/.test(value)) return 'authentication_failed'
+  if (/429|rate.?limit/.test(value)) return 'rate_limited'
+  return 'unknown'
+}
+
+const getTextLengthBucket = (length: number) => {
+  if (length < 100) return '<100'
+  if (length < 500) return '100–499'
+  if (length < 1000) return '500–999'
+  if (length < 2000) return '1000–1999'
+  return '≥2000'
+}
+
+const handleGenerate = async (options?: {
+  noToast?: boolean
+  throwOnError?: boolean
+  source?: 'standalone' | 'pipeline'
+}) => {
   if (!appStore.prompt.trim()) {
     const error = new Error(t('features.llm.errors.promptRequired') as string)
     if (!options?.noToast) toast.warning(error.message)
@@ -494,6 +533,16 @@ const handleGenerate = async (options?: { noToast?: boolean; throwOnError?: bool
   const controller = new AbortController()
   abortController.value = controller
   const requestConfig = structuredClone(toRaw(appStore.llmConfig))
+  const startedAt = performance.now()
+  let outcome: 'success' | 'failed' | 'cancelled' = 'failed'
+  let failureCode = 'unknown'
+  let requestCount = 0
+  let usageCount = 0
+  let inputTokens = 0
+  let outputTokens = 0
+  let inputTokensKnown = true
+  let outputTokensKnown = true
+  const operationId = createAnalyticsOperationId()
   outputText.value = ''
   appStore.updateCopywritingStatus('generating')
   try {
@@ -507,6 +556,16 @@ const handleGenerate = async (options?: { noToast?: boolean; throwOnError?: bool
       },
       onTextDelta: (delta) => {
         if (currentRequestId === requestId.value) outputText.value += delta
+      },
+      onRequestStart: () => {
+        requestCount += 1
+      },
+      onUsage: (usage) => {
+        usageCount += 1
+        if (usage.inputTokens === undefined) inputTokensKnown = false
+        else inputTokens += usage.inputTokens
+        if (usage.outputTokens === undefined) outputTokensKnown = false
+        else outputTokens += usage.outputTokens
       },
     })
     if (currentRequestId !== requestId.value) return ''
@@ -522,15 +581,21 @@ const handleGenerate = async (options?: { noToast?: boolean; throwOnError?: bool
         ),
       )
     if (result.status !== 'completed') {
+      outcome = result.status === 'cancelled' ? 'cancelled' : 'failed'
+      if (result.status === 'truncated') failureCode = 'invalid_response'
+      else if (result.status === 'failed') failureCode = 'empty_output'
       const error = new Error(t(`features.llm.errors.${result.status}`) as string)
       if (options?.throwOnError) throw error
       if (result.status !== 'cancelled' && !options?.noToast)
         showError(t('features.llm.errors.generateFailed') as string, error, requestConfig)
       return ''
     }
+    outcome = 'success'
     return result.text
   } catch (error) {
     if (currentRequestId !== requestId.value) return ''
+    outcome = controller.signal.aborted ? 'cancelled' : 'failed'
+    if (outcome === 'failed') failureCode = getErrorCode(error)
     if (String(appStore.copywritingStatus) === 'generating')
       appStore.updateCopywritingStatus('failed')
     const sanitizedError = new Error(getErrorDetail(error, requestConfig))
@@ -540,6 +605,36 @@ const handleGenerate = async (options?: { noToast?: boolean; throwOnError?: bool
     return ''
   } finally {
     if (currentRequestId === requestId.value) {
+      latestGenerationAnalytics.value = {
+        source: 'generated',
+        protocol: requestConfig.protocol,
+        providerCategory: getProviderCategory(requestConfig.protocol),
+        callCount: requestCount,
+        ...(inputTokensKnown && usageCount > 0 ? { inputTokens } : {}),
+        ...(outputTokensKnown && usageCount > 0 ? { outputTokens } : {}),
+        usageComplete:
+          requestCount > 0 && usageCount === requestCount && inputTokensKnown && outputTokensKnown,
+      }
+      if (options?.source !== 'pipeline') {
+        const data: Record<string, string | number | boolean> = {
+          operation_id: operationId,
+          outcome,
+          duration_ms: Math.max(0, Math.floor(performance.now() - startedAt)),
+          provider_category: getProviderCategory(requestConfig.protocol),
+          protocol: requestConfig.protocol,
+          llm_call_count: requestCount,
+          llm_usage_complete:
+            requestCount > 0 &&
+            usageCount === requestCount &&
+            inputTokensKnown &&
+            outputTokensKnown,
+          text_length_bucket: getTextLengthBucket(outputText.value.length),
+        }
+        if (inputTokensKnown && usageCount > 0) data.input_tokens = inputTokens
+        if (outputTokensKnown && usageCount > 0) data.output_tokens = outputTokens
+        if (outcome === 'failed') data.error_code = failureCode
+        trackAnalytics('text_generation_finished', data)
+      }
       abortController.value = null
       generationPhase.value = null
     }
@@ -549,10 +644,17 @@ const handleStopGenerate = () => abortController.value?.abort()
 const handleOutputEdited = () =>
   appStore.updateCopywritingStatus(outputText.value.trim() ? 'edited' : 'idle')
 const getTextForSynthesis = async () => {
-  if (appStore.copywritingStatus === 'completed' || appStore.copywritingStatus === 'edited')
+  if (appStore.copywritingStatus === 'completed' || appStore.copywritingStatus === 'edited') {
+    latestGenerationAnalytics.value = {
+      source: appStore.copywritingStatus === 'edited' ? 'edited' : 'reused',
+      providerCategory: 'unknown',
+      callCount: 0,
+      usageComplete: false,
+    }
     return outputText.value.trim()
+  }
   if (appStore.copywritingStatus === 'idle' && !outputText.value.trim()) {
-    return handleGenerate({ throwOnError: true, noToast: true })
+    return handleGenerate({ throwOnError: true, noToast: true, source: 'pipeline' })
   }
   throw new Error(t('features.llm.errors.textNotReady') as string)
 }
@@ -654,6 +756,16 @@ const handleTestConnection = async () => {
   const currentTestRequestId = ++testRequestId.value
   const controller = new AbortController()
   const requestConfig = structuredClone(toRaw(normalizeLlmConfig(config.value)))
+  const testStartedAt = performance.now()
+  let providerTestOutcome: 'success' | 'failed' | 'cancelled' | undefined
+  let providerTestErrorCode: string | undefined
+  let providerTestCallCount = 0
+  let providerTestUsageCount = 0
+  let providerTestInputTokens = 0
+  let providerTestOutputTokens = 0
+  let providerTestInputKnown = true
+  let providerTestOutputKnown = true
+  const providerTestOperationId = createAnalyticsOperationId()
   testLoading.value = true
   testAbortController.value = controller
   try {
@@ -664,17 +776,59 @@ const handleTestConnection = async () => {
       ),
       prompt: '请写一句简短、自然的口播开场白。',
       abortSignal: controller.signal,
+      onRequestStart: () => {
+        providerTestCallCount += 1
+      },
+      onUsage: (usage) => {
+        providerTestUsageCount += 1
+        if (usage.inputTokens === undefined) providerTestInputKnown = false
+        else providerTestInputTokens += usage.inputTokens
+        if (usage.outputTokens === undefined) providerTestOutputKnown = false
+        else providerTestOutputTokens += usage.outputTokens
+      },
     })
-    if (currentTestRequestId !== testRequestId.value || controller.signal.aborted) return
+    if (currentTestRequestId !== testRequestId.value) return
+    if (controller.signal.aborted || result.status === 'cancelled') {
+      providerTestOutcome = 'cancelled'
+      return
+    }
     if (result.status !== 'completed') throw new Error(result.status)
     testResult.value = 'success'
+    providerTestOutcome = 'success'
   } catch (error) {
-    if (currentTestRequestId === testRequestId.value && !controller.signal.aborted) {
+    if (currentTestRequestId === testRequestId.value && controller.signal.aborted) {
+      providerTestOutcome = 'cancelled'
+    } else if (currentTestRequestId === testRequestId.value) {
       testResult.value = 'error'
+      providerTestOutcome = 'failed'
+      providerTestErrorCode = getErrorCode(error)
       showError(t('features.llm.errors.connectionFailed') as string, error, requestConfig)
     }
   } finally {
     if (currentTestRequestId === testRequestId.value) {
+      // Duration is intentionally not reported for a cancelled or superseded test.
+      if (providerTestOutcome) {
+        trackAnalytics('provider_test_finished', {
+          operation_id: providerTestOperationId,
+          outcome: providerTestOutcome,
+          protocol: requestConfig.protocol,
+          provider_category: getProviderCategory(requestConfig.protocol),
+          ...(providerTestErrorCode ? { error_code: providerTestErrorCode } : {}),
+          duration_ms: Math.max(0, Math.floor(performance.now() - testStartedAt)),
+          llm_call_count: providerTestCallCount,
+          llm_usage_complete:
+            providerTestCallCount > 0 &&
+            providerTestUsageCount === providerTestCallCount &&
+            providerTestInputKnown &&
+            providerTestOutputKnown,
+          ...(providerTestInputKnown && providerTestUsageCount > 0
+            ? { input_tokens: providerTestInputTokens }
+            : {}),
+          ...(providerTestOutputKnown && providerTestUsageCount > 0
+            ? { output_tokens: providerTestOutputTokens }
+            : {}),
+        })
+      }
       testLoading.value = false
       testAbortController.value = null
     }
@@ -684,6 +838,7 @@ defineExpose({
   handleGenerate,
   handleStopGenerate,
   getTextForSynthesis,
+  getGenerationAnalytics: () => latestGenerationAnalytics.value,
   getCurrentOutputText: () => outputText.value,
   clearOutputText,
 })

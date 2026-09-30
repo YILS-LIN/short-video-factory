@@ -3,16 +3,17 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { BrowserWindow, ipcMain, dialog, app, shell } from 'electron'
 import { sqBulkInsertOrUpdate, sqDelete, sqInsert, sqQuery, sqUpdate } from './sqlite'
-import {
-  ListFilesFromFolderParams,
-  OpenExternalParams,
-  SelectFolderParams,
-  StatEventParams,
-} from './types'
+import { ListFilesFromFolderParams, OpenExternalParams, SelectFolderParams } from './types'
+import type { AnalyticsContextParams, AnalyticsTrackParams } from './analytics-types'
 import { edgeTtsGetVoiceList, edgeTtsSynthesizeToBase64, edgeTtsSynthesizeToFile } from './tts'
 import type { EdgeTtsSynthesizeToFileParams } from './tts/types'
 import { renderVideo } from './ffmpeg'
-import { sendStatEvent } from './lib/stat'
+import {
+  isTrustedAnalyticsSender,
+  markAnalyticsActive,
+  setAnalyticsContext,
+  trackAnalyticsEvent,
+} from './lib/analytics/service'
 import { exportDiagnostics } from './diagnostics'
 import { AppLogLevel, writeRendererLog } from './logger'
 import { checkForUpdates } from './updater'
@@ -234,8 +235,25 @@ export default function initIPC() {
   // 获取EdgeTTS语音列表
   ipcMain.handle('edge-tts-get-voice-list', () => edgeTtsGetVoiceList())
 
-  // 统计事件上报
-  ipcMain.handle('stat-track', (_event, params: StatEventParams) => sendStatEvent(params))
+  // 匿名统计：仅接受主窗口主 frame 的白名单事件，不接受渲染器控制身份或目标站点。
+  ipcMain.handle('analytics-track', (event, params: AnalyticsTrackParams) => {
+    if (!isTrustedAnalyticsSender(event.sender.id, event.frameId === 0, event.senderFrame.url)) {
+      return
+    }
+    return trackAnalyticsEvent(params)
+  })
+  ipcMain.handle('analytics-set-context', (event, params: AnalyticsContextParams) => {
+    if (!isTrustedAnalyticsSender(event.sender.id, event.frameId === 0, event.senderFrame.url)) {
+      return
+    }
+    return setAnalyticsContext(params)
+  })
+  ipcMain.handle('analytics-mark-active', (event, durationMs: unknown) => {
+    if (!isTrustedAnalyticsSender(event.sender.id, event.frameId === 0, event.senderFrame.url)) {
+      return
+    }
+    return markAnalyticsActive(durationMs)
+  })
 
   // 语音合成并获取Base64
   ipcMain.handle('edge-tts-synthesize-to-base64', (_event, params) =>
