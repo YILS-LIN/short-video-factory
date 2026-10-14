@@ -59,6 +59,8 @@ describe('app store persisted state', () => {
         rewriteOnSimilarity: true,
       })
       expect(store.renderConfig).toMatchObject({
+        subtitlesEnabled: true,
+        exportSubtitles: false,
         outputPath: 'C:/render output',
         outputSize: { width: 1080, height: 1920 },
         outputFileExt: '.mp4',
@@ -92,6 +94,8 @@ describe('app store persisted state', () => {
       outputPath: 'C:/output folder',
       outputFileName: 'story',
       outputFileExt: '.mp4',
+      subtitlesEnabled: false,
+      exportSubtitles: true,
     })
     firstSession.store.language = 'English (United States)'
     firstSession.store.gender = 'Female'
@@ -126,6 +130,8 @@ describe('app store persisted state', () => {
       })
       expect(secondSession.store.copywritingConfig.customSystemPrompt).toBe('Use a warm voice')
       expect(secondSession.store.renderConfig.outputPath).toBe('C:/output folder')
+      expect(secondSession.store.renderConfig.subtitlesEnabled).toBe(false)
+      expect(secondSession.store.renderConfig.exportSubtitles).toBe(true)
       expect(secondSession.store.language).toBe('English (United States)')
       expect(secondSession.store.gender).toBe('Female')
       expect(secondSession.store.voice?.ShortName).toBe('en-US-Test')

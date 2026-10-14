@@ -67,7 +67,7 @@ export async function renderVideo(
         )
         .replace(/\\/g, '/')
 
-    const subtitleAsset =
+    const generatedSubtitleAsset =
       params.subtitleAsset ??
       (params.subtitleText?.trim()
         ? {
@@ -75,6 +75,7 @@ export async function renderVideo(
             source: 'tts' as const,
           }
         : undefined)
+    const subtitleAsset = params.subtitlesEnabled === false ? undefined : generatedSubtitleAsset
     let subtitleSequenceInputPath: string | undefined
     let subtitleInputIndex: number | undefined
     let subtitleRenderProgress = 0
@@ -111,7 +112,10 @@ export async function renderVideo(
     if (!fs.existsSync(path.dirname(params.outputPath))) {
       throw new Error(`输出路径不存在`)
     }
-    const outputPath = generateUniqueFileName(params.outputPath)
+    const outputPath = generateUniqueFileName(
+      params.outputPath,
+      params.exportSubtitles ? '.srt' : undefined,
+    )
 
     // 构建args指令
     const args: string[] = []
@@ -161,7 +165,7 @@ export async function renderVideo(
       filters.push(
         `[vout][${subtitleInputIndex}:v]overlay=0:0:shortest=1:eof_action=pass[with_subs]`,
       )
-    } else {
+    } else if (params.subtitlesEnabled !== false) {
       filters.push(`[vout]subtitles=${subtitleFile.replace(/\:/g, '\\\\:')}[with_subs]`)
     }
 
@@ -208,7 +212,12 @@ export async function renderVideo(
     args.push('-filter_complex', `${filters.join(';')}`)
 
     // 映射输出流
-    args.push('-map', '[with_subs]', '-map', '[final_audio]')
+    args.push(
+      '-map',
+      params.subtitlesEnabled === false ? '[vout]' : '[with_subs]',
+      '-map',
+      '[final_audio]',
+    )
 
     // 编码参数
     args.push(
@@ -250,6 +259,23 @@ export async function renderVideo(
       durationSeconds,
     })
 
+    if (result.code === 0 && params.exportSubtitles && !abortSignal?.aborted) {
+      const subtitleOutputPath = path.join(
+        path.dirname(outputPath),
+        path.basename(outputPath, path.extname(outputPath)) + '.srt',
+      )
+      try {
+        const srtText = generatedSubtitleAsset?.srtText ?? fs.readFileSync(subtitleFile, 'utf8')
+        if (!srtText.trim()) throw new Error('生成的字幕为空')
+        fs.writeFileSync(subtitleOutputPath, srtText, { encoding: 'utf8', flag: 'wx' })
+      } catch (error) {
+        return {
+          ...result,
+          outputPath,
+          subtitleExportError: error instanceof Error ? error.message : String(error),
+        }
+      }
+    }
     // 返回结果
     return result
   } catch (error) {

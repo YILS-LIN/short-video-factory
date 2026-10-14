@@ -1,75 +1,75 @@
 <template>
   <div class="w-full">
-    <v-sheet
-      class="h-[200px] p-4 grid grid-cols-[120px_minmax(0,1fr)] grid-rows-[1fr_auto] gap-x-4 gap-y-3"
-      border
-      rounded
-    >
-      <div class="col-start-1 row-start-1 h-full flex items-center justify-center">
-        <v-progress-circular
-          color="primary"
-          v-model="renderProgress"
-          :indeterminate="taskInProgress && appStore.renderStatus !== RenderStatus.Rendering"
-          :size="96"
-          :width="8"
-        >
-          <div class="flex flex-col items-center leading-tight select-none">
-            <span class="text-xl font-bold text-slate-700">{{ progressCenterPrimary }}</span>
-            <span v-if="progressCenterSecondary" class="text-xs text-medium-emphasis mt-1">
-              {{ progressCenterSecondary }}
-            </span>
-          </div>
-        </v-progress-circular>
-      </div>
-      <span
-        class="col-start-1 row-start-2 text-xs text-medium-emphasis text-center leading-4 self-center select-none"
+    <v-sheet class="p-4" border rounded>
+      <div
+        class="h-[166px] grid grid-cols-[120px_minmax(0,1fr)] grid-rows-[1fr_auto] gap-x-4 gap-y-3"
       >
-        {{ renderStatusShortText }}
-      </span>
-
-      <div class="col-start-2 row-start-1 h-full flex items-center justify-center">
-        <v-btn
-          v-if="!taskInProgress"
-          class="!h-24 !px-8 w-full"
-          size="x-large"
-          color="primary"
-          @click="emit('renderVideo')"
+        <div class="col-start-1 row-start-1 h-full flex items-center justify-center">
+          <v-progress-circular
+            color="primary"
+            v-model="renderProgress"
+            :indeterminate="taskInProgress && appStore.renderStatus !== RenderStatus.Rendering"
+            :size="96"
+            :width="8"
+          >
+            <div class="flex flex-col items-center leading-tight select-none">
+              <span class="text-xl font-bold text-slate-700">{{ progressCenterPrimary }}</span>
+              <span v-if="progressCenterSecondary" class="text-xs text-medium-emphasis mt-1">
+                {{ progressCenterSecondary }}
+              </span>
+            </div>
+          </v-progress-circular>
+        </div>
+        <span
+          class="col-start-1 row-start-2 text-xs text-medium-emphasis text-center leading-4 self-center select-none"
         >
-          <div class="inline-flex items-center gap-4">
-            <v-icon size="28">mdi-rocket-launch</v-icon>
-            <span class="text-xl">{{ t('features.render.config.startLabel') }}</span>
-          </div>
-        </v-btn>
-        <v-btn
-          v-else
-          class="!h-24 !px-8 w-full"
-          size="x-large"
-          color="red"
-          prepend-icon="mdi-stop"
-          @click="emit('cancelRender')"
-        >
-          <span class="text-xl">{{ t('features.render.config.stopLabel') }}</span>
-        </v-btn>
-      </div>
+          {{ renderStatusShortText }}
+        </span>
 
-      <div class="col-start-2 row-start-2 w-full flex items-center justify-between gap-2">
-        <v-chip
-          class="batch-chip"
-          :class="{ 'batch-chip--locked': taskInProgress }"
-          :color="appStore.autoBatch ? 'primary' : 'grey'"
-          variant="tonal"
-          @click="handleToggleAutoBatch"
-        >
-          <v-icon start size="small">
-            {{ appStore.autoBatch ? 'mdi-autorenew' : 'mdi-autorenew-off' }}
-          </v-icon>
-          <span class="batch-chip-text">{{ batchSummaryText }}</span>
-        </v-chip>
+        <div class="col-start-2 row-start-1 h-full flex items-center justify-center">
+          <v-btn
+            v-if="!taskInProgress"
+            class="!h-24 !px-8 w-full"
+            size="x-large"
+            color="primary"
+            @click="emit('renderVideo')"
+          >
+            <div class="inline-flex items-center gap-4">
+              <v-icon size="28">mdi-rocket-launch</v-icon>
+              <span class="text-xl">{{ t('features.render.config.startLabel') }}</span>
+            </div>
+          </v-btn>
+          <v-btn
+            v-else
+            class="!h-24 !px-8 w-full"
+            size="x-large"
+            color="red"
+            prepend-icon="mdi-stop"
+            @click="emit('cancelRender')"
+          >
+            <span class="text-xl">{{ t('features.render.config.stopLabel') }}</span>
+          </v-btn>
+        </div>
 
-        <v-btn class="!h-10 !px-6" :disabled="taskInProgress" @click="configDialogShow = true">
-          <v-icon class="mt-1" start size="small">mdi-cog</v-icon>
-          {{ t('common.buttons.config') }}
-        </v-btn>
+        <div class="col-start-2 row-start-2 w-full flex items-center justify-between gap-2">
+          <v-chip
+            class="batch-chip"
+            :class="{ 'batch-chip--locked': taskInProgress }"
+            :color="appStore.autoBatch ? 'primary' : 'grey'"
+            variant="tonal"
+            @click="handleToggleAutoBatch"
+          >
+            <v-icon start size="small">
+              {{ appStore.autoBatch ? 'mdi-autorenew' : 'mdi-autorenew-off' }}
+            </v-icon>
+            <span class="batch-chip-text">{{ batchSummaryText }}</span>
+          </v-chip>
+
+          <v-btn class="!h-10 !px-6" :disabled="taskInProgress" @click="configDialogShow = true">
+            <v-icon class="mt-1" start size="small">mdi-cog</v-icon>
+            {{ t('common.buttons.config') }}
+          </v-btn>
+        </div>
       </div>
     </v-sheet>
 
@@ -157,7 +157,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, toRaw, nextTick, computed, watch, onUnmounted } from 'vue'
+import { ref, nextTick, computed, watch, onUnmounted } from 'vue'
 import { useTranslation } from 'i18next-vue'
 import { RenderStatus, useAppStore } from '@/store'
 
@@ -263,11 +263,20 @@ const handleToggleAutoBatch = () => {
 }
 
 // 配置合成选项
-const config = ref(structuredClone(toRaw(appStore.renderConfig)))
+// toRaw only unwraps the outer proxy; copy the nested size explicitly so hydrated
+// or saved reactive configuration never reaches structuredClone.
+const createConfigDraft = () => ({
+  ...appStore.renderConfig,
+  outputSize: { ...appStore.renderConfig.outputSize },
+})
+const config = ref(createConfigDraft())
 const configDialogShow = ref(false)
 const resetConfigDialog = () => {
-  config.value = structuredClone(toRaw(appStore.renderConfig))
+  config.value = createConfigDraft()
 }
+watch(configDialogShow, (show) => {
+  if (show) resetConfigDialog()
+})
 const handleCloseDialog = () => {
   configDialogShow.value = false
   nextTick(resetConfigDialog)

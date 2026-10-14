@@ -33,6 +33,7 @@
             :disabled="appStore.renderStatus === RenderStatus.SynthesizedSpeech"
           />
         </div>
+        <SubtitleOptions class="shrink-0" />
         <VideoRender
           class="shrink-0"
           @render-video="handleRenderVideo"
@@ -48,6 +49,7 @@ import TextGenerate from './components/TextGenerate.vue'
 import VideoManage from './components/VideoManage.vue'
 import TtsControl from './components/TtsControl.vue'
 import VideoRender from './components/VideoRender.vue'
+import SubtitleOptions from './components/SubtitleOptions.vue'
 import TopBar from './components/TopBar.vue'
 
 import { h, onBeforeUnmount, ref } from 'vue'
@@ -231,6 +233,8 @@ const finalizeBatch = (batch: BatchContext, stopReason: string) => {
 }
 
 const handleRenderVideo = async (batchContext?: BatchContext) => {
+  const subtitlesEnabled = appStore.renderConfig.subtitlesEnabled !== false
+  const exportSubtitles = appStore.renderConfig.exportSubtitles === true
   const operationId = createAnalyticsOperationId()
   const trigger = batchContext ? 'batch' : appStore.autoBatch ? 'batch' : 'manual'
   const blocked = (reason: string) => {
@@ -347,7 +351,7 @@ const handleRenderVideo = async (batchContext?: BatchContext) => {
       media_entered: false,
       export_entered: false,
       has_bgm: Boolean(randomBgm),
-      has_subtitles: true,
+      has_subtitles: subtitlesEnabled,
       resolution_bucket: getResolutionBucket(
         appStore.renderConfig.outputSize.width,
         appStore.renderConfig.outputSize.height,
@@ -413,7 +417,7 @@ const handleRenderVideo = async (batchContext?: BatchContext) => {
       trigger: task.trigger,
       ...(batch ? { batch_id: batch.id } : {}),
       has_bgm: Boolean(randomBgm),
-      has_subtitles: true,
+      has_subtitles: subtitlesEnabled,
       resolution_bucket: task.metrics.resolution_bucket as string,
       aspect_ratio: task.metrics.aspect_ratio as string,
     })
@@ -459,7 +463,7 @@ const handleRenderVideo = async (batchContext?: BatchContext) => {
       throw new Error(t('features.tts.errors.zeroDuration'))
     }
     task.metrics.audio_duration_ms = Math.floor(ttsResult.duration * 1000)
-    task.metrics.has_subtitles = Boolean(ttsResult.srtText)
+    task.metrics.has_subtitles = subtitlesEnabled && Boolean(ttsResult.srtText)
 
     // 获取视频片段
     // @ts-ignore
@@ -486,6 +490,8 @@ const handleRenderVideo = async (batchContext?: BatchContext) => {
         bgm: randomBgm?.path,
       },
       subtitleText: ttsResult.srtText,
+      subtitlesEnabled,
+      exportSubtitles,
       outputSize: {
         width: appStore.renderConfig.outputSize.width,
         height: appStore.renderConfig.outputSize.height,
@@ -504,11 +510,32 @@ const handleRenderVideo = async (batchContext?: BatchContext) => {
       throw new Error(renderResult.stderr || `FFmpeg exited with code ${renderResult.code}`)
     }
 
-    toast.success(t('features.render.success.succeeded'))
+    if (renderResult.subtitleExportError) {
+      const message = t('features.render.errors.subtitleExportFailed')
+      const detail = `${renderResult.outputPath ?? ''}\n${renderResult.subtitleExportError}`
+      toast.error({
+        component: {
+          render: () =>
+            h(ActionToastEmbed, {
+              message,
+              detail,
+              actionText: t('common.buttons.copyErrorDetail'),
+              onActionTirgger: () => {
+                navigator.clipboard.writeText(formatErrorForCopy(message, detail))
+                toast.success(t('common.messages.success.copySuccess'))
+              },
+            }),
+        },
+      })
+    } else {
+      toast.success(t('features.render.success.succeeded'))
+    }
     finishTask('succeeded')
     appStore.updateRenderStatus(RenderStatus.Completed)
 
-    if (batch && appStore.autoBatch) {
+    if (batch && renderResult.subtitleExportError) {
+      finalizeBatch(batch, 'subtitle_export_failed')
+    } else if (batch && appStore.autoBatch) {
       toast.info(t('features.render.info.batchNext'))
       TextGenerateInstance.value?.clearOutputText()
       void handleRenderVideo(batch)

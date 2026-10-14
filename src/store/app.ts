@@ -78,11 +78,21 @@ export const useAppStore = defineStore(
       outputPath: '',
       outputFileName: '',
       outputFileExt: '.mp4',
+      subtitlesEnabled: true,
+      exportSubtitles: false,
     })
     const autoBatch = ref(false)
     const renderStatus = ref(RenderStatus.None)
-    const updateRenderConfig = (newConfig: typeof renderConfig.value) => {
-      renderConfig.value = newConfig
+    const updateRenderConfig = (
+      newConfig: Omit<typeof renderConfig.value, 'subtitlesEnabled' | 'exportSubtitles'> &
+        Partial<Pick<typeof renderConfig.value, 'subtitlesEnabled' | 'exportSubtitles'>>,
+    ) => {
+      renderConfig.value = {
+        ...newConfig,
+        outputSize: { ...newConfig.outputSize },
+        subtitlesEnabled: newConfig.subtitlesEnabled !== false,
+        exportSubtitles: newConfig.exportSubtitles === true,
+      }
     }
     const updateRenderStatus = (newStatus: RenderStatus) => {
       renderStatus.value = newStatus
@@ -153,6 +163,7 @@ export const useAppStore = defineStore(
         }
       },
       afterHydrate: (context) => {
+        context.store.updateRenderConfig(context.store.renderConfig)
         context.store.updateLLMConfig(context.store.llmConfig)
         context.store.updateCopywritingConfig(context.store.copywritingConfig)
       },

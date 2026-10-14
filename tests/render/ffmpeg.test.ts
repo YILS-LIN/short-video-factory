@@ -23,6 +23,7 @@ vi.mock('../../electron/effect-engine/subtitle-render-service', () => ({
 }))
 
 import { executeFFmpeg, renderVideo } from '../../electron/ffmpeg'
+import { renderSubtitleFramesToPngSequence } from '../../electron/effect-engine/subtitle-render-service'
 
 const createChildProcess = () => {
   const child = Object.assign(new EventEmitter(), {
@@ -106,6 +107,76 @@ describe('FFmpeg execution and render inputs', () => {
     await expect(render).rejects.toThrow('FFmpeg exited with code 1')
     expect(fs.existsSync(voicePath)).toBe(false)
     expect(fs.existsSync(subtitlePath)).toBe(false)
+  })
+
+  it.each([
+    [false, false],
+    [false, true],
+    [true, false],
+    [true, true],
+  ])(
+    'supports overlay=%s and export=%s independently',
+    async (subtitlesEnabled, exportSubtitles) => {
+      const srtText = '1\n00:00:00,000 --> 00:00:01,000\n字幕测试\n'
+      const outputPath = path.join(tempDir, 'my video.mp4')
+      const subtitleOutputPath = path.join(tempDir, 'my video.srt')
+      const renderer = vi.mocked(renderSubtitleFramesToPngSequence)
+      renderer.mockReset()
+      renderer.mockResolvedValue({
+        manifest: { framesDir: tempDir, framePattern: '%06d.png' },
+        cleanup: vi.fn(),
+      } as unknown as Awaited<ReturnType<typeof renderSubtitleFramesToPngSequence>>)
+      fs.writeFileSync(mocks.ttsVoicePath, 'audio')
+      fs.writeFileSync(mocks.ttsVoicePath.replace(/\.mp3$/, '.srt'), 'stale subtitle')
+      const child = createChildProcess()
+      const render = renderVideo({
+        videoFiles: ['scene.mp4'],
+        timeRanges: [['0', '1']],
+        subtitleText: srtText,
+        subtitlesEnabled,
+        exportSubtitles,
+        outputSize: { width: 720, height: 1280 },
+        outputDuration: '1',
+        outputPath,
+      })
+      await vi.waitFor(() => expect(mocks.spawn).toHaveBeenCalledTimes(1))
+      const args = mocks.spawn.mock.calls[0][1] as string[]
+      const filter = args[args.indexOf('-filter_complex') + 1]
+      expect(renderer).toHaveBeenCalledTimes(subtitlesEnabled ? 1 : 0)
+      expect(filter.includes('overlay=')).toBe(subtitlesEnabled)
+      expect(filter).not.toContain('subtitles=')
+      expect(filter).toContain('loudnorm')
+      expect(args[args.indexOf('-map') + 1]).toBe(subtitlesEnabled ? '[with_subs]' : '[vout]')
+      child.emit('close', 0)
+      await expect(render).resolves.toMatchObject({ code: 0 })
+      expect(fs.existsSync(subtitleOutputPath)).toBe(exportSubtitles)
+      if (exportSubtitles) expect(fs.readFileSync(subtitleOutputPath, 'utf8')).toBe(srtText)
+      expect(fs.existsSync(mocks.ttsVoicePath)).toBe(false)
+    },
+  )
+
+  it('reports subtitle export failure without discarding the successful video', async () => {
+    const outputPath = path.join(tempDir, 'video.mp4')
+    const subtitlePath = path.join(tempDir, 'video.srt')
+    fs.writeFileSync(subtitlePath, 'existing captions')
+    const child = createChildProcess()
+    const render = renderVideo({
+      videoFiles: ['scene.mp4'],
+      timeRanges: [['0', '1']],
+      subtitlesEnabled: false,
+      exportSubtitles: true,
+      subtitleText: 'new captions',
+      outputSize: { width: 720, height: 1280 },
+      outputPath,
+    })
+    await vi.waitFor(() => expect(mocks.spawn).toHaveBeenCalledTimes(1))
+    child.emit('close', 0)
+    await expect(render).resolves.toMatchObject({
+      code: 0,
+      outputPath,
+      subtitleExportError: expect.any(String),
+    })
+    expect(fs.readFileSync(subtitlePath, 'utf8')).toBe('existing captions')
   })
 
   it('terminates FFmpeg on cancellation and removes the abort listener after exit', async () => {

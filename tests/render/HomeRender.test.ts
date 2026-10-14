@@ -93,86 +93,102 @@ describe('Home video render flow', () => {
     mocks.random.integer.mockReturnValue(0)
   })
 
-  it('preserves render arguments with spaces and does not continue auto-batch after cancellation', async () => {
-    const storeState = reactive({
-      renderConfig: {
-        bgmPath: '',
-        outputSize: { width: 720, height: 1280 },
-        outputPath: 'C:/video output',
-        outputFileName: 'my video',
-        outputFileExt: '.mp4',
-      },
-      autoBatch: true,
-      renderStatus: mocks.RenderStatus.None,
-      updateRenderStatus(status: number) {
-        this.renderStatus = status
-      },
-    })
-    const renderDeferred = createDeferred<{ stdout: string; stderr: string; code: number }>()
-    const renderVideo = vi.fn(() => renderDeferred.promise)
-    mocks.store = storeState
-    mocks.getTextForSynthesis.mockResolvedValue('A generated script')
-    mocks.synthesizeSpeech.mockResolvedValue({ duration: 8, srtText: 'subtitle text' })
-    mocks.getVideoSegments.mockResolvedValue({
-      videoFiles: ['C:/video assets/scene 1.mp4'],
-      timeRanges: [['1.000', '9.000']],
-    })
-    Object.defineProperty(window, 'electron', {
-      configurable: true,
-      value: {
-        platform: 'win32',
-        renderVideo,
-        statTrack: vi.fn(() => Promise.resolve()),
-      },
-    })
-    Object.defineProperty(window, 'ipcRenderer', {
-      configurable: true,
-      value: { send: vi.fn() },
-    })
-
-    const wrapper = mount(Home, {
-      attachTo: document.body,
-      global: {
-        stubs: {
-          TextGenerate: TextGenerateStub,
-          VideoManage: VideoManageStub,
-          TtsControl: TtsControlStub,
-          VideoRender: VideoRenderStub,
-          TopBar: true,
-        },
-      },
-    })
-
-    try {
-      await wrapper.find('#render-trigger').trigger('click')
-      await vi.waitFor(() => expect(renderVideo).toHaveBeenCalledTimes(1))
-
-      expect(renderVideo).toHaveBeenCalledWith(
-        expect.objectContaining({
-          videoFiles: ['C:/video assets/scene 1.mp4'],
-          timeRanges: [['1.000', '9.000']],
-          audioFiles: { bgm: undefined },
-          subtitleText: 'subtitle text',
+  it.each([
+    [true, false],
+    [false, false],
+    [true, true],
+    [false, true],
+  ])(
+    'preserves inputs and cancellation with overlay=%s and export=%s',
+    async (subtitlesEnabled, exportSubtitles) => {
+      const storeState = reactive({
+        renderConfig: {
+          subtitlesEnabled,
+          exportSubtitles,
+          bgmPath: '',
           outputSize: { width: 720, height: 1280 },
-          outputDuration: '8',
-          outputPath: 'C:/video output/my video.mp4',
-        }),
-      )
+          outputPath: 'C:/video output',
+          outputFileName: 'my video',
+          outputFileExt: '.mp4',
+        },
+        autoBatch: true,
+        renderStatus: mocks.RenderStatus.None,
+        updateRenderStatus(status: number) {
+          this.renderStatus = status
+        },
+      })
+      const renderDeferred = createDeferred<{ stdout: string; stderr: string; code: number }>()
+      const renderVideo = vi.fn(() => renderDeferred.promise)
+      mocks.store = storeState
+      mocks.getTextForSynthesis.mockResolvedValue('A generated script')
+      mocks.synthesizeSpeech.mockResolvedValue({ duration: 8, srtText: 'subtitle text' })
+      mocks.getVideoSegments.mockResolvedValue({
+        videoFiles: ['C:/video assets/scene 1.mp4'],
+        timeRanges: [['1.000', '9.000']],
+      })
+      Object.defineProperty(window, 'electron', {
+        configurable: true,
+        value: {
+          platform: 'win32',
+          renderVideo,
+          statTrack: vi.fn(() => Promise.resolve()),
+        },
+      })
+      Object.defineProperty(window, 'ipcRenderer', {
+        configurable: true,
+        value: { send: vi.fn() },
+      })
 
-      await wrapper.find('#cancel-trigger').trigger('click')
-      renderDeferred.resolve({ stdout: '', stderr: 'cancelled', code: 255 })
-      await flushPromises()
+      const wrapper = mount(Home, {
+        attachTo: document.body,
+        global: {
+          stubs: {
+            TextGenerate: TextGenerateStub,
+            VideoManage: VideoManageStub,
+            TtsControl: TtsControlStub,
+            VideoRender: VideoRenderStub,
+            SubtitleOptions: true,
+            TopBar: true,
+          },
+        },
+      })
 
-      expect(renderVideo).toHaveBeenCalledTimes(1)
-      expect(mocks.getTextForSynthesis).toHaveBeenCalledTimes(1)
-      expect(storeState.renderStatus).toBe(mocks.RenderStatus.None)
-      expect(mocks.toast.success).not.toHaveBeenCalled()
-      expect(mocks.toast.info).not.toHaveBeenCalledWith('features.render.info.batchNext')
-    } finally {
-      wrapper.unmount()
-      document.body.innerHTML = ''
-    }
-  })
+      try {
+        await wrapper.find('#render-trigger').trigger('click')
+        await vi.waitFor(() => expect(renderVideo).toHaveBeenCalledTimes(1))
+
+        expect(renderVideo).toHaveBeenCalledWith(
+          expect.objectContaining({
+            videoFiles: ['C:/video assets/scene 1.mp4'],
+            timeRanges: [['1.000', '9.000']],
+            audioFiles: { bgm: undefined },
+            subtitleText: 'subtitle text',
+            subtitlesEnabled,
+            exportSubtitles,
+            outputSize: { width: 720, height: 1280 },
+            outputDuration: '8',
+            outputPath: 'C:/video output/my video.mp4',
+          }),
+        )
+        expect(mocks.synthesizeSpeech).toHaveBeenCalledWith(
+          expect.objectContaining({ withCaption: true }),
+        )
+
+        await wrapper.find('#cancel-trigger').trigger('click')
+        renderDeferred.resolve({ stdout: '', stderr: 'cancelled', code: 255 })
+        await flushPromises()
+
+        expect(renderVideo).toHaveBeenCalledTimes(1)
+        expect(mocks.getTextForSynthesis).toHaveBeenCalledTimes(1)
+        expect(storeState.renderStatus).toBe(mocks.RenderStatus.None)
+        expect(mocks.toast.success).not.toHaveBeenCalled()
+        expect(mocks.toast.info).not.toHaveBeenCalledWith('features.render.info.batchNext')
+      } finally {
+        wrapper.unmount()
+        document.body.innerHTML = ''
+      }
+    },
+  )
 
   it('marks a zero-exit FFmpeg render as completed', async () => {
     const storeState = reactive({
@@ -218,6 +234,7 @@ describe('Home video render flow', () => {
           VideoManage: VideoManageStub,
           TtsControl: TtsControlStub,
           VideoRender: VideoRenderStub,
+          SubtitleOptions: true,
           TopBar: true,
         },
       },
@@ -295,6 +312,7 @@ describe('Home video render flow', () => {
           VideoManage: VideoManageStub,
           TtsControl: TtsControlStub,
           VideoRender: VideoRenderStub,
+          SubtitleOptions: true,
           TopBar: true,
         },
       },
@@ -374,6 +392,7 @@ describe('Home video render flow', () => {
           VideoManage: VideoManageStub,
           TtsControl: TtsControlStub,
           VideoRender: VideoRenderStub,
+          SubtitleOptions: true,
           TopBar: true,
         },
       },
@@ -440,6 +459,7 @@ describe('Home video render flow', () => {
           VideoManage: VideoManageStub,
           TtsControl: TtsControlStub,
           VideoRender: VideoRenderStub,
+          SubtitleOptions: true,
           TopBar: true,
         },
       },
@@ -500,6 +520,7 @@ describe('Home video render flow', () => {
           VideoManage: VideoManageStub,
           TtsControl: TtsControlStub,
           VideoRender: VideoRenderStub,
+          SubtitleOptions: true,
           TopBar: true,
         },
       },

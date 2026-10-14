@@ -14,6 +14,8 @@ export interface RenderVideoParams {
   subtitleText?: string
   subtitleAsset?: SubtitleAsset
   subtitleStyle?: Partial<SubtitleStyleConfig>
+  subtitlesEnabled?: boolean
+  exportSubtitles?: boolean
   outputSize: { width: number; height: number }
   outputPath: string
   outputDuration?: string
@@ -24,4 +26,6 @@ export interface ExecuteFFmpegResult {
   stdout: string
   stderr: string
   code: number
+  subtitleExportError?: string
+  outputPath?: string
 }

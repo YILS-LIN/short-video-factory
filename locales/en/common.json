@@ -285,6 +285,11 @@
         "autoBatchOff": "Batch render is off",
         "autoBatchOn": "Batch render is on",
         "bgmFolderLabel": "Background music folder (.mp3, pick randomly)",
+        "subtitlePanel": "Subtitles",
+        "subtitlesEnabled": "Show subtitles",
+        "subtitlesHint": "Show subtitles in the exported video; turning this off does not affect narration",
+        "exportSubtitles": "Export SRT",
+        "exportSubtitlesHint": "Save a same-named .srt subtitle file beside the video",
         "output": {
           "width": "Output width",
           "height": "Output height",
@@ -321,6 +326,7 @@
         "failed": "Fail"
       },
       "errors": {
+        "subtitleExportFailed": "Video created, but subtitle export failed",
         "failed": "Video rendering failed. Please check all configurations",
         "bgmListFailed": "Failed to load BGM list. Please check the folder exists",
         "outputFileNameRequired": "Please set an output file name first",

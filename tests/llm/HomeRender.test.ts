@@ -85,6 +85,7 @@ describe('Home render batch failure handling', () => {
           VideoManage: true,
           TtsControl: true,
           VideoRender: VideoRenderStub,
+          SubtitleOptions: true,
           TopBar: true,
         },
       },

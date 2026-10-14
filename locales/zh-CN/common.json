@@ -285,6 +285,11 @@
         "autoBatchOff": "批量合成已关闭",
         "autoBatchOn": "批量合成已开启",
         "bgmFolderLabel": "背景音乐文件夹（随机选取.mp3，为空则无背景音）",
+        "subtitlePanel": "字幕",
+        "subtitlesEnabled": "显示字幕",
+        "subtitlesHint": "在导出视频中显示字幕，关闭不影响配音",
+        "exportSubtitles": "同步导出SRT",
+        "exportSubtitlesHint": "在视频旁保存同名 .srt 字幕文件",
         "output": {
           "width": "导出视频宽度",
           "height": "导出视频高度",
@@ -321,6 +326,7 @@
         "failed": "失败"
       },
       "errors": {
+        "subtitleExportFailed": "视频已生成，字幕导出失败",
         "failed": "视频合成失败，请检查各项配置是否正确",
         "bgmListFailed": "获取背景音乐列表失败，请检查文件夹是否存在",
         "outputFileNameRequired": "请先配置导出文件名",
