@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => {
     emit: (event: string, ...args: unknown[]) => void
     send: ReturnType<typeof vi.fn>
     terminate: ReturnType<typeof vi.fn>
+    url: string
   }> = []
 
   class MockWebSocket {
@@ -15,7 +16,7 @@ const mocks = vi.hoisted(() => {
     close = vi.fn()
     terminate = vi.fn(() => this.emit('close', 1006, Buffer.from('terminated')))
 
-    constructor() {
+    constructor(public readonly url: string) {
       instances.push(this)
     }
 
@@ -36,7 +37,7 @@ const mocks = vi.hoisted(() => {
 
 vi.mock('ws', () => ({ default: mocks.MockWebSocket }))
 
-import { EdgeTTS } from '../../electron/lib/edge-tts'
+import { Constants, DRM, EdgeTTS, SEC_MS_GEC_VERSION } from '../../electron/lib/edge-tts'
 
 describe('EdgeTTS cancellation', () => {
   beforeEach(() => {
@@ -44,6 +45,7 @@ describe('EdgeTTS cancellation', () => {
   })
 
   it('terminates an active WebSocket and rejects as AbortError without retrying', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1791888000000)
     const edgeTts = new EdgeTTS()
     const controller = new AbortController()
     const removeEventListener = vi.spyOn(controller.signal, 'removeEventListener')
@@ -52,6 +54,12 @@ describe('EdgeTTS cancellation', () => {
 
     await vi.waitFor(() => expect(mocks.instances).toHaveLength(1))
     const socket = mocks.instances[0]
+    const url = new URL(socket.url)
+    expect(url.searchParams.get('Sec-MS-GEC')).toBe(DRM.generateSecMsGec())
+    expect(url.searchParams.get('Sec-MS-GEC')).toMatch(/^[0-9A-F]{16}-[0-9A-F]{64}$/)
+    expect(url.searchParams.get('Sec-MS-GEC-Version')).toBe(SEC_MS_GEC_VERSION)
+    expect(SEC_MS_GEC_VERSION).toMatch(/^2-/)
+    expect(url.searchParams.get('trustedclienttoken')).toBe(Constants.TRUSTED_CLIENT_TOKEN)
     controller.abort()
 
     await expect(operation).rejects.toMatchObject({ name: 'AbortError' })

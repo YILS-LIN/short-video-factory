@@ -1,4 +1,4 @@
-import Crypto from 'crypto'
+import { generateSecMsGecV2 } from './edge-tts-gec'
 import axios from 'axios'
 import WebSocket from 'ws'
 import { writeFileSync } from 'node:fs'
@@ -17,7 +17,7 @@ export const VOICE_LIST_URL = `https://${BASE_URL}/voices/list?trustedclienttoke
 
 export const CHROMIUM_FULL_VERSION = '143.0.3650.75'
 export const CHROMIUM_MAJOR_VERSION = CHROMIUM_FULL_VERSION.split('.', 1)[0]
-export const SEC_MS_GEC_VERSION = `1-${CHROMIUM_FULL_VERSION}`
+export const SEC_MS_GEC_VERSION = `2-${CHROMIUM_FULL_VERSION}`
 
 export const WIN_EPOCH = 11644473600
 export const S_TO_NS = 1e9
@@ -419,21 +419,7 @@ export class DRM {
    * Generates the Sec-MS-GEC token.
    */
   static generateSecMsGec(): string {
-    let ticks = DRM.getUnixTimestamp()
-
-    // Convert to Windows file time
-    ticks += WIN_EPOCH
-
-    // Round down to nearest 5 minutes (300 seconds)
-    ticks -= ticks % 300
-
-    // Convert to 100-nanosecond intervals
-    ticks *= S_TO_NS / 100
-
-    const strToHash = `${Math.floor(ticks)}${Constants.TRUSTED_CLIENT_TOKEN}`
-    const hash = Crypto.createHash('sha256')
-    hash.update(strToHash, 'ascii')
-    return hash.digest('hex').toUpperCase()
+    return generateSecMsGecV2(DRM.getUnixTimestamp(), Constants.TRUSTED_CLIENT_TOKEN)
   }
 }
 
@@ -553,7 +539,7 @@ export class EdgeTTS {
 
   async getVoices(): Promise<EdgeTTSVoice[]> {
     const response = await axios.get(
-      `${Constants.VOICES_URL}?trustedclienttoken=${Constants.TRUSTED_CLIENT_TOKEN}`,
+      `${VOICE_LIST_URL}&Sec-MS-GEC=${DRM.generateSecMsGec()}&Sec-MS-GEC-Version=${SEC_MS_GEC_VERSION}`,
       {
         headers: VOICE_HEADERS,
       },
