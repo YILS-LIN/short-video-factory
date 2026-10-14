@@ -28,12 +28,18 @@ importers:
       i18next-fs-backend:
         specifier: ^2.3.2
         version: 2.3.2
+      json-canonicalize:
+        specifier: 3.0.1
+        version: 3.0.1
       music-metadata:
         specifier: ^11.7.3
         version: 11.7.3
       pixi.js:
         specifier: 8.17.1
         version: 8.17.1
+      semver:
+        specifier: 7.8.5
+        version: 7.8.5
       subtitle:
         specifier: 4.2.2-alpha.0
         version: 4.2.2-alpha.0
@@ -43,6 +49,9 @@ importers:
       ws:
         specifier: ^8.18.3
         version: 8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5)
+      zod:
+        specifier: 4.3.6
+        version: 4.3.6
     devDependencies:
       '@ai-sdk/anthropic':
         specifier: 4.0.58
@@ -68,6 +77,9 @@ importers:
       '@types/node':
         specifier: ^22.20.4
         version: 22.20.4
+      '@types/semver':
+        specifier: 7.8.0
+        version: 7.8.0
       '@types/wicg-file-system-access':
         specifier: ^2023.10.6
         version: 2023.10.6
@@ -1498,6 +1510,12 @@ packages:
     resolution:
       {
         integrity: sha512-H/+L+UkTV33uf49PH5pCAUBVPNj2nDBXTN+qS1dOwyyg24l3CcicicCA7ca+HMvJBZcFgl5r8e+RR6elsb4Lyw==,
+      }
+
+  '@types/semver@7.8.0':
+    resolution:
+      {
+        integrity: sha512-1mAINjtQCXXeLkJ9ehXkwOcBpqtLxiVtKhpUf83DdRNdQKV0iXZpaHYqRr7nj+wvxuJzoAmAwXI+sCNMv1CzLQ==,
       }
 
   '@types/verror@1.10.11':
@@ -3836,6 +3854,13 @@ packages:
         integrity: sha512-4bV5BfR2mqfQTJm+V5tPPdf+ZpuhiIvTuAB5g8kcrXOZpTT/QwwVRWBywX1ozr6lEuPdbHxwaJlm9G6mI2sfSQ==,
       }
 
+  json-canonicalize@3.0.1:
+    resolution:
+      {
+        integrity: sha512-xEzkTucfHhDooWOSMOvrlll9oTk6/mXZIerF2DFWA2chHZsnc2zrmAKjVOyDbSYHr0e3Djx9F89nZ3U2Bn+lSw==,
+      }
+    engines: { node: '>=8.5' }
+
   json-schema-traverse@0.4.1:
     resolution:
       {
@@ -4806,6 +4831,14 @@ packages:
     resolution:
       {
         integrity: sha512-RF0Fw+rO5AMf9MAyaRXI4AV0Ulj5lMHqVxxdSgiVbixSCXoEmmX/jk0CuJw4+3SqroYO9VoUh+HcuJivvtJemA==,
+      }
+    engines: { node: '>=10' }
+    hasBin: true
+
+  semver@7.8.5:
+    resolution:
+      {
+        integrity: sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA==,
       }
     engines: { node: '>=10' }
     hasBin: true
@@ -6513,6 +6546,8 @@ snapshots:
     dependencies:
       '@types/node': 16.18.126
 
+  '@types/semver@7.8.0': {}
+
   '@types/verror@1.10.11':
     optional: true
 
@@ -8097,6 +8132,8 @@ snapshots:
 
   json-buffer@3.0.1: {}
 
+  json-canonicalize@3.0.1: {}
+
   json-schema-traverse@0.4.1: {}
 
   json-schema@0.4.0: {}
@@ -8624,6 +8661,8 @@ snapshots:
   semver@6.3.1: {}
 
   semver@7.7.2: {}
+
+  semver@7.8.5: {}
 
   serialize-error@7.0.1:
     dependencies:

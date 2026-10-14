@@ -80,7 +80,8 @@
     "poweredBy": "Powered by YILS (Blog: https://yils.blog)"
   },
   "topBar": {
-    "poweredByHint": "Developed by YILS. Visit the author's blog",
+    "poweredByHint": "Visit the author's homepage",
+    "poweredBy": "Powered by {{name}}",
     "documentation": "Documentation",
     "exportDiagnostics": "Export diagnostics",
     "diagnosticsExported": "Diagnostics exported",
@@ -96,20 +97,41 @@
   },
   "version": {
     "copy": "Copy version",
-    "checkUpdate": "Check for updates"
+    "checkUpdate": "Check for updates",
+    "updateAvailable": "Check for updates (update available)"
   },
   "update": {
     "title": "Update available",
+    "minimumVersionRequired": "A supported version is required",
     "currentVersion": "Current version",
     "latestVersion": "Latest version",
+    "minimumSupportedVersion": "Minimum supported version",
     "releaseDate": "Release date",
     "releaseNotes": "What's new",
     "checking": "Checking for updates",
     "upToDate": "You're up to date",
+    "noRelease": "No release information is available yet",
+    "mandatory": "This version is below the supported range. Please visit the website to get a supported version.",
+    "noCompatibleAsset": "No installer is available for this platform. Visit the website for download options.",
     "updateError": "Failed to check for updates",
     "unknownError": "Unknown error. Please try again later.",
     "updateLater": "Later",
     "visitWebsite": "Visit website"
+  },
+  "announcements": {
+    "title": "Announcements",
+    "open": "Open announcements",
+    "openWithTitle": "Open announcement: {{title}}. {{count}} total.",
+    "unread": "Unread",
+    "viewDetails": "View details",
+    "noLongerAvailable": "This announcement has expired or no longer applies to this version.",
+    "close": "Close",
+    "severity": {
+      "info": "Notice",
+      "success": "Good news",
+      "warning": "Important",
+      "critical": "Urgent"
+    }
   },
   "features": {
     "llm": {

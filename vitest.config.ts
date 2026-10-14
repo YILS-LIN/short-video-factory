@@ -5,6 +5,7 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify('test'),
+    __APP_METADATA_ENVIRONMENT__: JSON.stringify('test'),
   },
   plugins: [vue()],
   resolve: {

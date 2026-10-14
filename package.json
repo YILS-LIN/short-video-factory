@@ -32,11 +32,14 @@
     "ffmpeg-static": "^5.2.0",
     "i18next": "^25.4.0",
     "i18next-fs-backend": "^2.3.2",
+    "json-canonicalize": "3.0.1",
     "music-metadata": "^11.7.3",
     "pixi.js": "8.17.1",
+    "semver": "7.8.5",
     "subtitle": "4.2.2-alpha.0",
     "systeminformation": "^5.27.7",
-    "ws": "^8.18.3"
+    "ws": "^8.18.3",
+    "zod": "4.3.6"
   },
   "devDependencies": {
     "@ai-sdk/anthropic": "4.0.58",
@@ -47,6 +50,7 @@
     "@types/better-sqlite3": "^7.6.13",
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^22.20.4",
+    "@types/semver": "7.8.0",
     "@types/wicg-file-system-access": "^2023.10.6",
     "@types/ws": "^8.18.1",
     "@vitejs/plugin-vue": "^6.0.0",

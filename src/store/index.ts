@@ -6,3 +6,4 @@ const store = createPinia().use(piniaPluginPersistedstate)
 export default store
 
 export * from './app'
+export * from './metadata'

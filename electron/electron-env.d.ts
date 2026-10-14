@@ -64,6 +64,10 @@ interface Window {
     ) => Promise<void>
     analyticsMarkActive: (durationMs: number) => Promise<void>
     checkForUpdates: () => Promise<import('./updater').UpdateCheckResult>
+    getMetadataState: () => Promise<import('./metadata/types').MetadataState>
+    onMetadataStateChanged: (
+      listener: (state: import('./metadata/types').MetadataState) => void,
+    ) => () => void
     exportDiagnostics: () => Promise<string | null>
     log: (level: import('./logger').AppLogLevel, ...args: unknown[]) => void
   }
@@ -83,3 +87,7 @@ declare const __APP_ANALYTICS_BUILD_INFO__: {
   buildId: string
   distributionChannel: string
 }
+
+declare const __APP_METADATA_CONFIG__: import('./metadata/types').MetadataBuildConfig
+declare const __APP_METADATA_ENVIRONMENT__: import('./metadata/types').MetadataEnvironment
+declare const __APP_METADATA_RELEASE_CHANNEL__: import('./metadata/types').ReleaseChannel

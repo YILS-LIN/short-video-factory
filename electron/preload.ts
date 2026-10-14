@@ -68,6 +68,15 @@ contextBridge.exposeInMainWorld('electron', {
   analyticsMarkActive: (durationMs: number) =>
     ipcRenderer.invoke('analytics-mark-active', durationMs),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  getMetadataState: () => ipcRenderer.invoke('metadata-get-state'),
+  onMetadataStateChanged: (listener: (state: import('./metadata/types').MetadataState) => void) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      state: import('./metadata/types').MetadataState,
+    ) => listener(state)
+    ipcRenderer.on('metadata-state-changed', handler)
+    return () => ipcRenderer.off('metadata-state-changed', handler)
+  },
   exportDiagnostics: () => ipcRenderer.invoke('export-diagnostics'),
   log: (level: AppLogLevel, ...args: unknown[]) => ipcRenderer.send('app-log', { level, args }),
 })

@@ -13,6 +13,7 @@ import { flushAnalytics, registerAnalyticsWindow, startAnalytics } from './lib/a
 import { initLogger, writeMainLog } from './logger'
 import { checkForUpdates, initUpdateChecker } from './updater'
 import { getMainWindowSize } from './lib/window-size'
+import { initializeMetadataService } from './metadata/runtime'
 
 // 用于引入 CommonJS 模块的方法
 // import { createRequire } from 'node:module'
@@ -231,6 +232,7 @@ app.whenReady().then(() => {
   initSqlite()
   initI18n()
   initIPC()
+  initializeMetadataService()
   void startAnalytics()
   createWindow()
 

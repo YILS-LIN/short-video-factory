@@ -18,6 +18,8 @@ import { exportDiagnostics } from './diagnostics'
 import { AppLogLevel, writeRendererLog } from './logger'
 import { checkForUpdates } from './updater'
 import { setupEffectRendererFrameWriter } from './effect-engine/export-task-manager'
+import { getMetadataState } from './metadata/runtime'
+import { validateExternalHttpsUrl } from './lib/external-url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 let windowMaximizedByApp = false
@@ -182,7 +184,22 @@ export default function initIPC() {
 
   // 打开外部链接
   ipcMain.handle('open-external', (_event, params: OpenExternalParams) => {
-    return shell.openExternal(params.url)
+    return shell.openExternal(validateExternalHttpsUrl(params?.url))
+  })
+
+  ipcMain.handle('metadata-get-state', (event) => {
+    const frame = event.senderFrame
+    if (!frame || frame !== event.sender.mainFrame) {
+      throw new Error('Metadata state is only available to the main application frame.')
+    }
+    const frameUrl = new URL(frame.url)
+    if (VITE_DEV_SERVER_URL) {
+      const devOrigin = new URL(VITE_DEV_SERVER_URL).origin
+      if (frameUrl.origin !== devOrigin) throw new Error('Untrusted metadata IPC sender.')
+    } else if (frameUrl.protocol !== 'file:') {
+      throw new Error('Untrusted metadata IPC sender.')
+    }
+    return getMetadataState()
   })
 
   ipcMain.handle('export-diagnostics', (event) => {
