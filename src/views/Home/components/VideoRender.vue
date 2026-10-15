@@ -47,24 +47,27 @@
             prepend-icon="mdi-stop"
             @click="emit('cancelRender')"
           >
-            <span class="text-xl">{{ t('features.render.config.stopLabel') }}</span>
+            <span class="text-xl">{{
+              t(
+                appStore.batchProgress?.running
+                  ? 'features.render.batch.stop'
+                  : 'features.render.config.stopLabel',
+              )
+            }}</span>
           </v-btn>
         </div>
 
         <div class="col-start-2 row-start-2 w-full flex items-center justify-between gap-2">
-          <v-chip
-            class="batch-chip"
-            :class="{ 'batch-chip--locked': taskInProgress }"
-            :color="appStore.autoBatch ? 'primary' : 'grey'"
-            variant="tonal"
-            @click="handleToggleAutoBatch"
+          <v-btn
+            class="!h-10 !px-3"
+            variant="text"
+            :title="appStore.renderConfig.outputPath"
+            :disabled="!appStore.renderConfig.outputPath?.trim() || openingDirectory"
+            :loading="openingDirectory"
+            @click="handleOpenOutputDirectory"
           >
-            <v-icon start size="small">
-              {{ appStore.autoBatch ? 'mdi-autorenew' : 'mdi-autorenew-off' }}
-            </v-icon>
-            <span class="batch-chip-text">{{ batchSummaryText }}</span>
-          </v-chip>
-
+            {{ t('features.render.config.openOutputDirectory') }}
+          </v-btn>
           <v-btn class="!h-10 !px-6" :disabled="taskInProgress" @click="configDialogShow = true">
             <v-icon class="mt-1" start size="small">mdi-cog</v-icon>
             {{ t('common.buttons.config') }}
@@ -157,12 +160,44 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, nextTick, computed, watch, onUnmounted } from 'vue'
+import { h, ref, nextTick, computed, watch, onUnmounted } from 'vue'
 import { useTranslation } from 'i18next-vue'
 import { RenderStatus, useAppStore } from '@/store'
+import { useToast } from 'vue-toastification'
+import ActionToastEmbed from '@/components/ActionToastEmbed.vue'
+import { formatErrorForCopy } from '@/lib/error-copy'
 
 const appStore = useAppStore()
 const { t } = useTranslation()
+const toast = useToast()
+const openingDirectory = ref(false)
+const handleOpenOutputDirectory = async () => {
+  const folderPath = appStore.renderConfig.outputPath
+  if (!folderPath?.trim() || openingDirectory.value) return
+  openingDirectory.value = true
+  try {
+    await window.electron.openDirectory(folderPath)
+  } catch (error) {
+    const message = t('features.render.errors.openOutputDirectoryFailed')
+    const detail = `${folderPath}\n${error instanceof Error ? error.message : String(error)}`
+    toast.error({
+      component: {
+        render: () =>
+          h(ActionToastEmbed, {
+            message,
+            detail,
+            actionText: t('common.buttons.copyErrorDetail'),
+            onActionTirgger: () => {
+              navigator.clipboard.writeText(formatErrorForCopy(message, detail))
+              toast.success(t('common.messages.success.copySuccess'))
+            },
+          }),
+      },
+    })
+  } finally {
+    openingDirectory.value = false
+  }
+}
 
 const emit = defineEmits<{
   (e: 'renderVideo'): void
@@ -171,9 +206,10 @@ const emit = defineEmits<{
 
 const taskInProgress = computed(() => {
   return (
-    appStore.renderStatus !== RenderStatus.None &&
-    appStore.renderStatus !== RenderStatus.Completed &&
-    appStore.renderStatus !== RenderStatus.Failed
+    appStore.batchProgress?.running ||
+    (appStore.renderStatus !== RenderStatus.None &&
+      appStore.renderStatus !== RenderStatus.Completed &&
+      appStore.renderStatus !== RenderStatus.Failed)
   )
 })
 
@@ -194,13 +230,15 @@ watch(
       renderProgress.value = 100
       return
     }
-    if (status === RenderStatus.None) {
+    if (status === RenderStatus.None || status === RenderStatus.GenerateText) {
       renderProgress.value = 0
     }
   },
 )
 
 const renderStatusShortText = computed(() => {
+  if (appStore.batchProgress?.running && appStore.batchProgress.stopRequested)
+    return t('features.render.batch.stopping')
   switch (appStore.renderStatus) {
     case RenderStatus.GenerateText:
       return t('features.render.statusShort.generatingText')
@@ -251,17 +289,6 @@ const progressCenterSecondary = computed(() => {
   return ''
 })
 
-const batchSummaryText = computed(() => {
-  return appStore.autoBatch
-    ? t('features.render.config.autoBatchOn')
-    : t('features.render.config.autoBatchOff')
-})
-
-const handleToggleAutoBatch = () => {
-  if (taskInProgress.value) return
-  appStore.autoBatch = !appStore.autoBatch
-}
-
 // 配置合成选项
 // toRaw only unwraps the outer proxy; copy the nested size explicitly so hydrated
 // or saved reactive configuration never reaches structuredClone.
@@ -308,23 +335,3 @@ const handleSelectBgmFolder = async () => {
   }
 }
 </script>
-
-<style lang="scss" scoped>
-.batch-chip {
-  cursor: pointer;
-}
-
-.batch-chip--locked {
-  cursor: not-allowed;
-}
-
-.batch-chip-text {
-  display: inline-flex;
-  align-items: baseline;
-  white-space: nowrap;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1;
-  letter-spacing: 0.01em;
-}
-</style>

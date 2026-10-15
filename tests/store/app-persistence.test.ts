@@ -110,6 +110,7 @@ describe('app store persisted state', () => {
       SuggestedCodec: 'audio-24khz-48kbitrate-mono-mp3',
     }
     firstSession.store.speed = 30
+    firstSession.store.batchConfig = { count: 25, onError: 'continue' }
     firstSession.store.autoBatch = true
     firstSession.store.updateRenderStatus(RenderStatus.Rendering)
 
@@ -119,6 +120,7 @@ describe('app store persisted state', () => {
     expect(storedState.renderConfig.outputPath).toBe('C:/output folder')
     expect(storedState).not.toHaveProperty('autoBatch')
     expect(storedState).not.toHaveProperty('renderStatus')
+    expect(storedState).not.toHaveProperty('batchProgress')
     firstSession.app.unmount()
 
     const secondSession = createPersistedStore()
@@ -137,6 +139,8 @@ describe('app store persisted state', () => {
       expect(secondSession.store.voice?.ShortName).toBe('en-US-Test')
       expect(secondSession.store.speed).toBe(30)
       expect(secondSession.store.autoBatch).toBe(false)
+      expect(secondSession.store.batchConfig).toEqual({ count: 25, onError: 'continue' })
+      expect(secondSession.store.batchProgress).toBe(null)
       expect(secondSession.store.renderStatus).toBe(RenderStatus.None)
     } finally {
       secondSession.app.unmount()

@@ -33,7 +33,7 @@
             :disabled="appStore.renderStatus === RenderStatus.SynthesizedSpeech"
           />
         </div>
-        <SubtitleOptions class="shrink-0" />
+        <GenerationOptions class="shrink-0" />
         <VideoRender
           class="shrink-0"
           @render-video="handleRenderVideo"
@@ -49,7 +49,7 @@ import TextGenerate from './components/TextGenerate.vue'
 import VideoManage from './components/VideoManage.vue'
 import TtsControl from './components/TtsControl.vue'
 import VideoRender from './components/VideoRender.vue'
-import SubtitleOptions from './components/SubtitleOptions.vue'
+import GenerationOptions from './components/GenerationOptions.vue'
 import TopBar from './components/TopBar.vue'
 
 import { h, onBeforeUnmount, ref } from 'vue'
@@ -62,6 +62,7 @@ import ActionToastEmbed from '@/components/ActionToastEmbed.vue'
 import random from 'random'
 import { formatErrorForCopy } from '@/lib/error-copy'
 import { createAnalyticsOperationId, trackAnalytics } from '@/lib/analytics'
+import { runBatch, type BatchRunState } from '@/lib/batch'
 
 const toast = useToast()
 const appStore = useAppStore()
@@ -164,14 +165,7 @@ let activeTtsSynthesisController: AbortController | null = null
 type GenerationStage = 'text' | 'tts' | 'media' | 'export'
 type GenerationOutcome = 'succeeded' | 'failed' | 'cancelled'
 
-interface BatchContext {
-  id: string
-  startedAt: number
-  completedCount: number
-  failedCount: number
-  cancelledCount: number
-  finished: boolean
-}
+type BatchContext = BatchRunState
 
 interface GenerationTask {
   id: string
@@ -222,6 +216,8 @@ const classifyError = (error: unknown): string => {
 const finalizeBatch = (batch: BatchContext, stopReason: string) => {
   if (batch.finished) return
   batch.finished = true
+  batch.running = false
+  batch.stopReason = stopReason
   trackAnalytics('batch_finished', {
     batch_id: batch.id,
     completed_count: batch.completedCount,
@@ -232,7 +228,65 @@ const finalizeBatch = (batch: BatchContext, stopReason: string) => {
   })
 }
 
-const handleRenderVideo = async (batchContext?: BatchContext) => {
+let generationRunning = false
+const handleRenderVideo = async () => {
+  if (generationRunning) return
+  const count = Number(appStore.batchConfig?.count ?? 10)
+  if (appStore.autoBatch && (!Number.isInteger(count) || count < 1 || count > 999)) {
+    toast.warning(t('features.render.batch.invalidCount'))
+    return
+  }
+  generationRunning = true
+  try {
+    if (!appStore.autoBatch) {
+      appStore.batchProgress = null
+      await renderSingleVideo()
+      return
+    }
+    appStore.batchProgress = {
+      id: createAnalyticsOperationId(),
+      startedAt: performance.now(),
+      total: count,
+      current: 0,
+      completedCount: 0,
+      failedCount: 0,
+      cancelledCount: 0,
+      warningCount: 0,
+      consecutiveFailures: 0,
+      onError: appStore.batchConfig?.onError === 'continue' ? 'continue' : 'stop',
+      running: true,
+      stopRequested: false,
+      stopReason: '',
+      finished: false,
+    }
+    const batch = appStore.batchProgress
+    trackAnalytics('batch_started', { batch_id: batch.id })
+    try {
+      const reason = await runBatch(
+        batch,
+        () => renderSingleVideo(batch),
+        () => {
+          TextGenerateInstance.value?.clearOutputText?.()
+        },
+      )
+      finalizeBatch(batch, reason)
+      if (reason !== 'user_cancelled')
+        toast.info(
+          t('features.render.batch.summary', {
+            success: batch.completedCount,
+            failed: batch.failedCount,
+            warnings: batch.warningCount,
+          }),
+        )
+    } finally {
+      if (!batch.finished) finalizeBatch(batch, 'generation_failed')
+    }
+  } finally {
+    generationRunning = false
+  }
+}
+
+const renderSingleVideo = async (batchContext?: BatchContext) => {
   const subtitlesEnabled = appStore.renderConfig.subtitlesEnabled !== false
   const exportSubtitles = appStore.renderConfig.exportSubtitles === true
   const operationId = createAnalyticsOperationId()
@@ -250,6 +304,8 @@ const handleRenderVideo = async (batchContext?: BatchContext) => {
     }
     if (batchContext) {
       batchContext.failedCount += 1
+      batchContext.stopReason = reason
+      batchContext.stopRequested = true
       finalizeBatch(batchContext, 'generation_failed')
     }
   }
@@ -323,19 +379,8 @@ const handleRenderVideo = async (batchContext?: BatchContext) => {
     }
   }
 
-  const batch =
-    batchContext ??
-    (appStore.autoBatch
-      ? {
-          id: createAnalyticsOperationId(),
-          startedAt: performance.now(),
-          completedCount: 0,
-          failedCount: 0,
-          cancelledCount: 0,
-          finished: false,
-        }
-      : null)
-  if (batch && !batchContext) trackAnalytics('batch_started', { batch_id: batch.id })
+  const batch = batchContext ?? null
+  if (batch?.stopRequested) return
 
   const task: GenerationTask = {
     id: operationId,
@@ -511,6 +556,7 @@ const handleRenderVideo = async (batchContext?: BatchContext) => {
     }
 
     if (renderResult.subtitleExportError) {
+      if (batch) batch.warningCount += 1
       const message = t('features.render.errors.subtitleExportFailed')
       const detail = `${renderResult.outputPath ?? ''}\n${renderResult.subtitleExportError}`
       toast.error({
@@ -532,21 +578,18 @@ const handleRenderVideo = async (batchContext?: BatchContext) => {
     }
     finishTask('succeeded')
     appStore.updateRenderStatus(RenderStatus.Completed)
-
-    if (batch && renderResult.subtitleExportError) {
-      finalizeBatch(batch, 'subtitle_export_failed')
-    } else if (batch && appStore.autoBatch) {
-      toast.info(t('features.render.info.batchNext'))
-      TextGenerateInstance.value?.clearOutputText()
-      void handleRenderVideo(batch)
-    } else if (batch) {
-      finalizeBatch(batch, 'completed')
-    }
   } catch (error: any) {
     if (task.finished) return
     console.error('视频合成失败:', error)
     finishTask('failed', error)
-    if (batch) finalizeBatch(batch, 'generation_failed')
+    if (
+      batch &&
+      (['permission_denied', 'disk_full', 'authentication_failed'].includes(classifyError(error)) ||
+        String(error).includes('输出路径不存在'))
+    ) {
+      batch.stopRequested = true
+      batch.stopReason = 'unrecoverable_error'
+    }
     const errorMessage = error?.error?.message || error?.message || error
     toast.error({
       component: {
@@ -569,6 +612,10 @@ const handleRenderVideo = async (batchContext?: BatchContext) => {
   }
 }
 const handleCancelRender = () => {
+  if (appStore.batchProgress?.running) {
+    appStore.batchProgress.stopRequested = true
+    appStore.batchProgress.stopReason = 'user_cancelled'
+  }
   console.log('视频合成终止')
   const task = activeGeneration
   switch (appStore.renderStatus) {
@@ -592,7 +639,6 @@ const handleCancelRender = () => {
   }
   if (task) {
     task.finish?.('cancelled')
-    if (task.batch) finalizeBatch(task.batch, 'user_cancelled')
   }
   appStore.updateRenderStatus(RenderStatus.None)
   toast.info(t('features.render.info.canceled'))

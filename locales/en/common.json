@@ -278,6 +278,28 @@
       }
     },
     "render": {
+      "batch": {
+        "label": "Batch",
+        "enabled": "Batch · {{count}} runs",
+        "settings": "Batch settings",
+        "count": "Number of runs",
+        "invalidCount": "Enter an integer from 1 to 999",
+        "onError": "On failure",
+        "stopOnError": "Stop batch",
+        "continueOnError": "Skip and continue",
+        "hint": "Failures count toward the limit. Stop after 3 consecutive errors. No automatic retries.",
+        "stop": "Stop batch",
+        "stopping": "Stopping batch",
+        "progress": "Run {{current}} / {{total}} · {{remaining}} not started",
+        "summary": "Succeeded {{success}} · Failed {{failed}} · Subtitle errors {{warnings}}",
+        "reasons": {
+          "completed": "Batch completed",
+          "user_cancelled": "Batch stopped",
+          "generation_failed": "Batch stopped on error",
+          "consecutive_failures": "Stopped after 3 consecutive errors",
+          "unrecoverable_error": "Stopped on unrecoverable error"
+        }
+      },
       "config": {
         "startLabel": "Start Rendering",
         "stopLabel": "Stop Rendering",
@@ -287,6 +309,7 @@
         "bgmFolderLabel": "Background music folder (.mp3, pick randomly)",
         "subtitlePanel": "Subtitles",
         "subtitlesEnabled": "Show subtitles",
+        "openOutputDirectory": "Open output folder",
         "subtitlesHint": "Show subtitles in the exported video; turning this off does not affect narration",
         "exportSubtitles": "Export SRT",
         "exportSubtitlesHint": "Save a same-named .srt subtitle file beside the video",
@@ -327,6 +350,7 @@
       },
       "errors": {
         "subtitleExportFailed": "Video created, but subtitle export failed",
+        "openOutputDirectoryFailed": "Failed to open output folder",
         "failed": "Video rendering failed. Please check all configurations",
         "bgmListFailed": "Failed to load BGM list. Please check the folder exists",
         "outputFileNameRequired": "Please set an output file name first",

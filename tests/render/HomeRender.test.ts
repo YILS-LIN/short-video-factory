@@ -147,7 +147,7 @@ describe('Home video render flow', () => {
             VideoManage: VideoManageStub,
             TtsControl: TtsControlStub,
             VideoRender: VideoRenderStub,
-            SubtitleOptions: true,
+            GenerationOptions: true,
             TopBar: true,
           },
         },
@@ -190,7 +190,7 @@ describe('Home video render flow', () => {
     },
   )
 
-  it('marks a zero-exit FFmpeg render as completed', async () => {
+  it.each([1, 3])('completes exactly %s successful renders', async (count) => {
     const storeState = reactive({
       renderConfig: {
         bgmPath: '',
@@ -199,7 +199,9 @@ describe('Home video render flow', () => {
         outputFileName: 'success',
         outputFileExt: '.mp4',
       },
-      autoBatch: false,
+      autoBatch: count > 1,
+      batchConfig: { count, onError: 'stop' },
+      batchProgress: null as { running: boolean; completedCount: number } | null,
       renderStatus: mocks.RenderStatus.None,
       updateRenderStatus(status: number) {
         this.renderStatus = status
@@ -234,7 +236,7 @@ describe('Home video render flow', () => {
           VideoManage: VideoManageStub,
           TtsControl: TtsControlStub,
           VideoRender: VideoRenderStub,
-          SubtitleOptions: true,
+          GenerationOptions: true,
           TopBar: true,
         },
       },
@@ -243,11 +245,15 @@ describe('Home video render flow', () => {
     try {
       await wrapper.find('#render-trigger').trigger('click')
       await vi.waitFor(() => expect(renderVideo).toHaveBeenCalledTimes(1))
+      await wrapper.find('#render-trigger').trigger('click')
+      expect(mocks.getTextForSynthesis).toHaveBeenCalledTimes(1)
       renderDeferred.resolve({ stdout: '', stderr: '', code: 0 })
+      await vi.waitFor(() => expect(renderVideo).toHaveBeenCalledTimes(count))
+      await vi.waitFor(() => expect(storeState.batchProgress?.running ?? false).toBe(false))
 
       await vi.waitFor(() => expect(storeState.renderStatus).toBe(mocks.RenderStatus.Completed))
       expect(mocks.toast.success).toHaveBeenCalledWith('features.render.success.succeeded')
-      expect(mocks.getTextForSynthesis).toHaveBeenCalledTimes(1)
+      expect(mocks.getTextForSynthesis).toHaveBeenCalledTimes(count)
       expect(mocks.synthesizeSpeech).toHaveBeenCalledWith(
         expect.objectContaining({ text: 'A generated script', withCaption: true }),
       )
@@ -312,7 +318,7 @@ describe('Home video render flow', () => {
           VideoManage: VideoManageStub,
           TtsControl: TtsControlStub,
           VideoRender: VideoRenderStub,
-          SubtitleOptions: true,
+          GenerationOptions: true,
           TopBar: true,
         },
       },
@@ -392,7 +398,7 @@ describe('Home video render flow', () => {
           VideoManage: VideoManageStub,
           TtsControl: TtsControlStub,
           VideoRender: VideoRenderStub,
-          SubtitleOptions: true,
+          GenerationOptions: true,
           TopBar: true,
         },
       },
@@ -459,7 +465,7 @@ describe('Home video render flow', () => {
           VideoManage: VideoManageStub,
           TtsControl: TtsControlStub,
           VideoRender: VideoRenderStub,
-          SubtitleOptions: true,
+          GenerationOptions: true,
           TopBar: true,
         },
       },
@@ -520,7 +526,7 @@ describe('Home video render flow', () => {
           VideoManage: VideoManageStub,
           TtsControl: TtsControlStub,
           VideoRender: VideoRenderStub,
-          SubtitleOptions: true,
+          GenerationOptions: true,
           TopBar: true,
         },
       },

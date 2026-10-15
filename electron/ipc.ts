@@ -20,6 +20,7 @@ import { checkForUpdates } from './updater'
 import { setupEffectRendererFrameWriter } from './effect-engine/export-task-manager'
 import { getMetadataState } from './metadata/runtime'
 import { validateExternalHttpsUrl } from './lib/external-url'
+import { openDirectory } from './lib/open-directory'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 let windowMaximizedByApp = false
@@ -212,6 +213,8 @@ export default function initIPC() {
   ipcMain.handle('check-for-updates', () => checkForUpdates(app.getVersion()))
 
   // 选择文件夹
+  ipcMain.handle('open-directory', (_event, folderPath: string) => openDirectory(folderPath))
+
   ipcMain.handle('select-folder', async (event, params?: SelectFolderParams) => {
     const win = BrowserWindow.fromWebContents(event.sender)
     if (!win) {

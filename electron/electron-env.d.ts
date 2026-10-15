@@ -45,6 +45,7 @@ interface Window {
     setZoomFactor: (factor: number) => void
     openExternal: (params: import('./types').OpenExternalParams) => Promise<void>
     selectFolder: (params: import('./types').SelectFolderParams) => Promise<string>
+    openDirectory: (folderPath: string) => Promise<void>
     listFilesFromFolder: (
       params: import('./types').ListFilesFromFolderParams,
     ) => Promise<import('./types').ListFilesFromFolderRecord[]>

@@ -11,9 +11,18 @@ interface ExportTaskContext {
   task: SubtitleRendererTask
   tempPaths: EffectTempTaskPaths
   totalFrames: number
+  pendingWrites?: Set<Promise<void>>
 }
 
 const contextMap = new Map<string, ExportTaskContext>()
+// Retain a bounded cancellation history for IPC messages already in transit.
+const cancelledTaskIds = new Set<string>()
+function markTaskCancelled(taskId: string) {
+  cancelledTaskIds.add(taskId)
+  if (cancelledTaskIds.size > 128) {
+    cancelledTaskIds.delete(cancelledTaskIds.values().next().value!)
+  }
+}
 
 export class EffectRendererCancelledError extends Error {
   constructor(message: string = '字幕导出已取消') {
@@ -23,10 +32,16 @@ export class EffectRendererCancelledError extends Error {
 }
 
 export function registerEffectExportTaskContext(context: ExportTaskContext) {
+  cancelledTaskIds.delete(context.task.taskId)
+  context.pendingWrites = new Set()
   contextMap.set(context.task.taskId, context)
 }
 
-export function unregisterEffectExportTaskContext(taskId: string) {
+export async function unregisterEffectExportTaskContext(taskId: string) {
+  const context = contextMap.get(taskId)
+  if (context?.pendingWrites) {
+    await Promise.allSettled([...context.pendingWrites])
+  }
   contextMap.delete(taskId)
 }
 
@@ -35,6 +50,7 @@ export function setupEffectRendererFrameWriter() {
   ipcMain.handle(
     'effect-renderer-write-frame',
     async (_event, payload: { taskId: string; frameIndex: number; pngBase64: string }) => {
+      if (cancelledTaskIds.has(payload.taskId)) return false
       const context = contextMap.get(payload.taskId)
       if (!context) {
         throw new Error(`未找到任务上下文: ${payload.taskId}`)
@@ -46,8 +62,17 @@ export function setupEffectRendererFrameWriter() {
       )
       const outputPath = path.join(context.tempPaths.framesDir, fileName)
       const buffer = Buffer.from(payload.pngBase64, 'base64')
-      await fs.promises.writeFile(outputPath, buffer)
-      return true
+      const pendingWrite = fs.promises.writeFile(outputPath, buffer)
+      context.pendingWrites?.add(pendingWrite)
+      try {
+        await pendingWrite
+        return !cancelledTaskIds.has(payload.taskId)
+      } catch (error) {
+        if (cancelledTaskIds.has(payload.taskId)) return false
+        throw error
+      } finally {
+        context.pendingWrites?.delete(pendingWrite)
+      }
     },
   )
 }
@@ -61,6 +86,7 @@ export async function executeEffectExportTask(params: {
   const { renderWindow, context, onProgress, abortSignal } = params
   const { task } = context
   if (abortSignal?.aborted) {
+    markTaskCancelled(task.taskId)
     throw new EffectRendererCancelledError()
   }
 
@@ -136,6 +162,7 @@ export async function executeEffectExportTask(params: {
     }
 
     const onAbort = () => {
+      markTaskCancelled(task.taskId)
       // 取消链路：主进程发取消信号 -> 隐藏窗口停止逐帧导出 -> 主进程返回 cancelled。
       renderWindow.webContents.send('effect-renderer-export-cancel', { taskId: task.taskId })
       finish(() => reject(new EffectRendererCancelledError()))

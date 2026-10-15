@@ -41,6 +41,7 @@ import {
   executeEffectExportTask,
   registerEffectExportTaskContext,
   setupEffectRendererFrameWriter,
+  unregisterEffectExportTaskContext,
 } from '../../electron/effect-engine/export-task-manager'
 
 const createContext = (tempDir: string, taskId = 'task-test') => {
@@ -76,6 +77,7 @@ describe('effect renderer IPC lifecycle', () => {
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
     vi.useRealTimers()
     fs.rmSync(tempDir, { recursive: true, force: true })
   })
@@ -211,5 +213,61 @@ describe('effect renderer IPC lifecycle', () => {
     expect(renderWindow.webContents.send).not.toHaveBeenCalled()
     expect(mocks.ipcMain.listenerCount('effect-renderer-export-done')).toBe(0)
     expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('returns cancellation for late frames before and after removing the context', async () => {
+    const context = createContext(tempDir, 'cancelled-late-task')
+    registerEffectExportTaskContext(context)
+    setupEffectRendererFrameWriter()
+    const controller = new AbortController()
+    const pending = executeEffectExportTask({
+      renderWindow: createRenderWindow() as never,
+      context,
+      abortSignal: controller.signal,
+    })
+    controller.abort()
+    await expect(pending).rejects.toMatchObject({ name: 'EffectRendererCancelledError' })
+    const writeFrame = mocks.ipcMain.handlers.get('effect-renderer-write-frame')!
+    const payload = { taskId: context.task.taskId, frameIndex: 1, pngBase64: '' }
+    await expect(writeFrame({}, payload)).resolves.toBe(false)
+    await unregisterEffectExportTaskContext(context.task.taskId)
+    await expect(writeFrame({}, payload)).resolves.toBe(false)
+    expect(fs.readdirSync(context.tempPaths.framesDir)).toEqual([])
+    await expect(writeFrame({}, { ...payload, taskId: 'unknown-id' })).rejects.toThrow(
+      '未找到任务上下文',
+    )
+  })
+
+  it('drains an in-flight disk write before removing a cancelled context', async () => {
+    const context = createContext(tempDir, 'cancelled-writing-task')
+    registerEffectExportTaskContext(context)
+    setupEffectRendererFrameWriter()
+    let completeWrite!: () => void
+    vi.spyOn(fs.promises, 'writeFile').mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          completeWrite = resolve
+        }),
+    )
+    const writeFrame = mocks.ipcMain.handlers.get('effect-renderer-write-frame')!
+    const writing = writeFrame({}, { taskId: context.task.taskId, frameIndex: 1, pngBase64: '' })
+    const controller = new AbortController()
+    const pending = executeEffectExportTask({
+      renderWindow: createRenderWindow() as never,
+      context,
+      abortSignal: controller.signal,
+    })
+    controller.abort()
+    await expect(pending).rejects.toMatchObject({ name: 'EffectRendererCancelledError' })
+    let cleaned = false
+    const cleaning = unregisterEffectExportTaskContext(context.task.taskId).then(() => {
+      cleaned = true
+    })
+    await Promise.resolve()
+    expect(cleaned).toBe(false)
+    completeWrite()
+    await expect(writing).resolves.toBe(false)
+    await cleaning
+    expect(cleaned).toBe(true)
   })
 })

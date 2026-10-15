@@ -52,56 +52,64 @@ describe('Home render batch failure handling', () => {
     mocks.getTextForSynthesis.mockReset()
   })
 
-  it('stops an auto-batch after text generation fails instead of starting another render', async () => {
-    const storeState = reactive({
-      renderConfig: {
-        bgmPath: '',
-        outputSize: { width: 1080, height: 1920 },
-        outputPath: 'C:/render-output',
-        outputFileName: 'video',
-        outputFileExt: '.mp4',
-      },
-      autoBatch: true,
-      renderStatus: mocks.RenderStatus.None,
-      updateRenderStatus(status: number) {
-        this.renderStatus = status
-      },
-    })
-    mocks.store = storeState
-    mocks.getTextForSynthesis.mockRejectedValue(new Error('Generation failed'))
-    Object.defineProperty(window, 'electron', {
-      configurable: true,
-      value: {
-        platform: 'win32',
-        statTrack: vi.fn(() => Promise.resolve()),
-      },
-    })
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
-    const wrapper = mount(Home, {
-      attachTo: document.body,
-      global: {
-        stubs: {
-          TextGenerate: TextGenerateStub,
-          VideoManage: true,
-          TtsControl: true,
-          VideoRender: VideoRenderStub,
-          SubtitleOptions: true,
-          TopBar: true,
+  it.each([
+    ['stop', 10, 1],
+    ['continue', 2, 2],
+    ['continue', 10, 3],
+  ] as const)(
+    'handles %s policy with limit %s and %s failed attempts',
+    async (onError, count, attempts) => {
+      const storeState = reactive({
+        renderConfig: {
+          bgmPath: '',
+          outputSize: { width: 1080, height: 1920 },
+          outputPath: 'C:/render-output',
+          outputFileName: 'video',
+          outputFileExt: '.mp4',
         },
-      },
-    })
+        autoBatch: true,
+        batchConfig: { count, onError },
+        renderStatus: mocks.RenderStatus.None,
+        updateRenderStatus(status: number) {
+          this.renderStatus = status
+        },
+      })
+      mocks.store = storeState
+      mocks.getTextForSynthesis.mockRejectedValue(new Error('Generation failed'))
+      Object.defineProperty(window, 'electron', {
+        configurable: true,
+        value: {
+          platform: 'win32',
+          statTrack: vi.fn(() => Promise.resolve()),
+        },
+      })
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+      const wrapper = mount(Home, {
+        attachTo: document.body,
+        global: {
+          stubs: {
+            TextGenerate: TextGenerateStub,
+            VideoManage: true,
+            TtsControl: true,
+            VideoRender: VideoRenderStub,
+            GenerationOptions: true,
+            TopBar: true,
+          },
+        },
+      })
 
-    try {
-      await wrapper.find('#render-trigger').trigger('click')
-      await flushPromises()
+      try {
+        await wrapper.find('#render-trigger').trigger('click')
+        await flushPromises()
 
-      expect(mocks.getTextForSynthesis).toHaveBeenCalledTimes(1)
-      expect(storeState.renderStatus).toBe(mocks.RenderStatus.Failed)
-      expect(mocks.toast.error).toHaveBeenCalledTimes(1)
-      expect(consoleError).toHaveBeenCalledTimes(1)
-    } finally {
-      wrapper.unmount()
-      document.body.innerHTML = ''
-    }
-  })
+        expect(mocks.getTextForSynthesis).toHaveBeenCalledTimes(attempts)
+        expect(storeState.renderStatus).toBe(mocks.RenderStatus.Failed)
+        expect(mocks.toast.error).toHaveBeenCalledTimes(attempts)
+        expect(consoleError).toHaveBeenCalledTimes(attempts)
+      } finally {
+        wrapper.unmount()
+        document.body.innerHTML = ''
+      }
+    },
+  )
 })

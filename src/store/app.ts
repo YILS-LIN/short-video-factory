@@ -8,6 +8,7 @@ import {
   normalizeLlmConfig,
 } from '@/lib/llm/config'
 import type { CopywritingStatus, LlmConfig } from '@/lib/llm/types'
+import { normalizeBatchConfig, type BatchRunState } from '@/lib/batch'
 
 export enum RenderStatus {
   None,
@@ -82,6 +83,8 @@ export const useAppStore = defineStore(
       exportSubtitles: false,
     })
     const autoBatch = ref(false)
+    const batchConfig = ref({ count: 10, onError: 'stop' as 'stop' | 'continue' })
+    const batchProgress = ref<BatchRunState | null>(null)
     const renderStatus = ref(RenderStatus.None)
     const updateRenderConfig = (
       newConfig: Omit<typeof renderConfig.value, 'subtitlesEnabled' | 'exportSubtitles'> &
@@ -132,6 +135,8 @@ export const useAppStore = defineStore(
 
       renderConfig,
       autoBatch,
+      batchConfig,
+      batchProgress,
       renderStatus,
       updateRenderConfig,
       updateRenderStatus,
@@ -143,7 +148,14 @@ export const useAppStore = defineStore(
   },
   {
     persist: {
-      omit: ['genderList', 'speedList', 'autoBatch', 'renderStatus', 'copywritingStatus'],
+      omit: [
+        'genderList',
+        'speedList',
+        'autoBatch',
+        'batchProgress',
+        'renderStatus',
+        'copywritingStatus',
+      ],
       beforeHydrate: (context) => {
         // Pinia merges persisted state into default state before afterHydrate, so an old record
         // without protocol would otherwise inherit the new openai-compatible default. Seed the
@@ -163,6 +175,7 @@ export const useAppStore = defineStore(
         }
       },
       afterHydrate: (context) => {
+        context.store.batchConfig = normalizeBatchConfig(context.store.batchConfig)
         context.store.updateRenderConfig(context.store.renderConfig)
         context.store.updateLLMConfig(context.store.llmConfig)
         context.store.updateCopywritingConfig(context.store.copywritingConfig)

@@ -278,6 +278,28 @@
       }
     },
     "render": {
+      "batch": {
+        "label": "批量合成",
+        "enabled": "批量 · {{count}}次",
+        "settings": "批量设置",
+        "count": "合成次数",
+        "invalidCount": "请输入 1–999 的整数次数",
+        "onError": "失败后",
+        "stopOnError": "停止批量",
+        "continueOnError": "跳过并继续",
+        "hint": "失败也计入次数；连续 3 次异常自动停止。不自动重试。",
+        "stop": "停止批量",
+        "stopping": "正在停止批量",
+        "progress": "第 {{current}} / {{total}} 次 · 待开始 {{remaining}} 次",
+        "summary": "成功 {{success}} · 失败 {{failed}} · 字幕异常 {{warnings}}",
+        "reasons": {
+          "completed": "批量已完成",
+          "user_cancelled": "批量已停止",
+          "generation_failed": "批量因错误停止",
+          "consecutive_failures": "连续 3 次异常，批量已停止",
+          "unrecoverable_error": "发生不可恢复错误，批量已停止"
+        }
+      },
       "config": {
         "startLabel": "开始合成",
         "stopLabel": "停止合成",
@@ -287,6 +309,7 @@
         "bgmFolderLabel": "背景音乐文件夹（随机选取.mp3，为空则无背景音）",
         "subtitlePanel": "字幕",
         "subtitlesEnabled": "显示字幕",
+        "openOutputDirectory": "打开输出目录",
         "subtitlesHint": "在导出视频中显示字幕，关闭不影响配音",
         "exportSubtitles": "同步导出SRT",
         "exportSubtitlesHint": "在视频旁保存同名 .srt 字幕文件",
@@ -327,6 +350,7 @@
       },
       "errors": {
         "subtitleExportFailed": "视频已生成，字幕导出失败",
+        "openOutputDirectoryFailed": "打开输出目录失败",
         "failed": "视频合成失败，请检查各项配置是否正确",
         "bgmListFailed": "获取背景音乐列表失败，请检查文件夹是否存在",
         "outputFileNameRequired": "请先配置导出文件名",

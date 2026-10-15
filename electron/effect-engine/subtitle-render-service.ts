@@ -91,10 +91,12 @@ export async function renderSubtitleFramesToPngSequence(params: {
       cleanup: () => cleanupEffectTaskTempPaths(tempPaths),
     }
   } catch (error) {
+    // Cancellation can leave a disk write in flight. Drain it before removing files.
+    await unregisterEffectExportTaskContext(taskId)
     cleanupEffectTaskTempPaths(tempPaths)
     throw error
   } finally {
-    unregisterEffectExportTaskContext(taskId)
+    await unregisterEffectExportTaskContext(taskId)
     // 每次任务结束都销毁渲染窗口，避免长期占用 GPU/内存，并确保下一次任务干净重建。
     destroyEffectRenderWindow()
   }

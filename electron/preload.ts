@@ -54,6 +54,7 @@ contextBridge.exposeInMainWorld('electron', {
   setZoomFactor: (factor: number) => ipcRenderer.send('set-zoom-factor', factor),
   openExternal: (params: OpenExternalParams) => ipcRenderer.invoke('open-external', params),
   selectFolder: (params: SelectFolderParams) => ipcRenderer.invoke('select-folder', params),
+  openDirectory: (folderPath: string) => ipcRenderer.invoke('open-directory', folderPath),
   listFilesFromFolder: (params: ListFilesFromFolderParams) =>
     ipcRenderer.invoke('list-files-from-folder', params),
   edgeTtsGetVoiceList: () => ipcRenderer.invoke('edge-tts-get-voice-list'),
