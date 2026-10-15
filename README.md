@@ -1,8 +1,12 @@
 <a id="readme-top"></a>
 
+<p align="center">
+  <strong>简体中文</strong> | <a href="./README.en.md">English</a>
+</p>
+
 <!-- 项目海报 -->
 <div align="center">
-  <img src="images/ScreenShot.png" alt="Poster" width="100%">
+  <img src="images/ScreenShot-zh.png" alt="短视频工厂中文界面截图" width="100%">
 </div>
 
 ---
@@ -101,7 +105,7 @@
 </thead>
 <tbody>
 <tr>
-<td align="center"><video src="https://github.com/user-attachments/assets/165a8f96-861b-4cf3-946c-444b9692cef8"></video></td>
+<td align="center"><video src="https://github.com/user-attachments/assets/90945332-9e7c-4dae-b784-3c0ac5ec874d"></video></td>
 <td align="center"><video src="https://github.com/user-attachments/assets/12694618-e0fe-4848-8a7e-98b3f3a7aece"></video></td>
 </tr>
 </tbody>
