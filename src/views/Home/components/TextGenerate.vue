@@ -21,7 +21,12 @@
           >
             {{ t('common.buttons.generate') }}
           </v-btn>
-          <v-btn v-else prepend-icon="mdi-stop" color="red" stacked @click="handleStopGenerate">
+          <v-btn v-else color="red" stacked @click="handleStopGenerate">
+            <template #prepend>
+              <v-progress-circular indeterminate :size="28" :width="2" aria-hidden="true">
+                <v-icon size="18">mdi-stop</v-icon>
+              </v-progress-circular>
+            </template>
             {{ t('common.buttons.stop') }}
           </v-btn>
           <v-dialog v-model="configDialogShow" max-width="680" persistent>

@@ -309,7 +309,7 @@
         "bgmFolderLabel": "Background music folder (.mp3, pick randomly)",
         "subtitlePanel": "Subtitles",
         "subtitlesEnabled": "Show subtitles",
-        "openOutputDirectory": "Open output folder",
+        "openOutputDirectory": "Open folder",
         "subtitlesHint": "Show subtitles in the exported video; turning this off does not affect narration",
         "exportSubtitles": "Export SRT",
         "exportSubtitlesHint": "Save a same-named .srt subtitle file beside the video",

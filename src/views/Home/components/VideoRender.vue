@@ -59,7 +59,7 @@
 
         <div class="col-start-2 row-start-2 w-full flex items-center justify-between gap-2">
           <v-btn
-            class="!h-10 !px-3"
+            class="!h-10 !px-2 !text-[12px] !normal-case !tracking-normal"
             variant="text"
             :title="appStore.renderConfig.outputPath"
             :disabled="!appStore.renderConfig.outputPath?.trim() || openingDirectory"
