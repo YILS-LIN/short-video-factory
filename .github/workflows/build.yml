@@ -5,13 +5,21 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  release:
+  build:
     runs-on: ${{ matrix.os }}
     env:
       ANALYTICS_DISTRIBUTION_CHANNEL: official
 
     strategy:
+      fail-fast: false
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
 
@@ -58,34 +66,44 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Get version from tag
-      - name: Get version from tag
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
-        shell: bash
-
-      # Read release notes
-      - name: Read release notes
-        id: release_notes
-        run: |
-          NOTES=$(awk "/## \[v${{ env.VERSION }}\]/{p=1;print;next} /## \[v/{p=0}p" CHANGELOG.md)
-          echo "NOTES<<EOF" >> $GITHUB_ENV
-          echo "$NOTES" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-        shell: bash
-
-      # Publish Release
-      - name: Publish Release
-        uses: softprops/action-gh-release@v2
+      - name: Collect installers
+        uses: actions/upload-artifact@v4
         with:
-          files: |
-            release/${{ env.VERSION }}/*.dmg
-            release/${{ env.VERSION }}/*.exe
-            release/${{ env.VERSION }}/*.deb
-            release/${{ env.VERSION }}/*.rpm
-            release/${{ env.VERSION }}/*.AppImage
-          body: ${{ env.NOTES }}
-          draft: false
-          prerelease: false
+          name: installers-${{ matrix.os }}
+          path: |
+            release/**/*.dmg
+            release/**/*.exe
+            release/**/*.AppImage
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.17.0'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: installers-*
+          path: release-artifacts
+          merge-multiple: true
+      - name: Validate, upload and publish complete release
+        run: node scripts/publish-release.mjs
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Trigger documentation deployment
+        env:
+          DEPLOY_HOOK: ${{ secrets.VERCEL_DOCS_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "::warning::VERCEL_DOCS_DEPLOY_HOOK is not configured; documentation deployment skipped."
+            exit 0
+          fi
+          curl --fail --silent --show-error --output /dev/null \
+            --connect-timeout 10 --max-time 60 --retry 2 --retry-delay 10 \
+            --request POST "$DEPLOY_HOOK"
