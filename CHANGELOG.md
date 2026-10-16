@@ -4,6 +4,46 @@ All significant changes to this project will be recorded in this file.
 
 此项目的所有显著更改都将记录在此文件中。
 
+## [v1.3.0] - 2026-10-16
+
+<!-- i18n:en:start -->
+### Added
+
+- Expand AI copywriting configuration with support for multiple API protocols, sampling parameters, and copywriting diversity controls
+- Add a new subtitle rendering engine, subtitle visibility controls, and SRT export alongside videos
+- Enhance batch video composition controls and export operations
+- Add in-app update checks with localized release notes and dual-source checking via the Metadata API and GitHub
+- Add announcements and diagnostic export
+
+### Fixed & Optimized
+
+- Fix Edge TTS 403 errors caused by authentication changes and improve speech synthesis stability and audio validation
+- Optimize video segment selection in large media libraries and improve handling of unreadable media
+- Fix video rendering progress calculation and IPC listener cleanup to improve composition stability
+- Fix startup update notification timing and improve update-check error messages
+- Improve macOS window controls and title bar interactions, and refine interface layout and status indicators
+- Include the application version in copied error details and improve anonymous error reporting for troubleshooting
+<!-- i18n:en:end -->
+
+<!-- i18n:zh-CN:start -->
+### 新增
+
+- 增强 AI 文案生成配置，支持多种 API 协议、采样参数调整与文案多样性控制
+- 新增字幕渲染引擎，支持字幕显示控制和随视频同步导出 SRT 字幕文件
+- 完善批量视频合成控制与导出操作
+- 新增应用内更新检查，按语言展示发布说明，并支持元数据 API 与 GitHub 双源检查
+- 新增公告展示与诊断导出
+
+### 修复与优化
+
+- 修复鉴权变化导致的 Edge TTS 403 错误，增强语音合成稳定性与音频校验
+- 优化大素材库的视频片段选择性能，改善不可读素材处理
+- 修正视频渲染进度计算与 IPC 监听清理，提升合成流程稳定性
+- 修复启动时更新通知的时序问题，改善更新检查错误提示
+- 改善 macOS 窗口控制与标题栏交互，优化界面布局和状态提示
+- 复制错误详情时附带应用版本，完善匿名错误统计，便于问题排查
+<!-- i18n:zh-CN:end -->
+
 ## [v1.2.2] - 2026-04-07
 
 <!-- i18n:en:start -->
