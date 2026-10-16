@@ -162,7 +162,7 @@ If you find this project helpful, consider buying the author a coffee (or a beer
 Your **Stars ⭐** and **donations** are my biggest motivation to keep improving the project!
 
 <div align="left">
-  <img src="https://github.com/user-attachments/assets/6b832dd3-38ea-4927-9c3b-97549c77a1f0" alt="YILS's WeChat donation QR code" width="400">
+  <img src="images/wechat-donation-qr.jpg" alt="YILS's WeChat donation QR code" width="320">
 </div>
 
 👉 View the donor list here: [Donor Wall — Messages from Supporters](https://short-video-factory.yils.blog/donate/list.html)

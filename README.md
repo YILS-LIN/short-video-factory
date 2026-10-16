@@ -74,6 +74,18 @@
 
 <p align="right">(<a href="#readme-top">返回顶部</a>)</p>
 
+## 💬 交流社区
+
+欢迎加入「短视频工厂」微信交流群，与开发者一起交流使用心得、分享创作经验、获取最新更新。
+
+<div align="left">
+  <img src="images/wechat-community-group-1-qr.png" alt="短视频工厂微信交流 1 群二维码" width="320">
+</div>
+
+注：群二维码有效期有限，请以图片中标注的有效期为准。
+
+<p align="right">(<a href="#readme-top">返回顶部</a>)</p>
+
 ## 🗺️ 路线图
 
 **喜欢可以点个 Star 支持一下哦！**
@@ -162,7 +174,7 @@ Copyright © 2025 YILS.
 你的 **Star ⭐** 和 **捐赠** 是我持续更新的最大动力！
 
 <div align="left">
-  <img src="https://github.com/user-attachments/assets/6b832dd3-38ea-4927-9c3b-97549c77a1f0" alt="YILS的微信赞赏码" width="400">
+  <img src="images/wechat-donation-qr.jpg" alt="YILS的微信赞赏码" width="320">
 </div>
 
 👉 在此处查看捐赠者名单：[千古留名 - 捐赠者留言板](https://short-video-factory.yils.blog/donate/list.html)
