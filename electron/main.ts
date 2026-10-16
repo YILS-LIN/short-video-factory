@@ -11,7 +11,7 @@ import { i18nLanguages } from './i18n/common-options'
 import useCookieAllowCrossSite from './lib/cookie-allow-cross-site'
 import { flushAnalytics, registerAnalyticsWindow, startAnalytics } from './lib/analytics/service'
 import { initLogger, writeMainLog } from './logger'
-import { checkForUpdates, initUpdateChecker } from './updater'
+import { initUpdateChecker } from './updater'
 import { getMainWindowSize } from './lib/window-size'
 import { initializeMetadataService } from './metadata/runtime'
 
@@ -238,9 +238,6 @@ app.whenReady().then(() => {
 
   if (win) {
     initUpdateChecker(win)
-    setTimeout(() => {
-      void checkForUpdates(app.getVersion())
-    }, 2000)
   }
 
   i18next.on('languageChanged', () => {

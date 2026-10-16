@@ -225,45 +225,49 @@ const showUpdateError = (detail: string) => {
   })
 }
 
-const handleCheckUpdate = async () => {
+const checkUpdates = async (trigger: 'automatic' | 'manual') => {
   if (updateChecking.value) return
   updateChecking.value = true
   const startedAt = performance.now()
-  toast.info(t('update.checking'))
+  const manual = trigger === 'manual'
+  if (manual) toast.info(t('update.checking'))
   try {
     const result = await window.electron.checkForUpdates()
     trackAnalytics('update_check_finished', {
       outcome: result.status === 'error' ? 'failed' : 'success',
       has_update: result.status === 'available',
-      trigger: 'manual',
+      trigger,
       duration_ms: Math.max(0, Math.floor(performance.now() - startedAt)),
     })
     if (result.status === 'up-to-date') {
       updateInfo.value = null
-      toast.success(t('update.upToDate'))
+      if (manual) toast.success(t('update.upToDate'))
     } else if (result.status === 'no-release') {
       updateInfo.value = null
-      toast.info(t('update.noRelease'))
+      if (manual) toast.info(t('update.noRelease'))
     } else if (result.status === 'available') {
       updateInfo.value = result.info
       showUpdateDialog.value = true
     } else if (result.status === 'error') {
-      showUpdateError(result.message)
+      if (manual) showUpdateError(result.message)
+      else console.warn('Automatic update check failed:', result.message)
     }
   } catch (error) {
     trackAnalytics('update_check_finished', {
       outcome: 'failed',
       has_update: false,
-      trigger: 'manual',
+      trigger,
       duration_ms: Math.max(0, Math.floor(performance.now() - startedAt)),
     })
     const reason = error instanceof Error ? error.message : String(error)
     console.error('Failed to check for updates:', error)
-    showUpdateError(reason)
+    if (manual) showUpdateError(reason)
   } finally {
     updateChecking.value = false
   }
 }
+
+const handleCheckUpdate = () => checkUpdates('manual')
 
 const handleExportDiagnostics = async () => {
   if (diagnosticsExporting.value) return
@@ -302,6 +306,7 @@ onMounted(() => {
   document.addEventListener('visibilitychange', refreshLocalNoticeTime)
   window.ipcRenderer.on('update-available', handleUpdateAvailable)
   window.ipcRenderer.on('diagnostics-export-progress', handleDiagnosticsExportProgress)
+  void checkUpdates('automatic')
   stopMetadataUpdates = window.electron.onMetadataStateChanged(applyMetadataState)
   void window.electron
     .getMetadataState()
