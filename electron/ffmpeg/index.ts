@@ -74,8 +74,16 @@ export async function renderVideo(
             srtText: params.subtitleText,
             source: 'tts' as const,
           }
-        : undefined)
+        : params.subtitleFile && params.subtitlesEnabled !== false
+          ? {
+              srtText: fs.readFileSync(params.subtitleFile, 'utf8'),
+              source: 'external' as const,
+            }
+          : undefined)
     const subtitleAsset = params.subtitlesEnabled === false ? undefined : generatedSubtitleAsset
+    if (params.subtitlesEnabled !== false && !subtitleAsset?.srtText.trim()) {
+      throw new Error('字幕已开启，但未生成有效字幕内容，请重新生成语音字幕后重试')
+    }
     let subtitleSequenceInputPath: string | undefined
     let subtitleInputIndex: number | undefined
     let subtitleRenderProgress = 0
@@ -165,8 +173,6 @@ export async function renderVideo(
       filters.push(
         `[vout][${subtitleInputIndex}:v]overlay=0:0:shortest=1:eof_action=pass[with_subs]`,
       )
-    } else if (params.subtitlesEnabled !== false) {
-      filters.push(`[vout]subtitles=${subtitleFile.replace(/\:/g, '\\\\:')}[with_subs]`)
     }
 
     // 音频处理：使用响度归一化(loudnorm)确保音量均衡

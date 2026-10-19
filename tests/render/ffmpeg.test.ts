@@ -42,6 +42,11 @@ describe('FFmpeg execution and render inputs', () => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'short-video-ffmpeg-test-'))
     mocks.ttsVoicePath = path.join(tempDir, 'generated voice.mp3')
     mocks.spawn.mockReset()
+    vi.mocked(renderSubtitleFramesToPngSequence).mockReset()
+    vi.mocked(renderSubtitleFramesToPngSequence).mockResolvedValue({
+      manifest: { framesDir: tempDir, framePattern: '%06d.png' },
+      cleanup: vi.fn(),
+    } as unknown as Awaited<ReturnType<typeof renderSubtitleFramesToPngSequence>>)
   })
 
   afterEach(() => {
@@ -74,10 +79,21 @@ describe('FFmpeg execution and render inputs', () => {
     await vi.waitFor(() => expect(mocks.spawn).toHaveBeenCalledTimes(1))
     const args = mocks.spawn.mock.calls[0][1] as string[]
     const inputPaths = args.flatMap((arg, index) => (arg === '-i' ? [args[index + 1]] : []))
-    expect(inputPaths).toEqual([videoPath, voicePath, bgmPath])
+    expect(inputPaths).toEqual([
+      videoPath,
+      path.join(tempDir, '%06d.png').replace(/\\/g, '/'),
+      voicePath,
+      bgmPath,
+    ])
     expect(args.at(-1)).toBe(outputPath)
     expect(args[args.indexOf('-s') + 1]).toBe('720x1280')
-    expect(args[args.indexOf('-filter_complex') + 1]).toContain(subtitlePath.replace(/:/g, '\\\\:'))
+    expect(renderSubtitleFramesToPngSequence).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subtitleAsset: { srtText: 'input', source: 'external' },
+      }),
+    )
+    expect(args[args.indexOf('-filter_complex') + 1]).toContain('overlay=')
+    expect(args[args.indexOf('-filter_complex') + 1]).not.toContain('subtitles=')
 
     child.emit('close', 0)
     await expect(render).resolves.toMatchObject({ code: 0 })
@@ -99,6 +115,7 @@ describe('FFmpeg execution and render inputs', () => {
       timeRanges: [['0', '4']],
       outputSize: { width: 1080, height: 1920 },
       outputDuration: '4',
+      subtitlesEnabled: false,
       outputPath: path.join(tempDir, 'output', 'failed.mp4'),
     })
 
@@ -107,6 +124,42 @@ describe('FFmpeg execution and render inputs', () => {
     await expect(render).rejects.toThrow('FFmpeg exited with code 1')
     expect(fs.existsSync(voicePath)).toBe(false)
     expect(fs.existsSync(subtitlePath)).toBe(false)
+  })
+
+  it.each([undefined, '', '   '])(
+    'rejects missing or empty subtitle text (%s) before rendering',
+    async (subtitleText) => {
+      // A stale default SRT must not silently reactivate the legacy FFmpeg subtitle path.
+      fs.writeFileSync(mocks.ttsVoicePath.replace(/\.mp3$/, '.srt'), 'stale captions')
+      await expect(
+        renderVideo({
+          videoFiles: ['scene.mp4'],
+          timeRanges: [['0', '1']],
+          subtitlesEnabled: true,
+          subtitleText,
+          outputSize: { width: 720, height: 1280 },
+          outputPath: path.join(tempDir, 'video.mp4'),
+        }),
+      ).rejects.toThrow('未生成有效字幕内容')
+      expect(mocks.spawn).not.toHaveBeenCalled()
+      expect(renderSubtitleFramesToPngSequence).not.toHaveBeenCalled()
+    },
+  )
+
+  it.each(['missing', 'empty'])('rejects a %s subtitle file before rendering', async (state) => {
+    const subtitleFile = path.join(tempDir, 'captions.srt')
+    if (state === 'empty') fs.writeFileSync(subtitleFile, '   ')
+    await expect(
+      renderVideo({
+        videoFiles: ['scene.mp4'],
+        timeRanges: [['0', '1']],
+        subtitleFile,
+        outputSize: { width: 720, height: 1280 },
+        outputPath: path.join(tempDir, 'video.mp4'),
+      }),
+    ).rejects.toThrow(state === 'empty' ? '未生成有效字幕内容' : 'ENOENT')
+    expect(mocks.spawn).not.toHaveBeenCalled()
+    expect(renderSubtitleFramesToPngSequence).not.toHaveBeenCalled()
   })
 
   it.each([
