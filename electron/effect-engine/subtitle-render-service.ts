@@ -74,7 +74,8 @@ export async function renderSubtitleFramesToPngSequence(params: {
   try {
     const renderWindow = await ensureEffectRenderWindow()
 
-    // 关键链路：通过隐藏渲染窗口逐帧导出透明 PNG，主进程只做调度和落盘管理。
+    // 自研字幕引擎的独立渲染管线：在专用隐藏窗口中完成排版与逐帧渲染，
+    // 主进程负责调度与落盘，让字幕视觉表达与视频合成编码解耦。
     const manifest = await executeEffectExportTask({
       renderWindow,
       context: {

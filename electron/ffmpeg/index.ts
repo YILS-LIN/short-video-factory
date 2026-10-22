@@ -168,7 +168,8 @@ export async function renderVideo(
     // 重置时间基、帧率、色彩空间
     filters.push(`[vconcat]fps=30,format=yuv420p,setpts=PTS-STARTPTS[vout]`)
 
-    // 字幕使用 Pixi 导出的透明 PNG 序列叠加，避免 FFmpeg/libass 换行差异。
+    // 基于 PixiJS 的自研字幕引擎，自主掌控文本排版、样式与逐帧渲染，不依赖 libass 的排版与样式实现。
+    // 让字幕表现力由自研引擎驱动，让成熟的 FFmpeg 发挥合成与编码优势。
     if (subtitleInputIndex !== undefined) {
       filters.push(
         `[vout][${subtitleInputIndex}:v]overlay=0:0:shortest=1:eof_action=pass[with_subs]`,

@@ -48,6 +48,7 @@ function joinTokens(tokens: string[]): string {
   }, '')
 }
 
+// 自研字幕排版：结合分词与实际文本宽度测量，按画幅宽度、行数限制自适应换行与字号。
 export function autoLineBreak(params: {
   text: string
   style: SubtitleStyleConfig

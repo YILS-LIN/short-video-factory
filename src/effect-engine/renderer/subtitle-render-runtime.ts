@@ -19,6 +19,7 @@ export function buildSubtitleLayout(params: {
   }))
 }
 
+// 由字幕时间轴驱动视觉输出，统一控制字重、描边、行高、安全区与位置，掌控字幕的画面表现。
 export function renderSubtitleFrame(params: {
   root: Container
   cues: SubtitleLayoutCue[]

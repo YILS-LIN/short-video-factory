@@ -17,6 +17,7 @@ export async function renderSubtitleFrames(
   const context = measureCanvas.getContext('2d')
   if (!context) throw new Error('无法创建字幕测量画布')
 
+  // 提前完成字幕布局计算，逐帧渲染复用排版结果，让排版决策与时间轴输出各司其职。
   const cues = buildSubtitleLayout({
     cues: parseSrtToCues(task.subtitleAsset.srtText),
     style: task.style,
