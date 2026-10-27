@@ -36,6 +36,16 @@
 
 [![许可证][license-shield]][license-url]
 
+<p align="center">
+  <a href="https://www.star-history.com/yils-lin/short-video-factory">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/badge?repo=YILS-LIN/short-video-factory&type=trending&theme=dark" />
+      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/badge?repo=YILS-LIN/short-video-factory&type=trending" />
+      <img alt="GitHub Trending Repository of the Day" src="https://api.star-history.com/badge?repo=YILS-LIN/short-video-factory&type=trending" />
+    </picture>
+  </a>
+</p>
+
   <p align="center">
     <a href="https://github.com/YILS-LIN/short-video-factory/issues/new?labels=bug&template=bug-report---.md">报告Bug</a>
     &middot;
@@ -185,11 +195,11 @@ Copyright © 2025 YILS.
 
 ## ⭐ 星标历史
 
-<a href="https://star-history.dera.page/#YILS-LIN/short-video-factory">
+<a href="https://www.star-history.com/?repos=YILS-LIN/short-video-factory">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://star-history.dera.page/svg?repos=YILS-LIN/short-video-factory&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://star-history.dera.page/svg?repos=YILS-LIN/short-video-factory" />
-   <img alt="Star History Chart" src="https://star-history.dera.page/svg?repos=YILS-LIN/short-video-factory" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=YILS-LIN/short-video-factory&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=YILS-LIN/short-video-factory&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=YILS-LIN/short-video-factory&type=date&legend=top-left" />
  </picture>
 </a>
 
