@@ -89,7 +89,7 @@
 欢迎加入「短视频工厂」微信交流群，与开发者一起交流使用心得、分享创作经验、获取最新更新。
 
 <div align="left">
-  <img src="images/wechat-community-group-1-qr.png" alt="短视频工厂微信交流 1 群二维码" width="320">
+  <img src="images/wechat-community-group-2-qr.png" alt="短视频工厂微信交流 2 群二维码" width="320">
 </div>
 
 注：群二维码有效期有限，请以图片中标注的有效期为准。
