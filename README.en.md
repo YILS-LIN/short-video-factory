@@ -84,6 +84,28 @@ Visit the [official documentation](https://short-video-factory.yils.blog) for th
 
 <p align="right">(<a href="#readme-top">Back to top</a>)</p>
 
+## 🤝 Sponsors
+
+Thanks to the following partner for supporting the ongoing development of this project!
+
+<table>
+  <tr>
+    <td width="180" align="center">
+      <a href="https://www.jalapeno-cloud.ai?invite=short-video-factory">
+        <img src="https://github.com/user-attachments/assets/9a575788-0c19-4642-b9a3-64c9639224ca" alt="Jalapeno Cloud Logo" width="180">
+      </a>
+    </td>
+    <td>
+      <strong>Jalapeno Cloud</strong>
+      <p>Jalapeno Cloud offers self-deployed model tokens with reliable supply channels, plus Seedance sourced directly from its original cloud provider.</p>
+      <p>🎁 <strong>Exclusive Offer:</strong> Get $1 in free credits upon registration and 20% extra credits on every top-up (effectively 16.7% off).</p>
+      <a href="https://www.jalapeno-cloud.ai?invite=short-video-factory">Visit website ↗</a>
+    </td>
+  </tr>
+</table>
+
+<p align="right">(<a href="#readme-top">Back to top</a>)</p>
+
 ## 🗺️ Roadmap
 
 **If you like this project, please give it a Star!**

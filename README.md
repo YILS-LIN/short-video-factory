@@ -84,6 +84,28 @@
 
 <p align="right">(<a href="#readme-top">返回顶部</a>)</p>
 
+## 🤝 赞助商
+
+感谢以下合作伙伴对项目持续开发的支持！
+
+<table>
+  <tr>
+    <td width="180" align="center">
+      <a href="https://www.jalapeno-cloud.ai?invite=short-video-factory">
+        <img src="https://github.com/user-attachments/assets/9a575788-0c19-4642-b9a3-64c9639224ca" alt="Jalapeno Cloud Logo" width="180">
+      </a>
+    </td>
+    <td>
+      <strong>Jalapeno Cloud</strong>
+      <p>Jalapeno Cloud 提供自部署模型 Token 与稳定供应渠道，Seedance 直连源头云厂商。</p>
+      <p>🎁 <strong>专属福利：</strong>通过活动链接注册即赠 $1，充值额外赠送 20% 额度（约 83 折）。</p>
+      <a href="https://www.jalapeno-cloud.ai?invite=short-video-factory">访问官网 ↗</a>
+    </td>
+  </tr>
+</table>
+
+<p align="right">(<a href="#readme-top">返回顶部</a>)</p>
+
 ## 💬 交流社区
 
 欢迎加入「短视频工厂」微信交流群，与开发者一起交流使用心得、分享创作经验、获取最新更新。
