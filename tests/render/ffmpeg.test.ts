@@ -247,6 +247,25 @@ describe('FFmpeg execution and render inputs', () => {
     expect(removeEventListener).toHaveBeenCalledWith('abort', expect.any(Function))
   })
 
+  it('preserves FFmpeg exit code, signal and stderr for diagnostics', async () => {
+    const child = createChildProcess()
+    const execution = executeFFmpeg(['-i', 'input.mp4', 'output.mp4'])
+    child.stderr.emit('data', Buffer.from('encoder failed'))
+    child.emit('close', 1, 'SIGTERM')
+    await expect(execution).rejects.toMatchObject({
+      code: 1,
+      signal: 'SIGTERM',
+      message: 'FFmpeg exited with code 1: encoder failed',
+    })
+  })
+
+  it('preserves the underlying startup error instead of only its message', async () => {
+    const child = createChildProcess()
+    const execution = executeFFmpeg(['-i', 'input.mp4', 'output.mp4'])
+    child.emit('error', Object.assign(new Error('spawn EACCES'), { code: 'EACCES' }))
+    await expect(execution).rejects.toMatchObject({ cause: { code: 'EACCES' } })
+  })
+
   it('does not spawn FFmpeg for a signal that was already aborted', async () => {
     const controller = new AbortController()
     controller.abort()

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { normalizeBatchConfig, runBatch, type BatchRunState } from '../../src/lib/batch'
 
 const state = (): BatchRunState => ({
@@ -18,6 +18,9 @@ const state = (): BatchRunState => ({
   finished: false,
 })
 describe('finite sequential batches', () => {
+  beforeEach(() => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+  })
   it.each([
     null,
     {},
@@ -46,6 +49,7 @@ describe('finite sequential batches', () => {
     ).toBe('completed')
     expect(batch.completedCount).toBe(5)
     expect(batch.current).toBe(5)
+    expect(console.warn).not.toHaveBeenCalled()
     expect(next).toBe(4)
   })
   it('counts failed attempts and resets the consecutive failure limit on success', async () => {
@@ -61,6 +65,14 @@ describe('finite sequential batches', () => {
     expect(batch.failedCount).toBe(4)
     expect(batch.completedCount).toBe(1)
     expect(batch.current).toBe(5)
+    expect(console.warn).toHaveBeenCalledWith(
+      '[Generation]',
+      expect.objectContaining({
+        event: 'batch_decision',
+        batchId: 'batch',
+        reason: 'continue',
+      }),
+    )
   })
   it('stops after three consecutive failures', async () => {
     const batch = state()
@@ -74,6 +86,15 @@ describe('finite sequential batches', () => {
       ),
     ).toBe('consecutive_failures')
     expect(batch.current).toBe(3)
+    expect(console.warn).toHaveBeenLastCalledWith(
+      '[Generation]',
+      expect.objectContaining({
+        event: 'batch_decision',
+        reason: 'consecutive_failures',
+        consecutiveFailures: 3,
+        item: 3,
+      }),
+    )
   })
   it('stops on subtitle export errors without counting a successful video as failed', async () => {
     const batch = state()
@@ -90,6 +111,14 @@ describe('finite sequential batches', () => {
     ).toBe('generation_failed')
     expect(batch.completedCount).toBe(1)
     expect(batch.failedCount).toBe(0)
+    expect(console.warn).toHaveBeenCalledWith(
+      '[Generation]',
+      expect.objectContaining({
+        event: 'batch_decision',
+        reason: 'generation_failed',
+        onError: 'stop',
+      }),
+    )
   })
   it('never prepares or starts another task after cancellation', async () => {
     const batch = state()

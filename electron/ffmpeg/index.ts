@@ -407,19 +407,30 @@ export async function executeFFmpeg(
       parseProgressFromStderr(chunk)
     })
 
-    child.on('close', (code) => {
+    child.on('close', (code, signal) => {
       if (code === 0) {
         settle(() => {
           options?.onProgress?.(100)
           resolve({ stdout, stderr, code })
         })
       } else {
-        settle(() => reject(new Error(`FFmpeg exited with code ${code}: ${stderr}`)))
+        settle(() =>
+          reject(
+            Object.assign(new Error(`FFmpeg exited with code ${code}: ${stderr}`), {
+              code,
+              signal,
+            }),
+          ),
+        )
       }
     })
 
     child.on('error', (error) => {
-      settle(() => reject(new Error(`Failed to start FFmpeg: ${error.message}`)))
+      settle(() =>
+        reject(
+          Object.assign(new Error(`Failed to start FFmpeg: ${error.message}`), { cause: error }),
+        ),
+      )
     })
 
     // 提供取消功能

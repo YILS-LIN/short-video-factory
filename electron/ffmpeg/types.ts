@@ -7,6 +7,7 @@ export interface AudioVolumeConfig {
 }
 
 export interface RenderVideoParams {
+  diagnosticContext?: import('../../src/lib/generation-diagnostics').GenerationLogContext
   videoFiles: string[]
   timeRanges: [string, string][]
   audioFiles?: { voice?: string; bgm?: string }

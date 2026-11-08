@@ -1,3 +1,5 @@
+import { logGeneration } from './generation-diagnostics'
+
 export function normalizeBatchConfig(value: unknown): {
   count: number
   onError: 'stop' | 'continue'
@@ -45,8 +47,26 @@ export async function runBatch(
     if (batch.stopRequested || batch.finished) break
     const failed = batch.failedCount + batch.warningCount > errorsBefore
     batch.consecutiveFailures = failed ? batch.consecutiveFailures + 1 : 0
-    if (failed && batch.onError === 'stop') return 'generation_failed'
-    if (batch.consecutiveFailures >= 3) return 'consecutive_failures'
+    const reason =
+      failed && batch.onError === 'stop'
+        ? 'generation_failed'
+        : batch.consecutiveFailures >= 3
+          ? 'consecutive_failures'
+          : 'continue'
+    if (failed) {
+      logGeneration(
+        'batch_decision',
+        { batchId: batch.id, item: index, total: batch.total },
+        {
+          reason,
+          consecutiveFailures: batch.consecutiveFailures,
+          onError: batch.onError,
+        },
+        undefined,
+        'warn',
+      )
+    }
+    if (reason !== 'continue') return reason
     if (index < batch.total) prepareNext()
   }
   return batch.stopReason || (batch.stopRequested ? 'user_cancelled' : 'completed')
