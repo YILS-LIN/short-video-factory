@@ -407,7 +407,6 @@ const historyRevision = ref(0)
 let configDialogRevision = 0
 const protocolItems = computed(() => [
   { title: t('features.llm.config.protocolCompatible'), value: 'openai-compatible' },
-  { title: t('features.llm.config.protocolChat'), value: 'openai-chat' },
   { title: t('features.llm.config.protocolResponses'), value: 'openai-responses' },
   { title: t('features.llm.config.protocolAnthropic'), value: 'anthropic-messages' },
 ])

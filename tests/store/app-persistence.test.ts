@@ -44,7 +44,7 @@ describe('app store persisted state', () => {
     const { app, store } = createPersistedStore()
     try {
       expect(store.llmConfig).toMatchObject({
-        protocol: 'openai-chat',
+        protocol: 'openai-compatible',
         apiUrl: 'https://example.com/v1',
         apiKey: 'legacy-key',
         modelName: 'legacy-model',
@@ -69,6 +69,44 @@ describe('app store persisted state', () => {
       expect(store.renderStatus).toBe(RenderStatus.None)
     } finally {
       app.unmount()
+    }
+  })
+
+  it('converts persisted OpenAI chat settings to compatible format across reloads', async () => {
+    localStorage.setItem(
+      'app',
+      JSON.stringify({
+        llmConfig: {
+          protocol: 'openai-chat',
+          apiUrl: 'https://example.com/v1',
+          apiKey: 'legacy-key',
+          modelName: 'legacy-model',
+          temperature: 0.5,
+          maxOutputTokens: 1000,
+          customHeaders: [{ name: 'X-Trace', value: 'trace' }],
+        },
+      }),
+    )
+
+    for (let session = 0; session < 2; session++) {
+      const { app, store } = createPersistedStore()
+      try {
+        expect(store.llmConfig).toMatchObject({
+          protocol: 'openai-compatible',
+          apiUrl: 'https://example.com/v1',
+          apiKey: 'legacy-key',
+          modelName: 'legacy-model',
+          temperature: 0.5,
+          maxOutputTokens: 1000,
+          customHeaders: [{ name: 'X-Trace', value: 'trace' }],
+        })
+        await nextTick()
+        expect(JSON.parse(localStorage.getItem('app') ?? '{}').llmConfig.protocol).toBe(
+          'openai-compatible',
+        )
+      } finally {
+        app.unmount()
+      }
     }
   })
 

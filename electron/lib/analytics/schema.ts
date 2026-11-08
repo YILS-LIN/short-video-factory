@@ -195,7 +195,7 @@ const allowedValues: Record<string, readonly string[]> = {
   ],
   outcome: ['success', 'failed', 'cancelled'],
   provider_category: ['openai', 'anthropic', 'compatible', 'custom', 'unknown'],
-  protocol: ['openai-compatible', 'openai-chat', 'openai-responses', 'anthropic-messages'],
+  protocol: ['openai-compatible', 'openai-responses', 'anthropic-messages'],
   text_length_bucket: ['<100', '100–499', '500–999', '1000–1999', '≥2000'],
   stop_reason: ['completed', 'user_cancelled', 'generation_failed', 'unknown'],
   media_type: ['video', 'image', 'audio', 'mixed', 'unknown'],

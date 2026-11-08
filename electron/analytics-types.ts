@@ -33,7 +33,7 @@ export interface AnalyticsContextParams {
 
 export interface GenerationUsageSummary {
   source: 'generated' | 'edited' | 'reused' | 'unknown'
-  protocol?: 'openai-compatible' | 'openai-chat' | 'openai-responses' | 'anthropic-messages'
+  protocol?: 'openai-compatible' | 'openai-responses' | 'anthropic-messages'
   providerCategory: 'openai' | 'anthropic' | 'compatible' | 'custom' | 'unknown'
   callCount: number
   inputTokens?: number

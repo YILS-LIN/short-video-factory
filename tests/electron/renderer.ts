@@ -65,7 +65,6 @@ const run = async () => {
 
   const cases: Array<{ protocol: LlmProtocol; expectedFinishReason: string }> = [
     { protocol: 'openai-compatible', expectedFinishReason: 'stop' },
-    { protocol: 'openai-chat', expectedFinishReason: 'stop' },
     { protocol: 'openai-responses', expectedFinishReason: 'stop' },
     { protocol: 'anthropic-messages', expectedFinishReason: 'end_turn' },
   ]

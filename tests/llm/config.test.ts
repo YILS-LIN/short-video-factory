@@ -19,6 +19,24 @@ const createConfig = (apiUrl: string, overrides: Partial<LlmConfig> = {}): LlmCo
 })
 
 describe('LLM configuration', () => {
+  it('defaults to OpenAI-compatible and migrates the removed chat protocol without losing settings', () => {
+    expect(defaultLlmConfig().protocol).toBe('openai-compatible')
+    const settings = {
+      ...createConfig('https://example.com/v1'),
+      timeoutSeconds: 30,
+      maxOutputTokens: 1000,
+      temperature: 0.5,
+      topP: 0.8,
+      instructionDelivery: 'user-message' as const,
+      customHeaders: [{ name: 'X-Trace', value: 'trace' }],
+    }
+    const config = normalizeLlmConfig({ ...settings, protocol: 'openai-chat' })
+
+    expect(config).toEqual(settings)
+    expect(getLlmConfigIssue(config)).toBeUndefined()
+    expect(getRequestUrlHint(config)).toBe('https://example.com/v1/chat/completions')
+  })
+
   it('migrates legacy settings and filters unsafe custom headers', () => {
     const config = normalizeLlmConfig({
       apiUrl: ' https://example.com/v1 ',
@@ -36,7 +54,7 @@ describe('LLM configuration', () => {
       ],
     })
 
-    expect(config.protocol).toBe('openai-chat')
+    expect(config.protocol).toBe('openai-compatible')
     expect(config.apiUrl).toBe('https://example.com/v1')
     expect(config.timeoutSeconds).toBe(defaultLlmConfig().timeoutSeconds)
     expect(config.maxOutputTokens).toBeUndefined()
@@ -66,7 +84,6 @@ describe('LLM configuration', () => {
   it('validates URL protocols, known complete endpoints, query/hash, and credentials', () => {
     const cases = [
       ['openai-compatible', '/chat/completions'],
-      ['openai-chat', '/chat/completions'],
       ['openai-responses', '/responses'],
       ['anthropic-messages', '/messages'],
     ] as const
@@ -79,7 +96,7 @@ describe('LLM configuration', () => {
 
     expect(
       getRequestUrlIssue(
-        createConfig('https://example.com/v1/responses', { protocol: 'openai-chat' }),
+        createConfig('https://example.com/v1/responses', { protocol: 'openai-compatible' }),
       ),
     ).toBe('full-endpoint')
     expect(getRequestUrlIssue(createConfig('localhost:11434'))).toBe('invalid')

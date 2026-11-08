@@ -63,14 +63,6 @@ export function createLanguageModel(config: LlmConfig): LanguageModel {
         apiKey: config.apiKey || undefined,
         headers,
       }).chatModel(config.modelName)
-    case 'openai-chat': {
-      const provider = createOpenAI({
-        baseURL,
-        apiKey: config.apiKey || undefined,
-        headers,
-      })
-      return provider.chat(config.modelName)
-    }
     case 'openai-responses': {
       const provider = createOpenAI({
         baseURL,

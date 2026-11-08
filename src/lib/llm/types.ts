@@ -1,8 +1,4 @@
-export type LlmProtocol =
-  | 'openai-compatible'
-  | 'openai-chat'
-  | 'openai-responses'
-  | 'anthropic-messages'
+export type LlmProtocol = 'openai-compatible' | 'openai-responses' | 'anthropic-messages'
 
 export type AnthropicAuthMode = 'api-key' | 'bearer'
 export type InstructionDelivery = 'standard' | 'user-message'

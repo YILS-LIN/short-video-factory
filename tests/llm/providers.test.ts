@@ -34,11 +34,6 @@ describe('SDK provider requests', () => {
         events: createOpenAiEvents(),
       },
       {
-        protocol: 'openai-chat',
-        path: '/v1/chat/completions',
-        events: createOpenAiEvents(),
-      },
-      {
         protocol: 'openai-responses',
         path: '/v1/responses',
         events: createResponsesEvents(),
@@ -72,17 +67,13 @@ describe('SDK provider requests', () => {
         expect(body.temperature).toBe(0.4)
         expect(body.top_p).toBe(0.8)
 
-        if (protocol === 'openai-compatible' || protocol === 'openai-chat') {
+        if (protocol === 'openai-compatible') {
           const messages = body.messages as Array<{ role: string; content: string }>
           expect(messages).toContainEqual({ role: 'system', content: '只写口播正文' })
           expect(messages).toContainEqual({ role: 'user', content: '写一句欢迎语' })
           expect(body.max_tokens ?? body.max_completion_tokens).toBe(123)
           expect(request.headers.authorization).toBe('Bearer test-secret')
-          if (protocol === 'openai-chat') {
-            expect(body.stream_options).toMatchObject({ include_usage: true })
-          } else {
-            expect(body.stream_options).toBeUndefined()
-          }
+          expect(body.stream_options).toBeUndefined()
         }
 
         if (protocol === 'openai-responses') {
