@@ -8,14 +8,11 @@ const i18nInitialized = async () => {
   const appStore = useAppStore()
   if (appStore.locale) {
     await window.i18n.changeLanguage(toRaw(appStore.locale))
-  } else {
-    const systemLocale = await window.i18n.getLanguage()
-    appStore.updateLocale(systemLocale)
   }
   return i18next.use(Backend).init({
     // debug: true,
     ...i18nCommonOptions,
-    lng: appStore.locale,
+    lng: await window.i18n.getLanguage(),
     backend: {
       loadPath: 'file:///' + (await window.i18n.getLocalesPath()),
     },

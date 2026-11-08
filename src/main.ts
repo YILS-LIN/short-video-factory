@@ -106,9 +106,9 @@ i18nInitialized().then(() => {
     })
 
     // 监听主进程切换语言
-    window.ipcRenderer.on('i18n-changeLanguage', (_event, lng) => {
+    window.ipcRenderer.on('i18n-changeLanguage', (_event, lng, preference) => {
       i18next.changeLanguage(lng)
-      useAppStore().updateLocale(lng)
+      useAppStore().updateLocale(preference ?? lng)
     })
   })
 })

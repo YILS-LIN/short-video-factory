@@ -15,9 +15,12 @@
           <v-list
             class="p-2 space-y-1"
             activatable
-            :activated="i18next.language"
+            :activated="[appStore.locale]"
             @update:activated="handleChangeLanguage"
           >
+            <v-list-item value="" color="primary" density="compact" rounded>
+              <v-list-item-title>{{ t('menu.followSystem') }}</v-list-item-title>
+            </v-list-item>
             <v-list-item
               v-for="(item, index) in i18nLanguages"
               :key="index"
@@ -109,8 +112,7 @@ const zoomDisplayOptions = appStore.zoomOptions.map((factor) => ({
 }))
 
 const handleChangeLanguage = (lng: unknown) => {
-  console.log('handleChangeLanguage', lng)
-  if ((lng as string[])[0]) {
+  if (typeof (lng as string[])[0] === 'string') {
     window.i18n.changeLanguage((lng as string[])[0])
   }
 }

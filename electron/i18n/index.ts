@@ -4,6 +4,11 @@ import { app, BrowserWindow, ipcMain } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { i18nCommonOptions } from './common-options'
+import { resolveSystemLanguage } from './system-language'
+
+let languagePreference = ''
+export const getAppLanguagePreference = () => languagePreference
+const getSystemLanguage = () => resolveSystemLanguage(app.getPreferredSystemLanguages())
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 process.env.APP_ROOT = path.join(__dirname, '..')
@@ -15,7 +20,7 @@ export const initI18n = async () => {
     // initAsync: false,
     // debug: true,
     ...i18nCommonOptions,
-    lng: app.getLocale(), // 获取系统语言
+    lng: getSystemLanguage(),
     backend: {
       loadPath: localesPath,
     },
@@ -30,13 +35,14 @@ export const initI18n = async () => {
   // 渲染进程切换语言
   ipcMain.handle('i18n-changeLanguage', async (_, lng: string) => {
     await changeAppLanguage(lng)
-    return lng
+    return i18next.language
   })
 }
 
 export const changeAppLanguage = async (lng: string) => {
-  await i18next.changeLanguage(lng)
+  languagePreference = lng
+  await i18next.changeLanguage(lng || getSystemLanguage())
   BrowserWindow.getAllWindows().forEach((win) => {
-    win.webContents.send('i18n-changeLanguage', lng)
+    win.webContents.send('i18n-changeLanguage', i18next.language, languagePreference)
   })
 }

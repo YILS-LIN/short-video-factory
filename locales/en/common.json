@@ -12,6 +12,7 @@
       "quit": "Quit"
     },
     "language": "Language",
+    "followSystem": "Follow system",
     "edit": {
       "root": "Edit",
       "undo": "Undo",

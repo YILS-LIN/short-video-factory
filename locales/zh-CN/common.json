@@ -12,6 +12,7 @@
       "quit": "退出"
     },
     "language": "语言",
+    "followSystem": "跟随系统",
     "edit": {
       "root": "编辑",
       "undo": "撤销",

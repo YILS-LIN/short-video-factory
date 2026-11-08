@@ -23,7 +23,7 @@ export enum RenderStatus {
 export const useAppStore = defineStore(
   'app',
   () => {
-    // 国际化区域设置
+    // 空字符串表示跟随系统，非空值表示手动选择的语言
     const locale = ref('')
     const updateLocale = (newLocale: string) => {
       locale.value = newLocale

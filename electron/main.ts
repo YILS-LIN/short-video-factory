@@ -6,7 +6,7 @@ import path from 'node:path'
 import initIPC from './ipc'
 import { initSqlite } from './sqlite'
 import i18next from 'i18next'
-import { changeAppLanguage, initI18n } from './i18n'
+import { changeAppLanguage, getAppLanguagePreference, initI18n } from './i18n'
 import { i18nLanguages } from './i18n/common-options'
 import useCookieAllowCrossSite from './lib/cookie-allow-cross-site'
 import { flushAnalytics, registerAnalyticsWindow, startAnalytics } from './lib/analytics/service'
@@ -146,14 +146,16 @@ function buildMenu() {
       : []),
     {
       label: i18next.t('menu.language'),
-      submenu: i18nLanguages.map((lng) => ({
-        label: lng.name,
-        type: 'radio',
-        checked: i18next.language === lng.code,
-        click: () => {
-          changeAppLanguage(lng.code)
-        },
-      })) as MenuItemConstructorOptions[],
+      submenu: [{ code: '', name: i18next.t('menu.followSystem') }, ...i18nLanguages].map(
+        (lng) => ({
+          label: lng.name,
+          type: 'radio',
+          checked: getAppLanguagePreference() === lng.code,
+          click: () => {
+            changeAppLanguage(lng.code)
+          },
+        }),
+      ) as MenuItemConstructorOptions[],
     },
     {
       label: i18next.t('menu.edit.root'),
@@ -226,11 +228,11 @@ app.on('activate', () => {
 // 禁用硬件加速
 // app.disableHardwareAcceleration();
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   initLogger()
   setupMainConsoleLogging()
   initSqlite()
-  initI18n()
+  await initI18n()
   initIPC()
   initializeMetadataService()
   void startAnalytics()
@@ -243,6 +245,7 @@ app.whenReady().then(() => {
   i18next.on('languageChanged', () => {
     buildMenu()
   })
+  buildMenu()
 
   // 允许跨站请求携带cookie
   useCookieAllowCrossSite()
