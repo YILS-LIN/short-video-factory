@@ -1,4 +1,58 @@
 {
+  "renderSettings": {
+    "loading": "Generating preview…",
+    "sections": {
+      "subtitle": "Subtitles",
+      "typography": "Typography",
+      "outline": "Outline",
+      "layout": "Layout"
+    },
+    "video": "Video & output",
+    "subtitle": "Subtitles",
+    "audio": "Audio",
+    "preview": "Subtitle preview",
+    "previewHint": "Black-background subtitle preview; no video footage",
+    "previewText": "Preview text (does not change your script)",
+    "sample": "Welcome to Short Video Factory. Create amazing videos!",
+    "previewError": "Preview failed. Please retry.",
+    "retry": "Retry",
+    "preset": "Video size preset",
+    "custom": "Custom",
+    "swap": "Swap width and height",
+    "invalidSize": "Width and height must be even numbers from 64 to 4096",
+    "fontSize": "Font size",
+    "fontHint": "Relative to a 1080px-wide frame; scales with output width. Long text shrinks automatically.",
+    "color": "Text color",
+    "strokeColor": "Outline color",
+    "strokeWidth": "Outline width",
+    "position": "Position",
+    "offset": "Vertical offset (negative moves up)",
+    "maxLines": "Maximum lines",
+    "reset": "Reset subtitle style",
+    "top": "Top",
+    "middle": "Middle",
+    "bottom": "Bottom",
+    "lines1": "Single line",
+    "lines2": "Two lines",
+    "bgmMode": "Background music",
+    "none": "None",
+    "random": "Random audio",
+    "fixed": "Fixed audio",
+    "audioFolder": "Audio folder",
+    "audioFile": "Audio file",
+    "randomHint": "Choose one audio file randomly per video; repeats are allowed in a batch. Supports MP3, WAV, M4A, AAC, FLAC and OGG.",
+    "fixedHint": "Use the same audio file for every video. Voiceover settings are unchanged.",
+    "audioRequired": "Please select an audio file or folder",
+    "audioUnavailable": "Audio file is unreadable, or the folder contains no supported audio.",
+    "sizes": {
+      "1080x1920": "Portrait HD · 1080 × 1920 (9:16)",
+      "720x1280": "Portrait · 720 × 1280 (9:16)",
+      "1920x1080": "Landscape HD · 1920 × 1080 (16:9)",
+      "1280x720": "Landscape · 1280 × 720 (16:9)",
+      "1080x1080": "Square · 1080 × 1080 (1:1)",
+      "1080x1440": "Portrait · 1080 × 1440 (3:4)"
+    }
+  },
   "app": {
     "name": "AI Short Video Factory"
   },
@@ -41,6 +95,9 @@
   },
   "common": {
     "buttons": {
+      "selectFile": "Select file",
+      "selectFolder": "Select folder",
+      "cancel": "Cancel",
       "generate": "Generate",
       "stop": "Stop",
       "config": "Configure",

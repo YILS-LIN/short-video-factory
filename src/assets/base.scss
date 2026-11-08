@@ -12,6 +12,28 @@ body {
   background: linear-gradient(180deg, #f3f3f3, #ffffff);
 }
 
+/* Dialog headers/actions stay visible; only the content region may scroll. */
+.v-dialog > .v-overlay__content > .v-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+
+  > .v-card-item,
+  > .v-card-title,
+  > .v-card-subtitle,
+  > .v-card-actions,
+  > .v-divider {
+    flex-shrink: 0;
+  }
+
+  > .v-card-text {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+}
+
 /* 滚动条样式 */
 ::-webkit-scrollbar {
   width: 10px; /* 垂直滚动条宽度 */

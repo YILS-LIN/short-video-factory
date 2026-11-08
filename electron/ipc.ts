@@ -22,6 +22,7 @@ import { setupEffectRendererFrameWriter } from './effect-engine/export-task-mana
 import { getMetadataState } from './metadata/runtime'
 import { validateExternalHttpsUrl } from './lib/external-url'
 import { openDirectory } from './lib/open-directory'
+import { audioExtensions, isAudioFile } from '../src/lib/render-config'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 let windowMaximizedByApp = false
@@ -88,6 +89,28 @@ function resolveDefaultFolderPath(customPath?: string | null) {
 export default function initIPC() {
   const activeTtsSynthesisControllers = new Map<string, AbortController>()
   setupEffectRendererFrameWriter()
+  ipcMain.handle('select-audio-file', async (event, params: SelectFolderParams = {}) => {
+    const owner = BrowserWindow.fromWebContents(event.sender)
+    const options: Electron.OpenDialogOptions = {
+      title: params.title,
+      defaultPath: params.defaultPath || undefined,
+      properties: ['openFile'],
+      filters: [{ name: 'Audio', extensions: audioExtensions }],
+    }
+    const result = owner
+      ? await dialog.showOpenDialog(owner, options)
+      : await dialog.showOpenDialog(options)
+    return result.canceled ? '' : (result.filePaths[0] ?? '')
+  })
+  ipcMain.handle('validate-audio-file', async (_event, filePath: string) => {
+    if (typeof filePath !== 'string' || !isAudioFile(filePath)) return false
+    try {
+      await fs.promises.access(filePath, fs.constants.R_OK)
+      return (await fs.promises.stat(filePath)).isFile()
+    } catch {
+      return false
+    }
+  })
   ipcMain.on('app-log', (_event, payload: { level: AppLogLevel; args: unknown[] }) => {
     const level = payload?.level
     const args = payload?.args

@@ -1,4 +1,58 @@
 {
+  "renderSettings": {
+    "loading": "正在生成预览…",
+    "sections": {
+      "subtitle": "字幕开关",
+      "typography": "文字样式",
+      "outline": "描边",
+      "layout": "布局"
+    },
+    "video": "视频与输出",
+    "subtitle": "字幕",
+    "audio": "音频",
+    "preview": "字幕效果预览",
+    "previewHint": "黑底字幕预览，不含视频素材",
+    "previewText": "预览文字（不影响正式文案）",
+    "sample": "欢迎使用短视频工厂，轻松制作精彩视频！",
+    "previewError": "预览生成失败，请重试",
+    "retry": "重试",
+    "preset": "视频尺寸预设",
+    "custom": "自定义",
+    "swap": "交换宽高",
+    "invalidSize": "宽高须为 64–4096 范围内的偶数",
+    "fontSize": "字号",
+    "fontHint": "以 1080 像素宽画幅为基准，随输出宽度缩放；长句自动缩小字号。",
+    "color": "文字颜色",
+    "strokeColor": "描边颜色",
+    "strokeWidth": "描边粗细",
+    "position": "字幕位置",
+    "offset": "垂直微调（负值上移）",
+    "maxLines": "最大行数",
+    "reset": "恢复默认字幕样式",
+    "top": "顶部",
+    "middle": "居中",
+    "bottom": "底部",
+    "lines1": "单行",
+    "lines2": "双行",
+    "bgmMode": "背景音乐",
+    "none": "不使用",
+    "random": "随机音频",
+    "fixed": "固定音频",
+    "audioFolder": "音频文件夹",
+    "audioFile": "音频文件",
+    "randomHint": "每条视频从文件夹随机选择一个音频，批量生成时允许重复。支持 MP3、WAV、M4A、AAC、FLAC、OGG。",
+    "fixedHint": "所有视频使用同一个音频文件，不改变原有配音设置。",
+    "audioRequired": "请选择音频文件或文件夹",
+    "audioUnavailable": "音频文件不可读，或文件夹内没有可用音频。",
+    "sizes": {
+      "1080x1920": "竖屏高清 · 1080 × 1920（9:16）",
+      "720x1280": "竖屏 · 720 × 1280（9:16）",
+      "1920x1080": "横屏高清 · 1920 × 1080（16:9）",
+      "1280x720": "横屏 · 1280 × 720（16:9）",
+      "1080x1080": "方形 · 1080 × 1080（1:1）",
+      "1080x1440": "竖屏图文 · 1080 × 1440（3:4）"
+    }
+  },
   "app": {
     "name": "AI Short Video Factory - 短视频工厂"
   },
@@ -41,6 +95,9 @@
   },
   "common": {
     "buttons": {
+      "selectFile": "选择文件",
+      "selectFolder": "选择文件夹",
+      "cancel": "取消",
       "generate": "生成",
       "stop": "停止",
       "config": "配置",

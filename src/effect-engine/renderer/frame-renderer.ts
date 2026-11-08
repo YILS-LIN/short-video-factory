@@ -9,6 +9,9 @@ export async function renderSubtitleFrames(
   task: SubtitleRendererTask,
   isCancelled?: () => boolean,
 ) {
+  await document.fonts.load(
+    `${task.style.fontWeight} ${task.style.fontSize}px ${task.style.fontFamily}`,
+  )
   const { app, root } = await createPixiApp({ width: task.video.width, height: task.video.height })
   const canvas = app.canvas as HTMLCanvasElement
   const canvasHost = document.getElementById('effect-renderer-canvas-host')

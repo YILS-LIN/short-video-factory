@@ -64,6 +64,7 @@ import { formatErrorForCopy } from '@/lib/error-copy'
 import { createAnalyticsOperationId, trackAnalytics } from '@/lib/analytics'
 import { runBatch, type BatchRunState } from '@/lib/batch'
 import { logGeneration } from '@/lib/generation-diagnostics'
+import { isAudioFile } from '@/lib/render-config'
 
 const toast = useToast()
 const appStore = useAppStore()
@@ -316,6 +317,8 @@ const handleRenderVideo = async () => {
 const renderSingleVideo = async (batchContext?: BatchContext) => {
   const subtitlesEnabled = appStore.renderConfig.subtitlesEnabled !== false
   const exportSubtitles = appStore.renderConfig.exportSubtitles === true
+  const bgmMode =
+    appStore.renderConfig.bgmMode ?? (appStore.renderConfig.bgmPath ? 'random' : 'none')
   const operationId = createAnalyticsOperationId()
   const trigger = batchContext ? 'batch' : appStore.autoBatch ? 'batch' : 'manual'
   const logContext = {
@@ -330,7 +333,7 @@ const renderSingleVideo = async (batchContext?: BatchContext) => {
     outputHeight: appStore.renderConfig.outputSize?.height,
     subtitlesEnabled,
     exportSubtitles,
-    bgmEnabled: Boolean(appStore.renderConfig.bgmPath),
+    bgmEnabled: bgmMode !== 'none',
   })
   const blocked = (reason: string) => {
     logGeneration('task_blocked', logContext, { reason, stage: 'preflight' }, undefined, 'warn')
@@ -379,20 +382,28 @@ const renderSingleVideo = async (batchContext?: BatchContext) => {
   }
 
   let randomBgm: ListFilesFromFolderRecord | undefined = undefined
-  if (appStore.renderConfig.bgmPath) {
+  if (bgmMode !== 'none') {
     try {
-      const bgmList = (
-        await window.electron.listFilesFromFolder({
-          folderPath: appStore.renderConfig.bgmPath.replace(/\\/g, '/'),
+      if (bgmMode === 'fixed') {
+        const filePath = appStore.renderConfig.bgmFile
+        if (!(await window.electron.validateAudioFile(filePath)))
+          throw new Error(t('renderSettings.audioUnavailable'))
+        randomBgm = { path: filePath, name: filePath.split(/[\\/]/).pop() ?? filePath }
+      } else {
+        const bgmList = (
+          await window.electron.listFilesFromFolder({
+            folderPath: appStore.renderConfig.bgmPath.replace(/\\/g, '/'),
+          })
+        ).filter((asset) => isAudioFile(asset.name))
+        if (!bgmList.length) throw new Error(t('renderSettings.audioUnavailable'))
+        if (bgmList.length > 0) {
+          randomBgm = random.choice(bgmList)
+        }
+        console.debug('背景音乐素材读取完成', {
+          audioCount: bgmList.length,
+          selected: randomBgm?.name,
         })
-      ).filter((asset) => asset.name.toLowerCase().endsWith('.mp3'))
-      if (bgmList.length > 0) {
-        randomBgm = random.choice(bgmList)
       }
-      console.debug('背景音乐素材读取完成', {
-        mp3Count: bgmList.length,
-        selected: randomBgm?.name,
-      })
     } catch (error: any) {
       blocked('bgm_unavailable')
       logGeneration('preflight_failed', logContext, { reason: 'bgm_unavailable' }, error, 'error')
@@ -596,6 +607,7 @@ const renderSingleVideo = async (batchContext?: BatchContext) => {
         bgm: randomBgm?.path,
       },
       subtitleText: ttsResult.srtText,
+      subtitleStyle: { ...appStore.renderConfig.subtitleStyle },
       subtitlesEnabled,
       exportSubtitles,
       outputSize: {

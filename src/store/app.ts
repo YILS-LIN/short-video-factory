@@ -9,6 +9,7 @@ import {
 } from '@/lib/llm/config'
 import type { CopywritingStatus, LlmConfig } from '@/lib/llm/types'
 import { normalizeBatchConfig, type BatchRunState } from '@/lib/batch'
+import { normalizeSubtitleStyle, type BgmMode } from '@/lib/render-config'
 
 export enum RenderStatus {
   None,
@@ -75,6 +76,9 @@ export const useAppStore = defineStore(
     // 合成配置
     const renderConfig = ref({
       bgmPath: '',
+      bgmMode: 'none' as BgmMode,
+      bgmFile: '',
+      subtitleStyle: normalizeSubtitleStyle(),
       outputSize: { width: 1080, height: 1920 },
       outputPath: '',
       outputFileName: '',
@@ -87,14 +91,25 @@ export const useAppStore = defineStore(
     const batchProgress = ref<BatchRunState | null>(null)
     const renderStatus = ref(RenderStatus.None)
     const updateRenderConfig = (
-      newConfig: Omit<typeof renderConfig.value, 'subtitlesEnabled' | 'exportSubtitles'> &
-        Partial<Pick<typeof renderConfig.value, 'subtitlesEnabled' | 'exportSubtitles'>>,
+      newConfig: Omit<
+        typeof renderConfig.value,
+        'subtitlesEnabled' | 'exportSubtitles' | 'bgmMode' | 'bgmFile' | 'subtitleStyle'
+      > &
+        Partial<
+          Pick<
+            typeof renderConfig.value,
+            'subtitlesEnabled' | 'exportSubtitles' | 'bgmMode' | 'bgmFile' | 'subtitleStyle'
+          >
+        >,
     ) => {
       renderConfig.value = {
         ...newConfig,
         outputSize: { ...newConfig.outputSize },
         subtitlesEnabled: newConfig.subtitlesEnabled !== false,
         exportSubtitles: newConfig.exportSubtitles === true,
+        bgmMode: newConfig.bgmMode ?? (newConfig.bgmPath ? 'random' : 'none'),
+        bgmFile: newConfig.bgmFile ?? '',
+        subtitleStyle: normalizeSubtitleStyle(newConfig.subtitleStyle),
       }
     }
     const updateRenderStatus = (newStatus: RenderStatus) => {
@@ -148,6 +163,17 @@ export const useAppStore = defineStore(
   },
   {
     persist: {
+      serializer: {
+        serialize: JSON.stringify,
+        deserialize: (raw) => {
+          const state = JSON.parse(raw)
+          // Migrate before Pinia merges defaults, otherwise missing mode becomes "none".
+          if (state?.renderConfig && !state.renderConfig.bgmMode) {
+            state.renderConfig.bgmMode = state.renderConfig.bgmPath ? 'random' : 'none'
+          }
+          return state
+        },
+      },
       omit: [
         'genderList',
         'speedList',

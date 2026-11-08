@@ -54,6 +54,8 @@ contextBridge.exposeInMainWorld('electron', {
   setZoomFactor: (factor: number) => ipcRenderer.send('set-zoom-factor', factor),
   openExternal: (params: OpenExternalParams) => ipcRenderer.invoke('open-external', params),
   selectFolder: (params: SelectFolderParams) => ipcRenderer.invoke('select-folder', params),
+  selectAudioFile: (params: SelectFolderParams) => ipcRenderer.invoke('select-audio-file', params),
+  validateAudioFile: (filePath: string) => ipcRenderer.invoke('validate-audio-file', filePath),
   openDirectory: (folderPath: string) => ipcRenderer.invoke('open-directory', folderPath),
   listFilesFromFolder: (params: ListFilesFromFolderParams) =>
     ipcRenderer.invoke('list-files-from-folder', params),

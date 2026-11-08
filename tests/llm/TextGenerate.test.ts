@@ -92,6 +92,60 @@ describe('TextGenerate configuration and request lifecycle', () => {
     mocks.generateCopywriting.mockReset()
   })
 
+  it('keeps the configuration tabs outside the scroll body and resets scroll on tab changes', async () => {
+    const { wrapper, findDialogButton } = createHost()
+    try {
+      findDialogButton('common.buttons.config')!.click()
+      await flushPromises()
+      const card = document.body.querySelector('.llm-config-card')!
+      const tabs = card.querySelector('.llm-config-tabs')!
+      const body = card.querySelector('.llm-config-body')!
+      expect(tabs.parentElement).toBe(card)
+      expect(body.contains(tabs)).toBe(false)
+      expect(card.querySelector('.v-card-actions')!.parentElement).toBe(card)
+      body.scrollTop = 120
+      findDialogButton('features.llm.config.advancedTab')!.click()
+      await flushPromises()
+      const advancedBody = card.querySelector('.llm-config-body')!
+      expect(advancedBody).not.toBe(body)
+      expect(advancedBody.scrollTop).toBe(0)
+      expect(card.querySelector('.llm-config-tabs')).toBe(tabs)
+    } finally {
+      wrapper.unmount()
+      document.body.innerHTML = ''
+    }
+  })
+
+  it('lays out advanced pairs and header rows separately while preserving header editing', async () => {
+    const { wrapper, storeState, findDialogButton } = createHost()
+    try {
+      findDialogButton('common.buttons.config')!.click()
+      await flushPromises()
+      findDialogButton('features.llm.config.advancedTab')!.click()
+      await flushPromises()
+      expect(document.body.querySelectorAll('.llm-config-grid')).toHaveLength(2)
+      findDialogButton('common.buttons.add')!.click()
+      await flushPromises()
+      const row = document.body.querySelector('.llm-header-row')!
+      const inputs = row.querySelectorAll('input')
+      expect(inputs).toHaveLength(2)
+      expect(row.querySelector('.llm-header-remove')).not.toBeNull()
+      for (const [index, value] of ['X-Trace', 'trace-value'].entries()) {
+        inputs[index].value = value
+        inputs[index].dispatchEvent(new Event('input', { bubbles: true }))
+      }
+      await flushPromises()
+      findDialogButton('common.buttons.save')!.click()
+      await flushPromises()
+      expect(storeState.llmConfig.customHeaders).toEqual([
+        { name: 'X-Trace', value: 'trace-value' },
+      ])
+    } finally {
+      wrapper.unmount()
+      document.body.innerHTML = ''
+    }
+  })
+
   it('keeps the real Vuetify stop control enabled while a connection test is pending', async () => {
     const { wrapper, findDialogButton } = createHost()
     const deferred = createDeferred<{ text: string; status: 'completed' }>()
@@ -185,7 +239,7 @@ describe('TextGenerate configuration and request lifecycle', () => {
       const signal = (mocks.generateCopywriting.mock.calls[0][0] as { abortSignal: AbortSignal })
         .abortSignal
 
-      findDialogButton('common.buttons.close')!.click()
+      findDialogButton('common.buttons.cancel')!.click()
       await flushPromises()
       expect(signal.aborted).toBe(true)
       expect(storeState.llmConfig.apiUrl).toBe('https://example.com/v1')

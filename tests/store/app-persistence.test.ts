@@ -15,6 +15,31 @@ const createPersistedStore = () => {
 }
 
 describe('app store persisted state', () => {
+  it('migrates legacy BGM folders and persists explicit disabled/fixed modes', async () => {
+    localStorage.setItem('app', JSON.stringify({ renderConfig: { bgmPath: '/music' } }))
+    const first = createPersistedStore()
+    expect(first.store.renderConfig.bgmMode).toBe('random')
+    first.store.updateRenderConfig({
+      ...first.store.renderConfig,
+      bgmMode: 'fixed',
+      bgmFile: '/music/fixed.wav',
+      subtitleStyle: { ...first.store.renderConfig.subtitleStyle, color: '#FF0000' },
+    })
+    await nextTick()
+    first.app.unmount()
+    const second = createPersistedStore()
+    expect(second.store.renderConfig.bgmMode).toBe('fixed')
+    expect(second.store.renderConfig.bgmFile).toBe('/music/fixed.wav')
+    expect(second.store.renderConfig.subtitleStyle.color).toBe('#FF0000')
+    second.store.updateRenderConfig({ ...second.store.renderConfig, bgmMode: 'none' })
+    await nextTick()
+    second.app.unmount()
+    const third = createPersistedStore()
+    expect(third.store.renderConfig.bgmMode).toBe('none')
+    expect(third.store.renderConfig.bgmPath).toBe('/music')
+    third.app.unmount()
+  })
+
   afterEach(() => {
     localStorage.clear()
   })

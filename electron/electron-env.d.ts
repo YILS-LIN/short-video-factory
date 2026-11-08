@@ -45,6 +45,8 @@ interface Window {
     setZoomFactor: (factor: number) => void
     openExternal: (params: import('./types').OpenExternalParams) => Promise<void>
     selectFolder: (params: import('./types').SelectFolderParams) => Promise<string>
+    selectAudioFile: (params: import('./types').SelectFolderParams) => Promise<string>
+    validateAudioFile: (filePath: string) => Promise<boolean>
     openDirectory: (folderPath: string) => Promise<void>
     listFilesFromFolder: (
       params: import('./types').ListFilesFromFolderParams,

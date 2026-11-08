@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="dialogVisible" max-width="560">
+  <v-dialog v-model="dialogVisible" max-width="560" scrollable>
     <v-card class="update-dialog-card">
       <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2">
         <v-icon color="primary">mdi-update</v-icon>
@@ -163,8 +163,6 @@ const openWebsite = () => {
 }
 
 .release-notes {
-  max-height: 280px;
-  overflow-y: auto;
   background: rgba(var(--v-theme-on-surface), 0.04);
 }
 </style>

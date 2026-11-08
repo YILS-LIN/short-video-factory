@@ -29,25 +29,32 @@
             </template>
             {{ t('common.buttons.stop') }}
           </v-btn>
-          <v-dialog v-model="configDialogShow" max-width="680" persistent>
+          <v-dialog v-model="configDialogShow" max-width="680" persistent scrollable>
             <template #activator="{ props: activatorProps }">
               <v-btn v-bind="activatorProps" :disabled="disabled">{{
                 t('common.buttons.config')
               }}</v-btn>
             </template>
             <v-card
+              class="llm-config-card"
               prepend-icon="mdi-text-box-edit-outline"
               :title="t('features.llm.config.configTitle')"
             >
-              <v-card-text>
-                <v-tabs v-model="configTab" color="primary" density="comfortable" fixed-tabs>
-                  <v-tab value="connection">{{ t('features.llm.config.connectionTab') }}</v-tab>
-                  <v-tab value="copywriting">{{ t('features.llm.config.copywritingTab') }}</v-tab>
-                  <v-tab value="advanced">{{ t('features.llm.config.advancedTab') }}</v-tab>
-                </v-tabs>
-                <v-window v-model="configTab" class="mt-4">
+              <v-tabs
+                class="llm-config-tabs"
+                v-model="configTab"
+                color="primary"
+                density="comfortable"
+                fixed-tabs
+              >
+                <v-tab value="connection">{{ t('features.llm.config.connectionTab') }}</v-tab>
+                <v-tab value="copywriting">{{ t('features.llm.config.copywritingTab') }}</v-tab>
+                <v-tab value="advanced">{{ t('features.llm.config.advancedTab') }}</v-tab>
+              </v-tabs>
+              <v-card-text :key="configTab" class="llm-config-body">
+                <v-window v-model="configTab">
                   <v-window-item value="connection" class="px-1 py-1">
-                    <div class="flex flex-col gap-3">
+                    <div class="llm-config-form flex flex-col gap-3">
                       <v-select
                         v-model="config.protocol"
                         hide-details
@@ -111,7 +118,7 @@
                     </div>
                   </v-window-item>
                   <v-window-item value="copywriting" class="px-1 py-1">
-                    <div class="flex flex-col gap-3">
+                    <div class="llm-config-form flex flex-col gap-3">
                       <v-select
                         v-model="copyConfig.systemPromptMode"
                         hide-details
@@ -180,14 +187,14 @@
                     </div>
                   </v-window-item>
                   <v-window-item value="advanced" class="px-1 py-1">
-                    <div class="flex flex-col gap-3">
+                    <div class="llm-config-form flex flex-col gap-3">
                       <v-select
                         v-model="config.instructionDelivery"
                         hide-details
                         :label="t('features.llm.config.instructionDelivery')"
                         :items="deliveryItems"
                       />
-                      <div class="grid grid-cols-2 gap-3">
+                      <div class="llm-config-grid">
                         <v-text-field
                           v-model.number="config.timeoutSeconds"
                           type="number"
@@ -207,7 +214,7 @@
                       <div class="text-subtitle-2">
                         {{ t('features.llm.config.sampling') }}
                       </div>
-                      <div class="grid grid-cols-2 gap-3">
+                      <div class="llm-config-grid">
                         <v-text-field
                           v-model.number="config.temperature"
                           type="number"
@@ -246,7 +253,7 @@
                       <div
                         v-for="(header, index) in config.customHeaders"
                         :key="index"
-                        class="flex gap-2 items-start"
+                        class="llm-header-row"
                       >
                         <v-text-field
                           v-model="header.name"
@@ -258,7 +265,9 @@
                           type="password"
                         />
                         <v-btn
+                          class="llm-header-remove"
                           icon="mdi-delete-outline"
+                          size="small"
                           variant="text"
                           :title="t('common.buttons.remove')"
                           @click="removeHeader(index)"
@@ -302,7 +311,7 @@
                 </v-btn>
                 <v-spacer />
                 <v-btn
-                  :text="t('common.buttons.close')"
+                  :text="t('common.buttons.cancel')"
                   variant="plain"
                   @click="handleCloseDialog"
                 />
@@ -847,3 +856,50 @@ defineExpose({
   clearOutputText,
 })
 </script>
+
+<style scoped>
+.llm-config-card > .llm-config-tabs {
+  flex: 0 0 auto;
+  padding-inline: 24px;
+}
+.llm-config-card > .llm-config-body {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-top: 20px;
+}
+.llm-config-form > :deep(.v-input) {
+  flex: 0 0 auto;
+}
+.llm-config-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.llm-header-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 40px;
+  align-items: start;
+  gap: 8px;
+}
+.llm-config-grid > :deep(.v-input),
+.llm-header-row > :deep(.v-input) {
+  min-width: 0;
+  width: 100%;
+}
+@media (max-width: 480px) {
+  .llm-config-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .llm-header-row {
+    grid-template-columns: minmax(0, 1fr) 40px;
+  }
+  .llm-header-row > :deep(.v-input) {
+    grid-column: 1;
+  }
+  .llm-header-remove {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}
+</style>

@@ -4,12 +4,14 @@ import { createPinia } from 'pinia'
 import { isProxy, reactive, toRaw } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import VideoRender from '../../src/views/Home/components/VideoRender.vue'
+import RenderConfigDialog from '../../src/views/Home/components/RenderConfigDialog.vue'
 import { RenderStatus, useAppStore } from '../../src/store/app'
 
 const mocks = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }))
 vi.mock('vue-toastification', () => ({ useToast: () => mocks }))
 
 vi.mock('i18next-vue', () => ({ useTranslation: () => ({ t: (key: string) => key }) }))
+vi.mock('../../src/components/SubtitlePreview.vue', () => ({ default: { template: '<div />' } }))
 
 const stubs = Object.fromEntries(
   [
@@ -25,6 +27,10 @@ const stubs = Object.fromEntries(
     'VTextField',
     'VCardActions',
     'VSpacer',
+    'VTabs',
+    'VTab',
+    'VSelect',
+    'SubtitlePreview',
   ].map((name) => [name, true]),
 )
 
@@ -79,30 +85,27 @@ describe('VideoRender configuration drafts', () => {
       outputSize: reactive({ width: 720, height: 1280 }),
     }
     expect(isProxy(toRaw(store.renderConfig).outputSize)).toBe(true)
-    const wrapper = shallowMount(VideoRender, {
+    const wrapper = shallowMount(RenderConfigDialog, {
+      props: { modelValue: false },
       global: { plugins: [pinia], stubs, renderStubDefaultSlot: true },
     })
     try {
+      await wrapper.setProps({ modelValue: true })
       const fields = wrapper.findAllComponents({ name: 'VTextField' })
       expect(fields[0].attributes('modelvalue')).toBe('720')
       fields[0].vm.$emit('update:modelValue', 1080)
       expect(store.renderConfig.outputSize.width).toBe(720)
 
-      // Subtitle settings now live in their own panel. Opening the config
-      // dialog must pick up changes made there instead of restoring stale values.
+      // Reopening picks up quick-toggle changes rather than saving stale values.
       store.renderConfig.subtitlesEnabled = false
       store.renderConfig.exportSubtitles = true
       expect(store.renderConfig.subtitlesEnabled).toBe(false)
       expect(store.renderConfig.exportSubtitles).toBe(true)
 
+      await wrapper.setProps({ modelValue: false })
+      await wrapper.setProps({ modelValue: true })
       const buttons = wrapper.findAllComponents({ name: 'VBtn' })
-      const configButton = buttons.find((button) =>
-        button.text().includes('common.buttons.config'),
-      )!
-      await configButton.trigger('click')
-      const saveButton = buttons.find(
-        (button) => button.attributes('text') === 'common.buttons.save',
-      )!
+      const saveButton = buttons.find((button) => button.text().includes('common.buttons.save'))!
       await saveButton.trigger('click')
       expect(store.renderConfig.subtitlesEnabled).toBe(false)
       expect(store.renderConfig.exportSubtitles).toBe(true)

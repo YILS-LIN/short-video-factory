@@ -8,27 +8,12 @@ import {
 } from './export-task-manager'
 import { createEffectTaskTempPaths, cleanupEffectTaskTempPaths } from './temp-file-manager'
 import { destroyEffectRenderWindow, ensureEffectRenderWindow } from './render-window-manager'
-import { defaultSubtitleStyle } from '../../src/effect-engine/default-style'
+import { resolveSubtitleStyle } from '../../src/effect-engine/shared/style'
 import type {
   SubtitleAsset,
   SubtitleRendererManifest,
   SubtitleStyleConfig,
 } from '../../src/effect-engine/shared/types'
-
-function resolveStyle(style?: Partial<SubtitleStyleConfig>): SubtitleStyleConfig {
-  const merged = { ...defaultSubtitleStyle, ...style }
-  return {
-    ...merged,
-    offsetX: Math.max(-1200, Math.min(1200, Math.round(merged.offsetX))),
-    offsetY: Math.max(-1200, Math.min(1200, Math.round(merged.offsetY))),
-    safeAreaBottomRatio: Math.max(0, Math.min(0.5, merged.safeAreaBottomRatio)),
-    maxWidthRatio: Math.max(0.2, Math.min(1, merged.maxWidthRatio)),
-    maxLines: merged.maxLines === 1 ? 1 : 2,
-    fontSize: Math.max(16, Math.min(220, Math.round(merged.fontSize))),
-    minFontSize: Math.max(12, Math.min(merged.fontSize, Math.round(merged.minFontSize))),
-    strokeWidth: Math.max(0, Math.min(12, merged.strokeWidth)),
-  }
-}
 
 function createTaskId() {
   return `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -46,7 +31,7 @@ export async function renderSubtitleFramesToPngSequence(params: {
   const taskId = createTaskId()
   const tempPaths = createEffectTaskTempPaths(taskId)
 
-  const style = resolveStyle(params.style)
+  const style = resolveSubtitleStyle(params.style, params.outputSize.width)
 
   const task = {
     taskId,

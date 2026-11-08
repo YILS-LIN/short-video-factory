@@ -201,10 +201,18 @@ describe('Home video render flow', () => {
     },
   )
 
-  it.each([1, 3])('completes exactly %s successful renders', async (count) => {
+  it.each([
+    { count: 1, bgmMode: 'none' },
+    { count: 3, bgmMode: 'none' },
+    { count: 3, bgmMode: 'fixed' },
+    { count: 3, bgmMode: 'random' },
+  ])('completes $count successful renders with $bgmMode audio', async ({ count, bgmMode }) => {
     const storeState = reactive({
       renderConfig: {
-        bgmPath: '',
+        bgmPath: '/music',
+        bgmMode,
+        bgmFile: '/music/fixed.wav',
+        subtitleStyle: { fontSize: 64, color: '#FF0000' },
         outputSize: { width: 720, height: 1280 },
         outputPath: 'C:/video output',
         outputFileName: 'success',
@@ -220,6 +228,11 @@ describe('Home video render flow', () => {
     })
     const renderDeferred = createDeferred<{ stdout: string; stderr: string; code: number }>()
     const renderVideo = vi.fn(() => renderDeferred.promise)
+    const validateAudioFile = vi.fn().mockResolvedValue(true)
+    const listFilesFromFolder = vi
+      .fn()
+      .mockResolvedValue([{ name: 'random.WAV', path: '/music/random.WAV' }])
+    mocks.random.choice.mockImplementation((items) => items[0])
     mocks.store = storeState
     mocks.getTextForSynthesis.mockResolvedValue('A generated script')
     mocks.synthesizeSpeech.mockResolvedValue({ duration: 8, srtText: 'subtitle text' })
@@ -232,6 +245,8 @@ describe('Home video render flow', () => {
       value: {
         platform: 'win32',
         renderVideo,
+        validateAudioFile,
+        listFilesFromFolder,
         statTrack: vi.fn(() => Promise.resolve()),
       },
     })
@@ -269,6 +284,21 @@ describe('Home video render flow', () => {
         expect.objectContaining({ text: 'A generated script', withCaption: true }),
       )
       expect(mocks.getVideoSegments).toHaveBeenCalledWith({ duration: 8 })
+      expect(renderVideo).toHaveBeenCalledWith(
+        expect.objectContaining({
+          audioFiles: expect.objectContaining({
+            bgm:
+              bgmMode === 'none'
+                ? undefined
+                : bgmMode === 'fixed'
+                  ? '/music/fixed.wav'
+                  : '/music/random.WAV',
+          }),
+          subtitleStyle: { fontSize: 64, color: '#FF0000' },
+        }),
+      )
+      expect(validateAudioFile).toHaveBeenCalledTimes(bgmMode === 'fixed' ? count : 0)
+      expect(listFilesFromFolder).toHaveBeenCalledTimes(bgmMode === 'random' ? count : 0)
       expect(mocks.getTextForSynthesis.mock.invocationCallOrder[0]).toBeLessThan(
         mocks.synthesizeSpeech.mock.invocationCallOrder[0],
       )

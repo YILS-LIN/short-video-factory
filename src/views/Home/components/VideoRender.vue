@@ -76,94 +76,16 @@
       </div>
     </v-sheet>
 
-    <v-dialog v-model="configDialogShow" max-width="600" persistent>
-      <v-card prepend-icon="mdi-text-box-edit-outline" :title="t('dialogs.renderConfig')">
-        <v-card-text>
-          <div class="w-full flex gap-2 mb-4 items-center">
-            <v-text-field
-              :label="t('features.render.config.output.width')"
-              v-model="config.outputSize.width"
-              hide-details
-            ></v-text-field>
-            <v-text-field
-              v-model="config.outputSize.height"
-              :label="t('features.render.config.output.height')"
-              hide-details
-              required
-            ></v-text-field>
-          </div>
-          <div class="w-full flex gap-2 mb-4 items-center">
-            <v-text-field
-              :label="t('features.render.config.output.fileName')"
-              v-model="config.outputFileName"
-              hide-details
-              required
-              clearable
-            ></v-text-field>
-            <v-text-field
-              class="w-[120px] flex-none"
-              v-model="config.outputFileExt"
-              :label="t('features.render.config.output.format')"
-              hide-details
-              readonly
-              required
-            ></v-text-field>
-          </div>
-          <div class="w-full flex gap-2 mb-4 items-center">
-            <v-text-field
-              :label="t('features.render.config.output.folder')"
-              v-model="config.outputPath"
-              hide-details
-              readonly
-              required
-            ></v-text-field>
-            <v-btn
-              class="!h-[46px]"
-              prepend-icon="mdi-folder-open"
-              @click="handleSelectOutputFolder"
-            >
-              {{ t('common.buttons.select') }}
-            </v-btn>
-          </div>
-          <div class="w-full flex gap-2 mb-2 items-center">
-            <v-text-field
-              :label="t('features.render.config.bgmFolderLabel')"
-              v-model="config.bgmPath"
-              hide-details
-              readonly
-              required
-              clearable
-            ></v-text-field>
-            <v-btn class="!h-[46px]" prepend-icon="mdi-folder-open" @click="handleSelectBgmFolder">
-              {{ t('common.buttons.select') }}
-            </v-btn>
-          </div>
-        </v-card-text>
-        <v-divider></v-divider>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn
-            :text="t('common.buttons.close')"
-            variant="plain"
-            @click="handleCloseDialog"
-          ></v-btn>
-          <v-btn
-            color="primary"
-            :text="t('common.buttons.save')"
-            variant="tonal"
-            @click="handleSaveConfig"
-          ></v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <RenderConfigDialog v-model="configDialogShow" />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { h, ref, nextTick, computed, watch, onUnmounted } from 'vue'
+import { h, ref, computed, watch, onUnmounted } from 'vue'
 import { useTranslation } from 'i18next-vue'
 import { RenderStatus, useAppStore } from '@/store'
 import { useToast } from 'vue-toastification'
+import RenderConfigDialog from './RenderConfigDialog.vue'
 import ActionToastEmbed from '@/components/ActionToastEmbed.vue'
 import { formatErrorForCopy } from '@/lib/error-copy'
 
@@ -289,49 +211,8 @@ const progressCenterSecondary = computed(() => {
   return ''
 })
 
-// 配置合成选项
-// toRaw only unwraps the outer proxy; copy the nested size explicitly so hydrated
-// or saved reactive configuration never reaches structuredClone.
-const createConfigDraft = () => ({
-  ...appStore.renderConfig,
-  outputSize: { ...appStore.renderConfig.outputSize },
-})
-const config = ref(createConfigDraft())
 const configDialogShow = ref(false)
-const resetConfigDialog = () => {
-  config.value = createConfigDraft()
-}
-watch(configDialogShow, (show) => {
-  if (show) resetConfigDialog()
+watch(taskInProgress, (busy) => {
+  if (busy) configDialogShow.value = false
 })
-const handleCloseDialog = () => {
-  configDialogShow.value = false
-  nextTick(resetConfigDialog)
-}
-const handleSaveConfig = () => {
-  appStore.updateRenderConfig(config.value)
-  configDialogShow.value = false
-}
-
-// 选择文件夹
-const handleSelectOutputFolder = async () => {
-  const folderPath = await window.electron.selectFolder({
-    title: t('dialogs.selectOutputFolder'),
-    defaultPath: config.value.outputPath,
-  })
-  console.log('用户选择视频导出文件夹，绝对路径：', folderPath)
-  if (folderPath) {
-    config.value.outputPath = folderPath
-  }
-}
-const handleSelectBgmFolder = async () => {
-  const folderPath = await window.electron.selectFolder({
-    title: t('dialogs.selectBgmFolder'),
-    defaultPath: config.value.bgmPath,
-  })
-  console.log('用户选择背景音乐文件夹，绝对路径：', folderPath)
-  if (folderPath) {
-    config.value.bgmPath = folderPath
-  }
-}
 </script>
