@@ -1,4 +1,8 @@
 {
+  "durationEstimate": {
+    "label": "预计时长：约 {{duration}}",
+    "hint": "播放时长（[时:]分:秒），不是导出耗时。按正常朗读速度在本地粗略估算，仅供参考；实际时长受配音、语速及内容读法影响。"
+  },
   "renderSettings": {
     "loading": "正在生成预览…",
     "sections": {

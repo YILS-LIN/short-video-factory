@@ -7,6 +7,7 @@ import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import TextGenerate from '../../src/views/Home/components/TextGenerate.vue'
+import DurationEstimate from '../../src/views/Home/components/DurationEstimate.vue'
 import { defaultCopywritingConfig, defaultLlmConfig } from '../../src/lib/llm/config'
 import type { CopywritingStatus, LlmConfig } from '../../src/lib/llm/types'
 
@@ -485,6 +486,30 @@ describe('TextGenerate configuration and request lifecycle', () => {
     }
   })
 
+  it('shares the existing input details row with the persistent character counter', async () => {
+    vi.useFakeTimers()
+    const { wrapper } = createHost()
+    try {
+      const text = '欢迎来到短视频工厂，今天一起分享生活中的小美好。'
+      const outputField = wrapper.findAllComponents({ name: 'VTextarea' }).at(-1)!
+      await outputField.setValue(text)
+      await vi.advanceTimersByTimeAsync(200)
+      const details = outputField.find('.v-input__details')
+      const estimate = details.find('[data-testid="duration-estimate"]')
+      const counter = details.find('.v-counter')
+      expect(estimate.exists()).toBe(true)
+      expect(counter.text()).toBe(String(text.length))
+      expect(estimate.element.closest('.v-input__details')).toBe(details.element)
+      expect(counter.element.closest('.v-input__details')).toBe(details.element)
+      expect(outputField.findAll('.v-input__details')).toHaveLength(1)
+      expect(wrapper.findAllComponents(DurationEstimate)).toHaveLength(1)
+    } finally {
+      wrapper.unmount()
+      document.body.innerHTML = ''
+      vi.useRealTimers()
+    }
+  })
+
   it('allows TTS text only from completed or edited states', async () => {
     const { wrapper, storeState } = createHost()
     try {
@@ -495,13 +520,20 @@ describe('TextGenerate configuration and request lifecycle', () => {
       storeState.copywritingStatus = 'completed'
       await expect(exposed.getTextForSynthesis()).resolves.toBe('')
       await outputField!.setValue('朗读正文')
+      const durationEstimate = wrapper.findComponent(DurationEstimate)
+      expect(durationEstimate.props('text')).toBe('朗读正文')
+      expect(durationEstimate.props('text')).not.toBe(storeState.prompt)
 
       for (const status of ['generating', 'cancelled', 'failed', 'truncated'] as const) {
         storeState.copywritingStatus = status
+        await flushPromises()
+        expect(durationEstimate.props('ready')).toBe(false)
         await expect(exposed.getTextForSynthesis()).rejects.toThrow()
       }
 
       storeState.copywritingStatus = 'completed'
+      await flushPromises()
+      expect(durationEstimate.props('ready')).toBe(true)
       await expect(exposed.getTextForSynthesis()).resolves.toBe('朗读正文')
       storeState.copywritingStatus = 'edited'
       await expect(exposed.getTextForSynthesis()).resolves.toBe('朗读正文')

@@ -1,4 +1,8 @@
 {
+  "durationEstimate": {
+    "label": "Approx. length: {{duration}}",
+    "hint": "Playback length ([h:]min:sec), not export processing time. Estimated locally at a normal reading pace, for reference only. Actual length depends on the voice, speech rate and pronunciation."
+  },
   "renderSettings": {
     "loading": "Generating preview…",
     "sections": {

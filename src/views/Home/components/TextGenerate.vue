@@ -329,14 +329,22 @@
       <v-sheet class="h-0 flex-1 p-2" border rounded>
         <v-textarea
           v-model="outputText"
-          class="h-full"
+          class="h-full copywriting-output"
           :readonly="appStore.copywritingStatus === 'generating'"
           :label="`${t('features.llm.config.outputLabel')} · ${statusLabel}`"
           counter
           persistent-counter
           no-resize
           @update:model-value="handleOutputEdited"
-        />
+        >
+          <template #details>
+            <DurationEstimate
+              :text="outputText"
+              :generating="appStore.copywritingStatus === 'generating'"
+              :ready="['completed', 'edited'].includes(appStore.copywritingStatus)"
+            />
+          </template>
+        </v-textarea>
         <v-alert
           v-if="generationPhase === 'rewriting'"
           class="mt-2"
@@ -365,6 +373,7 @@ import { computed, h, nextTick, onBeforeUnmount, ref, toRaw, watch } from 'vue'
 import { useTranslation } from 'i18next-vue'
 import { useToast } from 'vue-toastification'
 import ActionToastEmbed from '@/components/ActionToastEmbed.vue'
+import DurationEstimate from './DurationEstimate.vue'
 import { copyErrorToClipboard } from '@/lib/error-copy'
 import {
   defaultCopywritingConfig,
@@ -858,6 +867,9 @@ defineExpose({
 </script>
 
 <style scoped>
+.copywriting-output :deep(.v-counter) {
+  flex-shrink: 0;
+}
 .llm-config-card > .llm-config-tabs {
   flex: 0 0 auto;
   padding-inline: 24px;
