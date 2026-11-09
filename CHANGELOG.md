@@ -4,6 +4,40 @@ All significant changes to this project will be recorded in this file.
 
 此项目的所有显著更改都将记录在此文件中。
 
+## [v1.4.0] - 2026-11-09
+
+<!-- i18n:en:start -->
+
+### Added
+
+- Add a dedicated video composition settings dialog with grouped controls, subtitle style preview, and audio selection
+- Add estimated output duration to help plan video composition
+- Add system language detection and a persistent language preference
+- Add generation diagnostics with batch and task context, detailed error tracking, and sensitive-field redaction
+
+### Fixed & Optimized
+
+- Unify subtitle composition through the in-house rendering engine and remove the FFmpeg native subtitle fallback
+- Simplify AI API format selection and merge OpenAI chat configuration with automatic migration of existing settings
+- Refine the main window size and composition interface layout
+<!-- i18n:en:end -->
+
+<!-- i18n:zh-CN:start -->
+
+### 新增
+
+- 新增独立的视频合成配置面板，支持分区设置、字幕样式预览与音频选择
+- 新增成片时长预估，便于规划视频合成
+- 新增系统语言识别与语言偏好保存
+- 新增生成诊断日志，记录批次与任务上下文、详细错误信息，并对敏感字段脱敏
+
+### 修复与优化
+
+- 统一使用自研字幕引擎完成字幕合成，移除 FFmpeg 原生字幕回退路径
+- 简化 AI 接口格式选择，合并 OpenAI 对话配置并自动迁移已有设置
+- 优化主窗口尺寸与视频合成界面布局
+<!-- i18n:zh-CN:end -->
+
 ## [v1.3.0] - 2026-10-16
 
 <!-- i18n:en:start -->
