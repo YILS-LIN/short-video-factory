@@ -22,28 +22,38 @@ test('extracts the exact tag without leaking adjacent versions', () => {
   assert.throws(() => releaseNotes(text, 'v1.3'))
 })
 
-function scenario({ existing = false, incomplete = false, publishFails = false } = {}) {
+function scenario({
+  existing = false,
+  draft = false,
+  incomplete = false,
+  publishFails = false,
+} = {}) {
   const installers = expectedInstallers('1.3.0').map((name) => ({
     name,
     size: 123,
     path: `artifacts/${name}`,
   }))
-  let release = existing
-    ? {
-        tag_name: 'v1.3.0',
-        published_at: 'date',
-        draft: false,
-        assets: installers.map((f) => ({ ...f, state: 'uploaded' })),
-      }
-    : null
+  let release =
+    existing || draft
+      ? {
+          id: 123,
+          tag_name: 'v1.3.0',
+          published_at: draft ? null : 'date',
+          draft,
+          assets: installers.map((f) => ({ ...f, state: 'uploaded' })),
+        }
+      : null
   const calls = []
   const gh = (...args) => {
     calls.push(args)
     if (args[0] === 'api') {
-      if (!release) throw Object.assign(new Error('Not Found'), { stderr: 'HTTP 404' })
+      if (args.includes('--slurp')) return JSON.stringify([[], release ? [release] : []])
+      if (!release || (args[1].includes('/tags/') && release.draft))
+        throw Object.assign(new Error('Not Found'), { stderr: 'HTTP 404' })
+      assert.ok(args[1].endsWith('/tags/v1.3.0') || args[1].endsWith(`/releases/${release.id}`))
       return JSON.stringify(release)
     }
-    if (args[1] === 'create') release = { tag_name: 'v1.3.0', draft: true, assets: [] }
+    if (args[1] === 'create') release = { id: 123, tag_name: 'v1.3.0', draft: true, assets: [] }
     if (args[1] === 'upload')
       release.assets = installers
         .slice(incomplete ? 1 : 0)
@@ -91,4 +101,41 @@ test('retries verify public releases without modifying them', () => {
     state.calls.every((args) => args[0] === 'api'),
     true,
   )
+})
+
+test('verifies a newly created draft by ID when tag lookup returns 404', () => {
+  const state = scenario()
+  assert.equal(state.run().draft, false)
+  assert.ok(state.calls.some((args) => args[1] === 'repos/owner/repo/releases/123'))
+})
+
+test('resumes an existing draft found on a later page without creating another release', () => {
+  const state = scenario({ draft: true })
+  assert.equal(state.run().draft, false)
+  assert.equal(
+    state.calls.some((args) => args[1] === 'create'),
+    false,
+  )
+  assert.ok(state.calls.some((args) => args.includes('--paginate') && args.includes('--slurp')))
+  assert.ok(state.calls.some((args) => args[1] === 'repos/owner/repo/releases/123'))
+})
+
+test('does not fall back to listing on authentication or other API errors', () => {
+  const calls = []
+  const error = Object.assign(new Error('Forbidden'), { stderr: 'HTTP 403' })
+  assert.throws(
+    () =>
+      publishCompleteRelease({
+        tag: 'v1.3.0',
+        repo: 'owner/repo',
+        installers: [],
+        notesPath: 'notes.md',
+        gh: (...args) => {
+          calls.push(args)
+          throw error
+        },
+      }),
+    (actual) => actual === error,
+  )
+  assert.equal(calls.length, 1)
 })
