@@ -37,7 +37,78 @@ const mocks = vi.hoisted(() => {
 
 vi.mock('ws', () => ({ default: mocks.MockWebSocket }))
 
-import { Constants, DRM, EdgeTTS, SEC_MS_GEC_VERSION } from '../../electron/lib/edge-tts'
+import {
+  Constants,
+  DRM,
+  EdgeTTS,
+  SEC_MS_GEC_VERSION,
+  splitTextByByteLength,
+} from '../../electron/lib/edge-tts'
+
+describe('splitTextByByteLength', () => {
+  it('splits 1810 continuous Chinese characters without losing text', () => {
+    const text = '中'.repeat(1810)
+    const chunks = splitTextByByteLength(text, 4096)
+
+    expect(chunks.map((chunk) => Buffer.byteLength(chunk))).toEqual([4095, 1335])
+    expect(chunks.join('')).toBe(text)
+  })
+
+  it('prefers sentence punctuation or a newline over a later space', () => {
+    expect(splitTextByByteLength('你好。再见 世界', 18)).toEqual(['你好。', '再见 世界'])
+    expect(splitTextByByteLength('hello\nworld again', 13)).toEqual(['hello\n', 'world again'])
+    expect(splitTextByByteLength('hello world again', 9)).toEqual(['hello ', 'world ', 'again'])
+  })
+
+  it('counts XML escapes and does not cut a multibyte character', () => {
+    expect(splitTextByByteLength(Buffer.from('中🙂&<>'), 6)).toEqual(['中', '🙂', '&', '<', '>'])
+    expect(splitTextByByteLength('中&', 8)).toEqual(['中&'])
+    expect(() => splitTextByByteLength('&', 4)).toThrow()
+    expect(() => splitTextByByteLength('text', NaN)).toThrow()
+  })
+})
+
+describe('EdgeTTS chunked synthesis', () => {
+  beforeEach(() => {
+    mocks.instances.length = 0
+  })
+
+  it('sends bounded, escaped SSML in order and joins audio and word offsets', async () => {
+    const edgeTts = new EdgeTTS()
+    const text = '中'.repeat(1364) + '&<尾>'
+    const operation = edgeTts.synthesize(text, 'zh-CN-YunjianNeural')
+    const sentTexts: string[] = []
+    const audioChunks: Buffer[] = []
+    const wordOffset = 200_000
+
+    for (const index of [0, 1]) {
+      await vi.waitFor(() => expect(mocks.instances).toHaveLength(index + 1))
+      const socket = mocks.instances[index]
+      socket.emit('open')
+      const speechMessage = socket.send.mock.calls[1][0] as string
+      const sentText = speechMessage.match(/<prosody[^>]*>\s*([^\n]*)/)?.[1] ?? ''
+      expect(Buffer.byteLength(sentText)).toBeLessThanOrEqual(4096)
+      sentTexts.push(sentText)
+
+      const audioChunk = Buffer.alloc(600, index)
+      audioChunk.set([0xff, 0xfb, 0x90, 0x64])
+      audioChunks.push(audioChunk)
+      const metadata = {
+        Metadata: [{ Type: 'WordBoundary', Data: { Offset: wordOffset, Duration: 100, text: {} } }],
+      }
+      socket.emit('message', Buffer.from(`Path:audio.metadata\r\n\r\n${JSON.stringify(metadata)}`))
+      socket.emit('message', Buffer.concat([Buffer.from('Path:audio\r\n'), audioChunk]))
+      socket.emit('message', Buffer.from('Path:turn.end\r\n\r\n'))
+      socket.emit('close', 1000, Buffer.alloc(0))
+    }
+
+    const result = await operation
+    expect(sentTexts).toEqual(['中'.repeat(1364), '&amp;&lt;尾&gt;'])
+    expect(mocks.instances).toHaveLength(2)
+    expect(result.getBuffer()).toEqual(Buffer.concat(audioChunks))
+    expect(result.getWordList().map((word) => word.Offset)).toEqual([wordOffset, 1_200_000])
+  })
+})
 
 describe('EdgeTTS cancellation', () => {
   beforeEach(() => {
@@ -125,6 +196,10 @@ describe('EdgeTTS cancellation', () => {
     expect(error).toMatchObject({
       name: 'EdgeTTSError',
       diagnostics: {
+        escapedTextBytes: 5,
+        ssmlBytes: expect.any(Number),
+        chunkIndex: 1,
+        chunkCount: 1,
         messageTypes: ['audio', 'audio.metadata', 'other'],
         messageCounts: { audio: 250, 'audio.metadata': 101, other: 50 },
       },

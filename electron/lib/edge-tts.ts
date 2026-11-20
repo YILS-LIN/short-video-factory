@@ -157,6 +157,10 @@ export interface EdgeTTSDiagnostics {
   attempt: number
   voice: string
   textLength: number
+  escapedTextBytes: number
+  ssmlBytes: number
+  chunkIndex: number
+  chunkCount: number
   startedAt: string
   elapsedMs?: number
   messageTypes: string[]
@@ -181,6 +185,7 @@ export class EdgeTTSError extends Error {
 }
 
 const MAX_RETRIES = 3
+const MAX_ESCAPED_TEXT_BYTES = 4096
 const RETRY_DELAYS_MS = [1000, 3000, 7000]
 const DIAGNOSTIC_MESSAGE_TYPES = new Set([
   'turn.start',
@@ -287,74 +292,45 @@ function removeIncompatibleCharacters(text: string): string {
   return chars.join('')
 }
 
-function findLastNewlineOrSpaceWithinLimit(text: Buffer, limit: number): number {
-  const newlineIndex = text.lastIndexOf(Buffer.from('\n'), limit)
-  if (newlineIndex >= 0) {
-    return newlineIndex
-  }
-  return text.lastIndexOf(Buffer.from(' '), limit)
+const SSML_TEXT_ENTITIES: Readonly<Record<string, string>> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
 }
 
-function findSafeUtf8SplitPoint(textSegment: Buffer): number {
-  let splitAt = textSegment.length
-  while (splitAt > 0) {
-    try {
-      textSegment.subarray(0, splitAt).toString('utf-8')
-      return splitAt
-    } catch {
-      splitAt--
-    }
-  }
-  return splitAt
-}
-
-function adjustSplitPointForXmlEntity(text: Buffer, splitAt: number): number {
-  while (splitAt > 0) {
-    const ampersandIndex = text.subarray(0, splitAt).lastIndexOf(Buffer.from('&'))
-    if (ampersandIndex < 0) {
-      break
-    }
-    const semicolonIndex = text.subarray(ampersandIndex, splitAt).indexOf(Buffer.from(';'))
-    if (semicolonIndex >= 0) {
-      break
-    }
-    splitAt = ampersandIndex
-  }
-  return splitAt
-}
-
+// Split plain text without dropping characters; budget for the escaped text sent in SSML.
 export function splitTextByByteLength(text: string | Buffer, byteLength: number): string[] {
+  if (!Number.isSafeInteger(byteLength) || byteLength <= 0) {
+    throw new Error('byteLength must be a positive integer')
+  }
+
+  const input = typeof text === 'string' ? text : text.toString('utf8')
   const chunks: string[] = []
-  let currentText = Buffer.isBuffer(text) ? text : Buffer.from(text, 'utf-8')
-
-  if (byteLength <= 0) {
-    throw new Error('byteLength must be greater than 0')
-  }
-
-  while (currentText.length > byteLength) {
-    let splitAt = findLastNewlineOrSpaceWithinLimit(currentText, byteLength)
-
-    if (splitAt < 0) {
-      splitAt = findSafeUtf8SplitPoint(currentText)
+  for (let start = 0; start < input.length; ) {
+    let end = start
+    let bytes = 0
+    let sentenceEnd = start
+    let phraseEnd = start
+    let hasText = false
+    while (end < input.length) {
+      const char = String.fromCodePoint(input.codePointAt(end)!)
+      const charBytes = Buffer.byteLength(SSML_TEXT_ENTITIES[char] ?? char, 'utf8')
+      if (bytes + charBytes > byteLength) break
+      bytes += charBytes
+      end += char.length
+      hasText ||= !/\s/u.test(char)
+      if (hasText && /[。！？.!?…\r\n]/u.test(char)) sentenceEnd = end
+      else if (hasText && /[，、；：,;:\s]/u.test(char)) phraseEnd = end
     }
 
-    splitAt = adjustSplitPointForXmlEntity(currentText, splitAt)
-
-    if (splitAt < 0) {
-      throw new Error('Maximum byte length is too small or invalid text structure')
+    if (end === start) throw new Error('byteLength is too small for one escaped character')
+    let splitAt = end
+    if (end < input.length) {
+      if (sentenceEnd > start) splitAt = sentenceEnd
+      else if (phraseEnd > start) splitAt = phraseEnd
     }
-
-    let chunk = currentText.subarray(0, splitAt).toString('utf-8').trim()
-    if (chunk) {
-      chunks.push(chunk)
-    }
-
-    currentText = splitAt > 0 ? currentText.subarray(splitAt) : currentText.subarray(1)
-  }
-
-  const remainingChunk = currentText.toString('utf-8').trim()
-  if (remainingChunk) {
-    chunks.push(remainingChunk)
+    chunks.push(input.slice(start, splitAt))
+    start = splitAt
   }
 
   return chunks
@@ -623,19 +599,23 @@ export class EdgeTTS {
     abortSignal?: AbortSignal,
   ): Promise<SynthesisResult> {
     if (abortSignal?.aborted) throw createAbortError()
-    const cleanedText = removeIncompatibleCharacters(text)
-    const textChunks = splitTextByByteLength(cleanedText, 4096)
-
-    if (textChunks.length === 1) {
-      return this.synthesizeSingleWithRetry(text, voice, options, abortSignal)
-    }
+    const cleanedText = removeIncompatibleCharacters(text).trim()
+    const textChunks = splitTextByByteLength(cleanedText, MAX_ESCAPED_TEXT_BYTES).filter(
+      (chunk) => chunk.trim().length > 0,
+    )
 
     const allAudioData: Buffer[] = []
     const allWordList: WordBoundary[] = []
     let offsetCompensation = 0
-    for (const chunk of textChunks) {
+    for (const [index, chunk] of textChunks.entries()) {
       if (abortSignal?.aborted) throw createAbortError()
-      const result = await this.synthesizeSingleWithRetry(chunk, voice, options, abortSignal)
+      const result = await this.synthesizeSingleWithRetry(
+        chunk,
+        voice,
+        options,
+        { chunkIndex: index + 1, chunkCount: textChunks.length },
+        abortSignal,
+      )
       const audioData = result.getBuffer()
       if (audioData.length > 0) {
         allAudioData.push(audioData)
@@ -656,12 +636,13 @@ export class EdgeTTS {
     text: string,
     voice: string,
     options: SynthesisOptions,
+    chunk: Pick<EdgeTTSDiagnostics, 'chunkIndex' | 'chunkCount'>,
     abortSignal?: AbortSignal,
   ): Promise<SynthesisResult> {
     let lastError: unknown
     for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
       try {
-        return await this.synthesizeSingle(text, voice, options, attempt, abortSignal)
+        return await this.synthesizeSingle(text, voice, options, attempt, chunk, abortSignal)
       } catch (error) {
         lastError = error
         if (abortSignal?.aborted || (error as { name?: string })?.name === 'AbortError') {
@@ -691,11 +672,13 @@ export class EdgeTTS {
     voice: string,
     options: SynthesisOptions,
     attempt: number,
+    chunk: Pick<EdgeTTSDiagnostics, 'chunkIndex' | 'chunkCount'>,
     abortSignal?: AbortSignal,
   ): Promise<SynthesisResult> {
     if (abortSignal?.aborted) throw createAbortError()
     // Validate local SSML inputs before opening a network connection.
-    const ssmlText = this.getSSML(text, voice, options)
+    const escapedText = text.replace(/[&<>]/g, (char) => SSML_TEXT_ENTITIES[char])
+    const ssmlText = this.getSSML(escapedText, voice, options)
 
     return new Promise((resolve, reject) => {
       const audioStream: Buffer[] = []
@@ -707,6 +690,9 @@ export class EdgeTTS {
         attempt,
         voice,
         textLength: text.length,
+        escapedTextBytes: Buffer.byteLength(escapedText, 'utf8'),
+        ssmlBytes: Buffer.byteLength(ssmlText, 'utf8'),
+        ...chunk,
         startedAt: new Date(startedAt).toISOString(),
         messageTypes: [],
         messageCounts: {},
@@ -779,6 +765,10 @@ export class EdgeTTS {
           attempt: diagnostics.attempt,
           voice: diagnostics.voice,
           textLength: diagnostics.textLength,
+          escapedTextBytes: diagnostics.escapedTextBytes,
+          ssmlBytes: diagnostics.ssmlBytes,
+          chunkIndex: diagnostics.chunkIndex,
+          chunkCount: diagnostics.chunkCount,
           audioBytes: diagnostics.audioBytes,
           closeCode: diagnostics.closeCode,
           messageTypes: diagnostics.messageTypes,
@@ -884,7 +874,7 @@ export class EdgeTTS {
     })
   }
 
-  private getSSML(text: string, voice: string, options: SynthesisOptions): string {
+  private getSSML(escapedText: string, voice: string, options: SynthesisOptions): string {
     const pitch = this.validatePitch(options.pitch ?? 0)
     const rate = this.validateRate(options.rate ?? 0)
     const volume = this.validateVolume(options.volume ?? 0)
@@ -892,7 +882,7 @@ export class EdgeTTS {
     return `<speak version='1.0' xml:lang='en-US'>
       <voice name='${voice}'>
         <prosody pitch='${pitch}Hz' rate='${rate}%' volume='${volume}%'>
-          ${text}
+          ${escapedText}
         </prosody>
       </voice>
     </speak>`
