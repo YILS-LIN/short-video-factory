@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
 import { generateCopywriting } from '../../src/lib/llm/generate'
-import type { LlmConfig } from '../../src/lib/llm/types'
-import { createOpenAiEvents, startSseServer, writeSse } from './server'
+import type { LlmConfig, SystemPromptMode } from '../../src/lib/llm/types'
+import {
+  createAnthropicEvents,
+  createOpenAiEvents,
+  createResponsesEvents,
+  startSseServer,
+  writeSse,
+} from './server'
 
 const createConfig = (apiUrl: string, overrides: Partial<LlmConfig> = {}): LlmConfig => ({
   protocol: 'openai-compatible',
@@ -22,6 +28,174 @@ const generate = (apiUrl: string, abortSignal = new AbortController().signal) =>
     prompt: '写一句欢迎语',
     abortSignal,
   })
+
+const chatDelta = (delta: Record<string, unknown>) => ({
+  data: { choices: [{ index: 0, delta, finish_reason: null }] },
+})
+
+describe('reasoning and copywriting separation', () => {
+  const body = '<think>示例</think>\nLet’s think.\n现在开始。'
+  const chatEnd = createOpenAiEvents().slice(1)
+
+  const run = async (
+    events: Parameters<typeof writeSse>[1],
+    config: Partial<LlmConfig> = {},
+    systemPromptMode: SystemPromptMode = 'off',
+  ) => {
+    const received: string[] = []
+    const server = await startSseServer((_request, response) => writeSse(response, events))
+    try {
+      const result = await generateCopywriting({
+        llmConfig: createConfig(server.baseUrl, config),
+        copywritingConfig: { systemPromptMode, customSystemPrompt: '请写口播文案。' },
+        prompt: '写一句欢迎语',
+        abortSignal: new AbortController().signal,
+        onTextDelta: (delta) => received.push(delta),
+      })
+      return { result, received: received.join('') }
+    } finally {
+      await server.close()
+    }
+  }
+
+  it.each([
+    ['builtin', undefined, true],
+    ['custom', undefined, true],
+    ['off', undefined, true],
+    ['builtin', false, false],
+    ['custom', true, true],
+  ] as const)(
+    'applies the thinking-tag policy for %s with override %s',
+    async (mode, override, decode) => {
+      const content = '<think>draft</think>' + body
+      const { result, received } = await run(
+        [chatDelta({ content }), ...chatEnd],
+        { decodeLeadingThink: override },
+        mode,
+      )
+      expect(received).toBe(decode ? body : content)
+      expect(result).toMatchObject({ text: received, status: 'completed' })
+    },
+  )
+
+  it('preserves ordinary Chat Completions text regardless of separate reasoning fields', async () => {
+    const { result, received } = await run(
+      [
+        chatDelta({ reasoning_content: 'scratchpad', content: body.slice(0, 12) }),
+        chatDelta({ reasoning: 'more scratchpad', reasoning_details: [], content: body.slice(12) }),
+        ...chatEnd,
+      ],
+      { decodeLeadingThink: false },
+    )
+    expect(received).toBe(body)
+    expect(result).toMatchObject({ text: body, status: 'completed' })
+  })
+
+  it('uses text rather than reasoning-summary events in Responses', async () => {
+    const { result, received } = await run(createResponsesEvents(), {
+      protocol: 'openai-responses',
+    })
+    expect(received).toBe('你好')
+    expect(result).toMatchObject({ text: '你好', status: 'completed' })
+  })
+
+  it('uses text rather than thinking blocks in Messages', async () => {
+    const [start, ...events] = createAnthropicEvents()
+    const { result, received } = await run(
+      [
+        start,
+        {
+          event: 'content_block_start',
+          data: {
+            type: 'content_block_start',
+            index: 1,
+            content_block: { type: 'thinking', thinking: '', signature: '' },
+          },
+        },
+        {
+          event: 'content_block_delta',
+          data: {
+            type: 'content_block_delta',
+            index: 1,
+            delta: { type: 'thinking_delta', thinking: 'scratchpad' },
+          },
+        },
+        { event: 'content_block_stop', data: { type: 'content_block_stop', index: 1 } },
+        ...events,
+      ],
+      { protocol: 'anthropic-messages' },
+    )
+    expect(received).toBe('你好')
+    expect(result).toMatchObject({ text: '你好', status: 'completed' })
+  })
+
+  it('decodes only one leading wrapper even when both tags span multiple chunks', async () => {
+    const deltas = [' \n<th', 'ink>draft', ' notes</', 'thi', 'nk>' + body]
+    const { result, received } = await run(
+      [...deltas.map((content) => chatDelta({ content })), ...chatEnd],
+      { decodeLeadingThink: true, modelName: 'unknown-model-alias' },
+    )
+    expect(received).toBe(body)
+    expect(result).toMatchObject({ text: body, status: 'completed' })
+  })
+
+  it.each(['Let’s think.\n' + body, '</think>你好', '<thin'])(
+    'preserves unwrapped text: %s',
+    async (content) => {
+      const { result, received } = await run([chatDelta({ content }), ...chatEnd], {
+        decodeLeadingThink: true,
+      })
+      expect(received).toBe(content)
+      expect(result).toMatchObject({ text: content, status: 'completed' })
+    },
+  )
+
+  it('keeps an unclosed wrapper out of the preview and exposes it separately for recovery', async () => {
+    const content = ' <think>draft followed by possible narration'
+    const { result, received } = await run([chatDelta({ content }), ...chatEnd], {
+      decodeLeadingThink: true,
+    })
+    expect(received).toBe('')
+    expect(result).toMatchObject({ text: '', status: 'failed', unclosedThinkingOutput: content })
+  })
+
+  it('preserves only the confirmed body when cancelled during streaming', async () => {
+    const controller = new AbortController()
+    const onTextDelta = vi.fn(() => controller.abort())
+    const server = await startSseServer((_request, response) => {
+      response.writeHead(200, { 'content-type': 'text/event-stream' })
+      for (const content of ['<think>scratchpad', '</think>', body]) {
+        response.write(`data: ${JSON.stringify(chatDelta({ content }).data)}\n\n`)
+      }
+    })
+    try {
+      const result = await generateCopywriting({
+        llmConfig: createConfig(server.baseUrl, { decodeLeadingThink: true }),
+        copywritingConfig: { systemPromptMode: 'off', customSystemPrompt: '' },
+        prompt: '写一句欢迎语',
+        abortSignal: controller.signal,
+        onTextDelta,
+      })
+      expect(result).toEqual({ text: body, status: 'cancelled' })
+      expect(onTextDelta.mock.calls).toEqual([[body]])
+    } finally {
+      await server.close()
+    }
+  })
+
+  it.each([
+    [{ reasoning_content: 'draft only' }, false],
+    [{ content: '<think>draft only</think>' }, true],
+  ] as const)(
+    'does not count a reasoning-only response as successful',
+    async (delta, decodeLeadingThink) => {
+      const { result, received } = await run([chatDelta(delta), ...chatEnd], { decodeLeadingThink })
+      expect(received).toBe('')
+      expect(result).toMatchObject({ text: '', status: 'failed' })
+      expect(result).not.toHaveProperty('unclosedThinkingOutput')
+    },
+  )
+})
 
 describe('copywriting stream lifecycle', () => {
   it('returns completed text only after a normal stop finish reason', async () => {

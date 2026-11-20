@@ -229,6 +229,7 @@
       "config": {
         "promptLabel": "Prompt",
         "outputLabel": "Output Text (editable)",
+        "rawOutputLabel": "Raw output (not used for narration)",
         "configTitle": "Configure LLM API",
         "modelName": "Model Name",
         "apiUrl": "API URL",
@@ -270,6 +271,8 @@
         "clearHistoryConfirm": "Clear locally stored recent scripts and strategy rotation history?",
         "advanced": "Advanced connection settings",
         "instructionDelivery": "Instruction delivery",
+        "decodeLeadingThink": "Recognize leading thinking tags",
+        "decodeLeadingThinkHint": "Separates a leading <think>…</think> by default, regardless of prompt mode. Turn this off if your script should begin with that tag.",
         "standardDelivery": "Standard (recommended)",
         "userMessageDelivery": "Merge into user message",
         "timeoutSeconds": "Request timeout (seconds)",
@@ -299,6 +302,7 @@
         "cancelled": "Generation was cancelled",
         "failed": "No valid text was received",
         "truncated": "Generation is incomplete",
+        "unclosedThinkingOutput": "The opening thinking tag was not closed; the narration could not be identified",
         "textNotReady": "The current script is not ready for speech synthesis",
         "historyClearFailed": "Could not clear recent records. Check local storage availability."
       },

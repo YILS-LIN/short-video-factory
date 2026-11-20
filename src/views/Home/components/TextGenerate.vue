@@ -53,7 +53,7 @@
               </v-tabs>
               <v-card-text :key="configTab" class="llm-config-body">
                 <v-window v-model="configTab">
-                  <v-window-item value="connection" class="px-1 py-1">
+                  <v-window-item value="connection" class="llm-config-panel">
                     <div class="llm-config-form flex flex-col gap-3">
                       <v-select
                         v-model="config.protocol"
@@ -117,10 +117,12 @@
                       >
                     </div>
                   </v-window-item>
-                  <v-window-item value="copywriting" class="px-1 py-1">
+                  <v-window-item value="copywriting" class="llm-config-panel">
                     <div class="llm-config-form flex flex-col gap-3">
                       <v-select
                         v-model="copyConfig.systemPromptMode"
+                        v-model:menu="promptModeMenuOpen"
+                        :transition="false"
                         hide-details
                         :label="t('features.llm.config.systemPromptMode')"
                         :items="promptModeItems"
@@ -138,7 +140,9 @@
                           }}</v-btn>
                         </div>
                         <v-textarea
+                          ref="customPromptField"
                           v-model="copyConfig.customSystemPrompt"
+                          :aria-label="t('features.llm.config.customPrompt')"
                           :hint="t('features.llm.config.customPromptHint')"
                           persistent-hint
                           rows="8"
@@ -186,13 +190,21 @@
                       </template>
                     </div>
                   </v-window-item>
-                  <v-window-item value="advanced" class="px-1 py-1">
+                  <v-window-item value="advanced" class="llm-config-panel">
                     <div class="llm-config-form flex flex-col gap-3">
                       <v-select
                         v-model="config.instructionDelivery"
                         hide-details
                         :label="t('features.llm.config.instructionDelivery')"
                         :items="deliveryItems"
+                      />
+                      <v-switch
+                        v-model="thinkingTagMode"
+                        color="primary"
+                        density="compact"
+                        :label="t('features.llm.config.decodeLeadingThink')"
+                        :hint="t('features.llm.config.decodeLeadingThinkHint')"
+                        persistent-hint
                       />
                       <div class="llm-config-grid">
                         <v-text-field
@@ -345,6 +357,16 @@
             />
           </template>
         </v-textarea>
+        <details v-if="unclosedThinkingOutput" class="mt-2">
+          <summary>{{ t('features.llm.errors.unclosedThinkingOutput') }}</summary>
+          <v-textarea
+            :model-value="unclosedThinkingOutput"
+            :label="t('features.llm.config.rawOutputLabel')"
+            readonly
+            rows="4"
+            hide-details
+          />
+        </details>
         <v-alert
           v-if="generationPhase === 'rewriting'"
           class="mt-2"
@@ -375,12 +397,7 @@ import { useToast } from 'vue-toastification'
 import ActionToastEmbed from '@/components/ActionToastEmbed.vue'
 import DurationEstimate from './DurationEstimate.vue'
 import { copyErrorToClipboard } from '@/lib/error-copy'
-import {
-  defaultCopywritingConfig,
-  getCustomHeaderIssue,
-  getLlmConfigIssue,
-  normalizeLlmConfig,
-} from '@/lib/llm/config'
+import { getCustomHeaderIssue, getLlmConfigIssue, normalizeLlmConfig } from '@/lib/llm/config'
 import { generateCopywriting } from '@/lib/llm/generate'
 import { generateDiverseCopywriting, type GenerationPhase } from '@/lib/llm/generate-diverse'
 import { builtinSystemPrompt } from '@/lib/llm/prompts'
@@ -403,11 +420,15 @@ const { t } = useTranslation()
 defineProps<{ disabled?: boolean }>()
 
 const outputText = ref('')
+const unclosedThinkingOutput = ref('')
 const abortController = ref<AbortController | null>(null)
 const testAbortController = ref<AbortController | null>(null)
 const configDialogShow = ref(false)
 const config = ref<LlmConfig>(structuredClone(toRaw(appStore.llmConfig)))
 const copyConfig = ref(structuredClone(toRaw(appStore.copywritingConfig)))
+const customPromptField = ref<{ focus: () => void } | null>(null)
+const promptModeMenuOpen = ref(false)
+let shouldFocusCustomPrompt = false
 const showApiKey = ref(false)
 const latestGenerationAnalytics = ref<GenerationUsageSummary>({
   source: 'unknown',
@@ -436,6 +457,12 @@ const deliveryItems = computed(() => [
   { title: t('features.llm.config.standardDelivery'), value: 'standard' },
   { title: t('features.llm.config.userMessageDelivery'), value: 'user-message' },
 ])
+const thinkingTagMode = computed({
+  get: () => config.value.decodeLeadingThink !== false,
+  set: (enabled: boolean) => {
+    config.value.decodeLeadingThink = enabled
+  },
+})
 const promptModeItems = computed(() => [
   { title: t('features.llm.config.builtin'), value: 'builtin' },
   { title: t('features.llm.config.custom'), value: 'custom' },
@@ -456,6 +483,20 @@ const systemPromptDescription = computed(() =>
   t(`features.llm.config.${copyConfig.value.systemPromptMode}Description`),
 )
 
+const focusCustomPrompt = () => {
+  if (!shouldFocusCustomPrompt) return
+  shouldFocusCustomPrompt = false
+  if (configDialogShow.value && configTab.value === 'copywriting') customPromptField.value?.focus()
+}
+// Move focus after the select menu closes and the textarea has rendered.
+watch(
+  promptModeMenuOpen,
+  (open) => {
+    if (!open) focusCustomPrompt()
+  },
+  { flush: 'post' },
+)
+
 const cancelTestConnection = () => {
   testRequestId.value += 1
   testAbortController.value?.abort()
@@ -474,7 +515,8 @@ watch(
 watch(
   () => copyConfig.value.systemPromptMode,
   (mode, previous) => {
-    if (mode === 'custom' && previous !== 'custom' && !copyConfig.value.customSystemPrompt.trim())
+    shouldFocusCustomPrompt = mode === 'custom' && previous !== 'custom'
+    if (shouldFocusCustomPrompt && !copyConfig.value.customSystemPrompt.trim())
       copyConfig.value.customSystemPrompt = builtinSystemPrompt
   },
 )
@@ -566,6 +608,7 @@ const handleGenerate = async (options?: {
   let outputTokensKnown = true
   const operationId = createAnalyticsOperationId()
   outputText.value = ''
+  unclosedThinkingOutput.value = ''
   appStore.updateCopywritingStatus('generating')
   try {
     const result = await generateDiverseCopywriting({
@@ -592,6 +635,7 @@ const handleGenerate = async (options?: {
     })
     if (currentRequestId !== requestId.value) return ''
     outputText.value = result.text
+    unclosedThinkingOutput.value = result.unclosedThinkingOutput ?? ''
     appStore.updateCopywritingStatus(result.status)
     historyRevision.value += 1
     if (result.similarityWarning && !options?.noToast)
@@ -604,9 +648,11 @@ const handleGenerate = async (options?: {
       )
     if (result.status !== 'completed') {
       outcome = result.status === 'cancelled' ? 'cancelled' : 'failed'
-      if (result.status === 'truncated') failureCode = 'invalid_response'
+      if (result.status === 'truncated' || result.unclosedThinkingOutput)
+        failureCode = 'invalid_response'
       else if (result.status === 'failed') failureCode = 'empty_output'
-      const error = new Error(t(`features.llm.errors.${result.status}`) as string)
+      const errorKey = result.unclosedThinkingOutput ? 'unclosedThinkingOutput' : result.status
+      const error = new Error(t(`features.llm.errors.${errorKey}`) as string)
       if (options?.throwOnError) throw error
       if (result.status !== 'cancelled' && !options?.noToast)
         showError(t('features.llm.errors.generateFailed') as string, error, requestConfig)
@@ -682,10 +728,12 @@ const getTextForSynthesis = async () => {
 }
 const clearOutputText = () => {
   outputText.value = ''
+  unclosedThinkingOutput.value = ''
   appStore.updateCopywritingStatus('idle')
 }
 
 const resetConfigDialog = () => {
+  shouldFocusCustomPrompt = false
   config.value = structuredClone(toRaw(appStore.llmConfig))
   copyConfig.value = structuredClone(toRaw(appStore.copywritingConfig))
   testResult.value = undefined
@@ -793,9 +841,7 @@ const handleTestConnection = async () => {
   try {
     const result = await generateCopywriting({
       llmConfig: requestConfig,
-      copywritingConfig: structuredClone(
-        toRaw(appStore.copywritingConfig ?? defaultCopywritingConfig()),
-      ),
+      copywritingConfig: structuredClone(toRaw(copyConfig.value)),
       prompt: '请写一句简短、自然的口播开场白。',
       abortSignal: controller.signal,
       onRequestStart: () => {
@@ -814,6 +860,8 @@ const handleTestConnection = async () => {
       providerTestOutcome = 'cancelled'
       return
     }
+    if (result.unclosedThinkingOutput)
+      throw new Error(t('features.llm.errors.unclosedThinkingOutput') as string)
     if (result.status !== 'completed') throw new Error(result.status)
     testResult.value = 'success'
     providerTestOutcome = 'success'
@@ -878,7 +926,11 @@ defineExpose({
   flex: 0 1 auto;
   min-height: 0;
   overflow-y: auto;
-  padding-top: 20px;
+  padding: 20px 0 16px;
+}
+.llm-config-panel {
+  /* Keep the gutter inside v-window so switch shadows clear its clipping edge. */
+  padding: 4px 24px;
 }
 .llm-config-form > :deep(.v-input) {
   flex: 0 0 auto;

@@ -19,6 +19,13 @@ const createConfig = (apiUrl: string, overrides: Partial<LlmConfig> = {}): LlmCo
 })
 
 describe('LLM configuration', () => {
+  it('enables thinking-tag recognition unless explicitly disabled', () => {
+    expect(normalizeLlmConfig({}).decodeLeadingThink).toBe(true)
+    expect(normalizeLlmConfig({ decodeLeadingThink: 'true' }).decodeLeadingThink).toBe(true)
+    expect(normalizeLlmConfig({ decodeLeadingThink: true }).decodeLeadingThink).toBe(true)
+    expect(normalizeLlmConfig({ decodeLeadingThink: false }).decodeLeadingThink).toBe(false)
+  })
+
   it('defaults to OpenAI-compatible and migrates the removed chat protocol without losing settings', () => {
     expect(defaultLlmConfig().protocol).toBe('openai-compatible')
     const settings = {

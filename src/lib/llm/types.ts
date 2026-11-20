@@ -46,6 +46,7 @@ export interface LlmConfig {
   topP?: number
   anthropicAuthMode: AnthropicAuthMode
   instructionDelivery: InstructionDelivery
+  decodeLeadingThink?: boolean
   customHeaders: CustomHeader[]
 }
 
@@ -60,6 +61,7 @@ export interface GenerationResult {
   text: string
   status: Extract<CopywritingStatus, 'completed' | 'cancelled' | 'failed' | 'truncated'>
   finishReason?: string
+  unclosedThinkingOutput?: string
   similarityWarning?: boolean
   rewriteFailed?: boolean
 }

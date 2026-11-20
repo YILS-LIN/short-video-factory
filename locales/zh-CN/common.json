@@ -229,6 +229,7 @@
       "config": {
         "promptLabel": "提示词",
         "outputLabel": "输出文案（可编辑）",
+        "rawOutputLabel": "原始输出（不会用于配音）",
         "configTitle": "配置大语言模型接口",
         "modelName": "模型名称",
         "apiUrl": "API 地址",
@@ -270,6 +271,8 @@
         "clearHistoryConfirm": "确定清除本机保存的近期文案及策略轮换记录吗？",
         "advanced": "高级连接设置",
         "instructionDelivery": "系统指令发送方式",
+        "decodeLeadingThink": "识别开头的思考标签",
+        "decodeLeadingThinkHint": "默认分离开头的 <think>…</think>，不受提示词模式影响。如果正文需要以该标签开头，请关闭此选项。",
         "standardDelivery": "标准方式（推荐）",
         "userMessageDelivery": "合并到用户消息",
         "timeoutSeconds": "请求超时（秒）",
@@ -299,6 +302,7 @@
         "cancelled": "文案生成已取消",
         "failed": "未收到有效文案",
         "truncated": "文案生成不完整",
+        "unclosedThinkingOutput": "开头的思考标签未闭合，无法确认正文",
         "textNotReady": "当前文案未完成，无法用于语音合成",
         "historyClearFailed": "清除近期记录失败，请检查本地存储是否可用"
       },

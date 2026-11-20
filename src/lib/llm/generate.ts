@@ -1,5 +1,6 @@
 import { streamText } from 'ai'
 import { getLlmConfigIssue } from './config'
+import { createLeadingThinkDecoder } from './leading-think'
 import { buildPrompt, cleanGeneratedText, getSystemPrompt } from './prompts.ts'
 import { createLanguageModel } from './providers.ts'
 import type { CopywritingConfig, GenerationResult, LlmConfig } from './types'
@@ -71,6 +72,17 @@ export async function generateCopywriting(
   }, llmConfig.timeoutSeconds * 1000)
   const signal = requestController.signal
   let text = ''
+  const decoder = llmConfig.decodeLeadingThink !== false ? createLeadingThinkDecoder() : undefined
+  const emitText = (delta: string) => {
+    if (!delta) return
+    text += delta
+    onTextDelta?.(delta)
+  }
+  const finishText = () => {
+    const pending = decoder?.finish()
+    emitText(pending?.text ?? '')
+    return pending?.unclosedThinkingOutput
+  }
   let finishReason: string | undefined
   let rawFinishReason: string | undefined
 
@@ -88,8 +100,7 @@ export async function generateCopywriting(
     })
     for await (const part of result.stream) {
       if (part.type === 'text-delta') {
-        text += part.text
-        onTextDelta?.(part.text)
+        emitText(decoder ? decoder.push(part.text) : part.text)
       }
       if (part.type === 'error') throw part.error
       if (part.type === 'abort') {
@@ -116,17 +127,30 @@ export async function generateCopywriting(
     }
     if (terminationReason === 'timeout')
       throw new Error(`Request timed out after ${llmConfig.timeoutSeconds} seconds`)
-    if (terminationReason === 'cancelled')
-      return { text: cleanGeneratedText(text), status: 'cancelled' }
-    finishReason ??= await result.finishReason
-    rawFinishReason ??= await result.rawFinishReason
+    if (terminationReason !== 'cancelled') {
+      finishReason ??= await result.finishReason
+      rawFinishReason ??= await result.rawFinishReason
+    }
+    const unclosedThinkingOutput = finishText()
     text = cleanGeneratedText(text)
+    const recovery = unclosedThinkingOutput ? { unclosedThinkingOutput } : {}
+    if (terminationReason === 'cancelled') return { text, status: 'cancelled', ...recovery }
     return {
       text,
       finishReason: rawFinishReason ?? finishReason,
-      status: getStatus(text, finishReason),
+      status: unclosedThinkingOutput ? 'failed' : getStatus(text, finishReason),
+      ...recovery,
     }
   } catch (error) {
+    const pending = decoder?.finish()
+    const unclosedThinkingOutput = pending?.unclosedThinkingOutput
+    if (unclosedThinkingOutput) {
+      return {
+        text: '',
+        status: terminationReason === 'cancelled' ? 'cancelled' : 'failed',
+        unclosedThinkingOutput,
+      }
+    }
     if (terminationReason === 'timeout') {
       throw new Error(`Request timed out after ${llmConfig.timeoutSeconds} seconds`)
     }
@@ -134,6 +158,7 @@ export async function generateCopywriting(
       terminationReason === 'cancelled' &&
       (isAbortError(error) || signal.aborted || abortSignal.aborted)
     ) {
+      emitText(pending?.text ?? '')
       return { text: cleanGeneratedText(text), status: 'cancelled' }
     }
     throw error

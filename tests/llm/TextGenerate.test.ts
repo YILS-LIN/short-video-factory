@@ -117,6 +117,63 @@ describe('TextGenerate configuration and request lifecycle', () => {
     }
   })
 
+  it('focuses the custom prompt after selecting its mode and saves typed text', async () => {
+    const { wrapper, storeState, findDialogButton } = createHost()
+    try {
+      findDialogButton('common.buttons.config')!.click()
+      await flushPromises()
+      findDialogButton('features.llm.config.copywritingTab')!.click()
+      await flushPromises()
+      const opener = document.body.querySelector('.llm-config-panel .v-select .v-field')!
+      opener.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+      await flushPromises()
+      const custom = [...document.body.querySelectorAll<HTMLElement>('.v-list-item')].find(
+        (item) => item.textContent?.trim() === 'features.llm.config.custom',
+      )
+      expect(custom).toBeDefined()
+      custom!.click()
+      await vi.waitFor(() => {
+        const prompt = document.body.querySelector<HTMLTextAreaElement>(
+          'textarea[aria-label="features.llm.config.customPrompt"]',
+        )
+        expect(prompt).not.toBeNull()
+        expect(document.activeElement).toBe(prompt)
+      })
+      const prompt = document.activeElement as HTMLTextAreaElement
+      prompt.value = '自定义口播提示词'
+      prompt.dispatchEvent(new Event('input', { bubbles: true }))
+      await flushPromises()
+      findDialogButton('common.buttons.save')!.click()
+      await flushPromises()
+      expect(storeState.copywritingConfig.customSystemPrompt).toBe('自定义口播提示词')
+    } finally {
+      wrapper.unmount()
+      document.body.innerHTML = ''
+    }
+  })
+
+  it('defaults to recognizing thinking tags and saves a manual opt-out', async () => {
+    const { wrapper, storeState, findDialogButton } = createHost()
+    try {
+      findDialogButton('common.buttons.config')!.click()
+      await flushPromises()
+      findDialogButton('features.llm.config.advancedTab')!.click()
+      await flushPromises()
+      const toggle = document.body.querySelector<HTMLInputElement>(
+        '.llm-config-panel .v-switch input[type="checkbox"]',
+      )!
+      expect(toggle.checked).toBe(true)
+      toggle.click()
+      await flushPromises()
+      findDialogButton('common.buttons.save')!.click()
+      await flushPromises()
+      expect(storeState.llmConfig.decodeLeadingThink).toBe(false)
+    } finally {
+      wrapper.unmount()
+      document.body.innerHTML = ''
+    }
+  })
+
   it('lays out advanced pairs and header rows separately while preserving header editing', async () => {
     const { wrapper, storeState, findDialogButton } = createHost()
     try {

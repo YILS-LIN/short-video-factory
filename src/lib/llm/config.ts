@@ -10,6 +10,7 @@ export const defaultLlmConfig = (): LlmConfig => ({
   timeoutSeconds: 120,
   anthropicAuthMode: 'api-key',
   instructionDelivery: 'standard',
+  decodeLeadingThink: true,
   customHeaders: [],
 })
 
@@ -95,6 +96,7 @@ export function normalizeLlmConfig(value: unknown): LlmConfig {
     anthropicAuthMode: config.anthropicAuthMode === 'bearer' ? 'bearer' : 'api-key',
     instructionDelivery:
       config.instructionDelivery === 'user-message' ? 'user-message' : 'standard',
+    decodeLeadingThink: config.decodeLeadingThink !== false,
     customHeaders,
   }
 }
