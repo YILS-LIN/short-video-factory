@@ -39,6 +39,52 @@ function setup() {
   return { store, wrapper, save }
 }
 describe('unified render configuration', () => {
+  it('keeps dimensions under Output and saves the mode from Editing', async () => {
+    const { wrapper, store, save } = setup()
+    try {
+      expect(wrapper.findAllComponents({ name: 'VTab' }).map((tab) => tab.attributes('value'))).toEqual([
+        'output',
+        'editing',
+        'subtitle',
+        'audio',
+      ])
+      expect(wrapper.findComponent({ name: 'VTabs' }).attributes('modelvalue')).toBe('output')
+      expect(wrapper.findComponent({ name: 'VSelect' }).attributes('label')).toBe('renderSettings.preset')
+      const dimensions = wrapper.find('.output-dimensions')
+      expect(dimensions.findAllComponents({ name: 'VTextField' })).toHaveLength(2)
+      expect(dimensions.findComponent({ name: 'VBtn' }).attributes('aria-label')).toBe('renderSettings.swap')
+      expect(wrapper.findAllComponents({ name: 'VSelect' })).toHaveLength(1)
+      wrapper.findComponent({ name: 'VTabs' }).vm.$emit('update:modelValue', 'editing')
+      await wrapper.vm.$nextTick()
+      expect(wrapper.find('.output-dimensions').exists()).toBe(false)
+      const select = (label: string) => wrapper
+        .findAllComponents({ name: 'VSelect' })
+        .find((field) => field.attributes('label') === label)
+      const mode = select('renderSettings.segmentMode.label')!
+      expect(select('renderSettings.segmentOrder.label')).toBeUndefined()
+      const fill = select('renderSettings.videoFill.label')!
+      expect(fill.attributes('hint')).toBe('renderSettings.videoFill.contain.hint')
+      fill.vm.$emit('update:modelValue', 'cover')
+      expect(mode.attributes('label')).toBe('renderSettings.segmentMode.label')
+      expect(mode.attributes('hint')).toBe('renderSettings.segmentMode.standard.hint')
+      mode.vm.$emit('update:modelValue', 'whole')
+      await wrapper.vm.$nextTick()
+      expect(mode.attributes('hint')).toBe('renderSettings.segmentMode.whole.hint')
+      expect(fill.attributes('hint')).toBe('renderSettings.videoFill.cover.hint')
+      const order = select('renderSettings.segmentOrder.label')!
+      expect(order.attributes('hint')).toBe('renderSettings.segmentOrder.random.hint')
+      order.vm.$emit('update:modelValue', 'filename')
+      await wrapper.vm.$nextTick()
+      expect(order.attributes('hint')).toBe('renderSettings.segmentOrder.filename.hint')
+      expect(store.renderConfig.segmentMode).toBe('standard')
+      await save().trigger('click')
+      expect(store.renderConfig.segmentMode).toBe('whole')
+      expect(store.renderConfig.segmentOrder).toBe('filename')
+      expect(store.renderConfig.videoFillMode).toBe('cover')
+    } finally {
+      wrapper.unmount()
+    }
+  })
   it('updates preset dimensions in the draft and saves them together', async () => {
     const { wrapper, store, save } = setup()
     try {
@@ -97,16 +143,16 @@ describe('unified render configuration', () => {
       expect(store.renderConfig.subtitleStyle.fontSize).toBe(56)
       expect(store.renderConfig.subtitleStyle.color).toBe('#FFFFFF')
       await wrapper.setProps({ modelValue: false })
-      expect(wrapper.findComponent({ name: 'VTabs' }).attributes('modelvalue')).toBe('video')
+      expect(wrapper.findComponent({ name: 'VTabs' }).attributes('modelvalue')).toBe('output')
       await wrapper.setProps({ modelValue: true })
-      expect(wrapper.findComponent({ name: 'VTabs' }).attributes('modelvalue')).toBe('video')
+      expect(wrapper.findComponent({ name: 'VTabs' }).attributes('modelvalue')).toBe('output')
       wrapper.findComponent({ name: 'VTabs' }).vm.$emit('update:modelValue', 'subtitle')
       await wrapper.vm.$nextTick()
       expect(wrapper.findComponent({ name: 'VSlider' }).attributes('modelvalue')).toBe('56')
       wrapper.findComponent({ name: 'VSlider' }).vm.$emit('update:modelValue', 72)
       await save().trigger('click')
       expect(store.renderConfig.subtitleStyle.fontSize).toBe(72)
-      expect(wrapper.findComponent({ name: 'VTabs' }).attributes('modelvalue')).toBe('video')
+      expect(wrapper.findComponent({ name: 'VTabs' }).attributes('modelvalue')).toBe('output')
     } finally {
       wrapper.unmount()
     }
@@ -136,10 +182,10 @@ describe('unified render configuration', () => {
   it('uses folder labels for random audio and resets the tab scroll container', async () => {
     const { wrapper } = setup()
     try {
-      const videoFields = wrapper.find('.config-fields').element
+      const outputFields = wrapper.find('.config-fields').element
       wrapper.findComponent({ name: 'VTabs' }).vm.$emit('update:modelValue', 'audio')
       await wrapper.vm.$nextTick()
-      expect(wrapper.find('.config-fields').element).not.toBe(videoFields)
+      expect(wrapper.find('.config-fields').element).not.toBe(outputFields)
       wrapper.findComponent({ name: 'VSelect' }).vm.$emit('update:modelValue', 'random')
       await wrapper.vm.$nextTick()
       const select = wrapper

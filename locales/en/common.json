@@ -11,7 +11,36 @@
       "outline": "Outline",
       "layout": "Layout"
     },
-    "video": "Video & output",
+    "output": "Output",
+    "editing": "Editing",
+    "segmentMode": {
+      "label": "Clip selection mode",
+      "standard": { "title": "Standard clips (recommended)", "hint": "A sweet spot for viewer attention: faster pacing with random cuts, up to 15 seconds per clip." },
+      "long": { "title": "Long clips", "hint": "Best when you have fewer source videos. Switch less often, with clips up to 30 seconds each." },
+      "whole": { "title": "Whole clips", "hint": "Best for pre-edited videos. Use full clips without random cuts, trimming only the last clip if needed." }
+    },
+    "segmentOrder": {
+      "label": "Clip order",
+      "random": {
+        "title": "Random order (default)",
+        "hint": "Shuffle the clips for each video, then join them from the start of each source."
+      },
+      "filename": {
+        "title": "Filename order",
+        "hint": "Join clips in filename order. To set the playback order, number your files, such as 01-intro, 02-demo, and 03-outro."
+      }
+    },
+    "videoFill": {
+      "label": "Frame fit",
+      "contain": {
+        "title": "Show full image (default)",
+        "hint": "Keep the full image. If the aspect ratios differ, black bars appear above and below or on the sides."
+      },
+      "cover": {
+        "title": "Crop to fill",
+        "hint": "Scale and center the source to fill the frame. Anything outside the frame is cropped."
+      }
+    },
     "subtitle": "Subtitles",
     "audio": "Audio",
     "preview": "Subtitle preview",
@@ -332,6 +361,7 @@
         "audioDurationInvalid": "Audio duration is invalid. Please check the speech synthesis result or audio file",
         "noVideoAssets": "No available video assets. Please select an assets folder containing MP4 videos",
         "noUsableVideoAssets": "No readable video assets. Check whether the files are corrupted or use a supported codec",
+        "segmentLimit": "More than {{limit}} clips are needed. Shorten the narration or use longer video assets",
         "durationInsufficient": "Total available video assets duration is insufficient"
       },
       "success": {

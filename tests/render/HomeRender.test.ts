@@ -212,6 +212,9 @@ describe('Home video render flow', () => {
         bgmPath: '/music',
         bgmMode,
         bgmFile: '/music/fixed.wav',
+        segmentMode: bgmMode === 'fixed' ? 'whole' : count > 1 ? 'long' : undefined,
+        segmentOrder: 'filename',
+        videoFillMode: 'cover',
         subtitleStyle: { fontSize: 64, color: '#FF0000' },
         outputSize: { width: 720, height: 1280 },
         outputPath: 'C:/video output',
@@ -227,7 +230,7 @@ describe('Home video render flow', () => {
       },
     })
     const renderDeferred = createDeferred<{ stdout: string; stderr: string; code: number }>()
-    const renderVideo = vi.fn(() => renderDeferred.promise)
+    const renderVideo = vi.fn((_params: { videoFillMode?: string }) => renderDeferred.promise)
     const validateAudioFile = vi.fn().mockResolvedValue(true)
     const listFilesFromFolder = vi
       .fn()
@@ -273,6 +276,9 @@ describe('Home video render flow', () => {
       await vi.waitFor(() => expect(renderVideo).toHaveBeenCalledTimes(1))
       await wrapper.find('#render-trigger').trigger('click')
       expect(mocks.getTextForSynthesis).toHaveBeenCalledTimes(1)
+      storeState.renderConfig.segmentMode = 'standard'
+      storeState.renderConfig.segmentOrder = 'random'
+      storeState.renderConfig.videoFillMode = 'contain'
       renderDeferred.resolve({ stdout: '', stderr: '', code: 0 })
       await vi.waitFor(() => expect(renderVideo).toHaveBeenCalledTimes(count))
       await vi.waitFor(() => expect(storeState.batchProgress?.running ?? false).toBe(false))
@@ -283,7 +289,24 @@ describe('Home video render flow', () => {
       expect(mocks.synthesizeSpeech).toHaveBeenCalledWith(
         expect.objectContaining({ text: 'A generated script', withCaption: true }),
       )
-      expect(mocks.getVideoSegments).toHaveBeenCalledWith({ duration: 8 })
+      expect(mocks.getVideoSegments).toHaveBeenCalledTimes(count)
+      for (const [options] of mocks.getVideoSegments.mock.calls) {
+        expect(options).toEqual({
+          duration: 8,
+          settings:
+            bgmMode === 'fixed'
+              ? { mode: 'whole', order: 'filename' }
+              : {
+                  mode: count > 1 ? 'long' : 'standard',
+                  minDurationMs: 2000,
+                  maxDurationMs: count > 1 ? 30_000 : 15_000,
+                },
+          signal: expect.any(AbortSignal),
+        })
+      }
+      for (const call of renderVideo.mock.calls) {
+        expect(call[0]).toEqual(expect.objectContaining({ videoFillMode: 'cover' }))
+      }
       expect(renderVideo).toHaveBeenCalledWith(
         expect.objectContaining({
           audioFiles: expect.objectContaining({
@@ -417,7 +440,7 @@ describe('Home video render flow', () => {
     }
   })
 
-  it('aborts in-flight TTS and does not begin rendering after cancellation', async () => {
+  it.each(['TTS', 'media planning'])('aborts in-flight %s before rendering', async (stage) => {
     const storeState = reactive({
       renderConfig: {
         bgmPath: '',
@@ -432,27 +455,20 @@ describe('Home video render flow', () => {
         this.renderStatus = status
       },
     })
-    const ttsDeferred = createDeferred<{ duration: number; srtText: string }>()
     const renderVideo = vi.fn(() => Promise.resolve({ stdout: '', stderr: '', code: 0 }))
     const statTrack = vi.fn((_payload: { title: string }) => Promise.resolve())
     mocks.store = storeState
     mocks.getTextForSynthesis.mockResolvedValue('A generated script')
-    mocks.synthesizeSpeech.mockImplementation((options: { abortSignal: AbortSignal }) => {
-      options.abortSignal.addEventListener(
-        'abort',
-        () => {
-          const error = new Error('cancelled')
-          error.name = 'AbortError'
-          ttsDeferred.reject(error)
-        },
-        { once: true },
-      )
-      return ttsDeferred.promise
-    })
-    mocks.getVideoSegments.mockResolvedValue({
-      videoFiles: ['C:/video assets/scene 1.mp4'],
-      timeRanges: [['1.000', '9.000']],
-    })
+    const waitForAbort = (signal: AbortSignal) =>
+      new Promise((_, reject) => {
+        signal.addEventListener('abort', () => reject(signal.reason), { once: true })
+      })
+    if (stage === 'TTS') {
+      mocks.synthesizeSpeech.mockImplementation(({ abortSignal }) => waitForAbort(abortSignal))
+    } else {
+      mocks.synthesizeSpeech.mockResolvedValue({ duration: 8, srtText: 'subtitle text' })
+      mocks.getVideoSegments.mockImplementation(({ signal }) => waitForAbort(signal))
+    }
     Object.defineProperty(window, 'electron', {
       configurable: true,
       value: {
@@ -482,14 +498,14 @@ describe('Home video render flow', () => {
 
     try {
       await wrapper.find('#render-trigger').trigger('click')
-      await vi.waitFor(() => expect(mocks.synthesizeSpeech).toHaveBeenCalledTimes(1))
-      const request = mocks.synthesizeSpeech.mock.calls[0][0] as {
-        abortSignal: AbortSignal
-      }
-      expect(request.abortSignal.aborted).toBe(false)
+      const stageCall = stage === 'TTS' ? mocks.synthesizeSpeech : mocks.getVideoSegments
+      await vi.waitFor(() => expect(stageCall).toHaveBeenCalledTimes(1))
+      const { abortSignal, signal } = stageCall.mock.calls[0][0]
+      const activeSignal: AbortSignal = abortSignal ?? signal
+      expect(activeSignal.aborted).toBe(false)
 
       await wrapper.find('#cancel-trigger').trigger('click')
-      expect(request.abortSignal.aborted).toBe(true)
+      expect(activeSignal.aborted).toBe(true)
       await flushPromises()
 
       expect(renderVideo).not.toHaveBeenCalled()

@@ -9,7 +9,8 @@ import {
 } from '@/lib/llm/config'
 import type { CopywritingStatus, LlmConfig } from '@/lib/llm/types'
 import { normalizeBatchConfig, type BatchRunState } from '@/lib/batch'
-import { normalizeSubtitleStyle, type BgmMode } from '@/lib/render-config'
+import { normalizeSubtitleStyle, normalizeVideoFillMode, type BgmMode } from '@/lib/render-config'
+import { normalizeSegmentMode, normalizeSegmentOrder, type SegmentMode } from '@/lib/video-segments'
 
 export enum RenderStatus {
   None,
@@ -78,6 +79,9 @@ export const useAppStore = defineStore(
       bgmPath: '',
       bgmMode: 'none' as BgmMode,
       bgmFile: '',
+      segmentMode: 'standard' as SegmentMode,
+      segmentOrder: normalizeSegmentOrder(undefined),
+      videoFillMode: normalizeVideoFillMode(undefined),
       subtitleStyle: normalizeSubtitleStyle(),
       outputSize: { width: 1080, height: 1920 },
       outputPath: '',
@@ -93,12 +97,26 @@ export const useAppStore = defineStore(
     const updateRenderConfig = (
       newConfig: Omit<
         typeof renderConfig.value,
-        'subtitlesEnabled' | 'exportSubtitles' | 'bgmMode' | 'bgmFile' | 'subtitleStyle'
+        | 'subtitlesEnabled'
+        | 'exportSubtitles'
+        | 'bgmMode'
+        | 'bgmFile'
+        | 'subtitleStyle'
+        | 'segmentMode'
+        | 'segmentOrder'
+        | 'videoFillMode'
       > &
         Partial<
           Pick<
             typeof renderConfig.value,
-            'subtitlesEnabled' | 'exportSubtitles' | 'bgmMode' | 'bgmFile' | 'subtitleStyle'
+            | 'subtitlesEnabled'
+            | 'exportSubtitles'
+            | 'bgmMode'
+            | 'bgmFile'
+            | 'subtitleStyle'
+            | 'segmentMode'
+            | 'segmentOrder'
+            | 'videoFillMode'
           >
         >,
     ) => {
@@ -109,6 +127,9 @@ export const useAppStore = defineStore(
         exportSubtitles: newConfig.exportSubtitles === true,
         bgmMode: newConfig.bgmMode ?? (newConfig.bgmPath ? 'random' : 'none'),
         bgmFile: newConfig.bgmFile ?? '',
+        segmentMode: normalizeSegmentMode(newConfig.segmentMode),
+        segmentOrder: normalizeSegmentOrder(newConfig.segmentOrder),
+        videoFillMode: normalizeVideoFillMode(newConfig.videoFillMode),
         subtitleStyle: normalizeSubtitleStyle(newConfig.subtitleStyle),
       }
     }

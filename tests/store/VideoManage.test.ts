@@ -7,8 +7,7 @@ import VideoManage from '../../src/views/Home/components/VideoManage.vue'
 const mocks = vi.hoisted(() => ({
   appStore: {} as Record<string, unknown>,
   random: {
-    float: vi.fn((min: number) => min),
-    int: vi.fn(() => 0),
+    int: vi.fn((min: number) => min),
   },
   toast: {
     error: vi.fn(),
@@ -122,7 +121,8 @@ const createHost = (
     getVideoSegments: (
       wrapper.vm as unknown as {
         getVideoSegments: (options: {
-          duration: number
+           duration: number
+          signal?: AbortSignal
         }) => Promise<{ videoFiles: string[]; timeRanges: [string, string][] }>
       }
     ).getVideoSegments,
@@ -132,8 +132,6 @@ const createHost = (
 describe('VideoManage asset filtering and segment selection', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.random.float.mockImplementation((min: number) => min)
-    mocks.random.int.mockReturnValue(0)
   })
 
   it('filters case-insensitive MP4 files and creates duration-matched segments', async () => {
@@ -167,7 +165,8 @@ describe('VideoManage asset filtering and segment selection', () => {
       expect(metadata.videos).toHaveLength(1)
       expect(metadata.videos[0].pause).toHaveBeenCalled()
       expect(metadata.videos[0].removeEventListener).toHaveBeenCalledTimes(2)
-      expect(consoleDebug).toHaveBeenCalledWith('随机素材片段生成完成', {
+      expect(consoleDebug).toHaveBeenCalledWith('素材片段生成完成', {
+        mode: 'standard',
         segmentCount: 1,
         totalDurationSeconds: '2.000',
       })
@@ -274,6 +273,27 @@ describe('VideoManage asset filtering and segment selection', () => {
       expect(metadata.videos[0].pause).toHaveBeenCalled()
       expect(metadata.videos[0].removeEventListener).toHaveBeenCalledTimes(2)
       expect(consoleWarn).toHaveBeenCalledTimes(1)
+      expect(vi.getTimerCount()).toBe(0)
+    } finally {
+      vi.useRealTimers()
+      wrapper.unmount()
+      metadata.createElement.mockRestore()
+    }
+  })
+
+  it('cancels a pending metadata read and clears its timer and media listeners', async () => {
+    const asset = { name: 'stalled.mp4', path: 'C:/video assets/stalled.mp4' }
+    const metadata = installVideoMetadata({ 'file:///C:/video%20assets/stalled.mp4': null })
+    const { wrapper, getVideoSegments } = createHost([asset])
+    try {
+      await flushPromises()
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      const controller = new AbortController()
+      const segments = getVideoSegments({ duration: 2, signal: controller.signal })
+      controller.abort()
+      await expect(segments).rejects.toMatchObject({ name: 'AbortError' })
+      expect(metadata.videos[0].removeEventListener).toHaveBeenCalledTimes(2)
+      expect(metadata.videos[0].load).toHaveBeenCalledOnce()
       expect(vi.getTimerCount()).toBe(0)
     } finally {
       vi.useRealTimers()

@@ -63,12 +63,16 @@ import { useTranslation } from 'i18next-vue'
 import { useAppStore } from '@/store'
 import { useToast } from 'vue-toastification'
 import { ListFilesFromFolderRecord } from '~/electron/types'
-import { RenderVideoParams } from '~/electron/ffmpeg/types'
 import VideoAutoPreview from '@/components/VideoAutoPreview.vue'
 import ActionToastEmbed from '@/components/ActionToastEmbed.vue'
-import random from 'random'
 import { formatErrorForCopy } from '@/lib/error-copy'
 import { trackAnalytics } from '@/lib/analytics'
+import {
+  planVideoSegments,
+  resolveSegmentSettings,
+  SegmentPlanError,
+  type SegmentSettings,
+} from '@/lib/video-segments'
 
 const toast = useToast()
 const appStore = useAppStore()
@@ -165,7 +169,8 @@ onMounted(() => {
   refreshAssets()
 })
 
-const readVideoDuration = (assetPath: string) => {
+const readVideoDuration = (assetPath: string, signal?: AbortSignal) => {
+  signal?.throwIfAborted()
   const cached = videoDurationCache.value.get(assetPath)
   if (typeof cached === 'number' && Number.isFinite(cached) && cached > 0) {
     return Promise.resolve(cached)
@@ -186,6 +191,7 @@ const readVideoDuration = (assetPath: string) => {
       window.clearTimeout(timeout)
       video.removeEventListener('loadedmetadata', onLoaded)
       video.removeEventListener('error', onError)
+      signal?.removeEventListener('abort', onAbort)
       video.pause()
       video.removeAttribute('src')
       video.load()
@@ -207,45 +213,54 @@ const readVideoDuration = (assetPath: string) => {
       reject(new Error('视频元数据读取失败'))
     }
 
+    const onAbort = () => {
+      cleanup()
+      reject(signal?.reason)
+    }
+
     video.preload = 'metadata'
     video.addEventListener('loadedmetadata', onLoaded)
     video.addEventListener('error', onError)
+    signal?.addEventListener('abort', onAbort, { once: true })
     video.src = encodeURI(src)
   })
 }
 
-// 获取视频分镜随机素材片段
-const getVideoSegments = async (options: { duration: number }) => {
-  const targetDurationMs = Math.ceil(options.duration * 1000)
-  if (!Number.isFinite(targetDurationMs) || targetDurationMs <= 0) {
-    throw new Error(t('features.assets.errors.audioDurationInvalid'))
-  }
-
-  if (!videoAssets.value.length) {
-    throw new Error(t('features.assets.errors.noVideoAssets'))
-  }
-
-  // 搜集随机素材片段
-  const segments: Pick<RenderVideoParams, 'videoFiles' | 'timeRanges'> = {
-    videoFiles: [],
-    timeRanges: [],
-  }
-  const minSegmentDurationMs = 2000
-  const maxSegmentDurationMs = 15000
-
-  let currentTotalDurationMs = 0
-  let tempVideoAssets = [...videoAssets.value]
-  const unreadableAssetPaths = new Set<string>()
+const getVideoSegments = async (options: {
+  duration: number
+  settings?: SegmentSettings
+  signal?: AbortSignal
+}) => {
   let unreadableAssetCount = 0
   const unreadableAssetSamples: string[] = []
-  const formatTimestamp = (milliseconds: number) => (milliseconds / 1000).toFixed(3)
-  const recordUnreadableAsset = (assetName: string, reason: string) => {
-    unreadableAssetCount += 1
-    if (unreadableAssetSamples.length < 3) {
-      unreadableAssetSamples.push(`${assetName}: ${reason.slice(0, 100)}`)
+  const settings =
+    options.settings ??
+    resolveSegmentSettings(appStore.renderConfig?.segmentMode, appStore.renderConfig?.segmentOrder)
+  try {
+    const segments = await planVideoSegments({
+      ...options,
+      settings,
+      assets: videoAssets.value,
+      readDuration: readVideoDuration,
+      onUnreadable: ({ name }, reason) => {
+        unreadableAssetCount++
+        if (unreadableAssetSamples.length < 3) {
+          unreadableAssetSamples.push(`${name}: ${reason.slice(0, 100)}`)
+        }
+      },
+    })
+    console.debug('素材片段生成完成', {
+      mode: settings.mode,
+      segmentCount: segments.videoFiles.length,
+      totalDurationSeconds: (Math.ceil(options.duration * 1000) / 1000).toFixed(3),
+    })
+    return segments
+  } catch (error) {
+    if (error instanceof SegmentPlanError) {
+      throw new Error(t(`features.assets.errors.${error.code}`, { limit: error.limit }))
     }
-  }
-  const reportUnreadableAssets = () => {
+    throw error
+  } finally {
     if (unreadableAssetCount > 0) {
       console.warn('部分视频素材不可用，已跳过', {
         count: unreadableAssetCount,
@@ -253,77 +268,6 @@ const getVideoSegments = async (options: { duration: number }) => {
       })
     }
   }
-
-  while (currentTotalDurationMs < targetDurationMs) {
-    // 如果素材库中没有剩余素材，时长还不够，重新来一轮
-    if (tempVideoAssets.length === 0) {
-      tempVideoAssets = videoAssets.value.filter((asset) => !unreadableAssetPaths.has(asset.path))
-      if (!tempVideoAssets.length) {
-        reportUnreadableAssets()
-        throw new Error(t('features.assets.errors.noUsableVideoAssets'))
-      }
-      continue
-    }
-
-    // 直接随机选取并移除素材，避免按路径再次扫描数组
-    const randomAssetIndex = random.int(0, tempVideoAssets.length - 1)
-    const [randomAsset] = tempVideoAssets.splice(randomAssetIndex, 1)
-    if (!randomAsset) {
-      continue
-    }
-
-    let randomAssetDurationMs = 0
-    try {
-      randomAssetDurationMs = Math.floor((await readVideoDuration(randomAsset.path)) * 1000)
-    } catch (error) {
-      unreadableAssetPaths.add(randomAsset.path)
-      recordUnreadableAsset(
-        randomAsset.name,
-        error instanceof Error ? error.message : String(error),
-      )
-      continue
-    }
-
-    if (randomAssetDurationMs <= 0) {
-      unreadableAssetPaths.add(randomAsset.path)
-      recordUnreadableAsset(randomAsset.name, '视频时长无效')
-      continue
-    }
-
-    const remainingDurationMs = targetDurationMs - currentTotalDurationMs
-    const randomSegmentDurationMs =
-      randomAssetDurationMs < minSegmentDurationMs
-        ? Math.min(randomAssetDurationMs, remainingDurationMs)
-        : Math.min(
-            remainingDurationMs,
-            Math.max(
-              1,
-              Math.floor(
-                random.float(
-                  minSegmentDurationMs,
-                  Math.min(maxSegmentDurationMs, randomAssetDurationMs),
-                ),
-              ),
-            ),
-          )
-    const maxStartMs = randomAssetDurationMs - randomSegmentDurationMs
-    const randomSegmentStartMs = maxStartMs > 0 ? Math.floor(random.float(0, maxStartMs)) : 0
-
-    segments.videoFiles.push(randomAsset.path)
-    segments.timeRanges.push([
-      formatTimestamp(randomSegmentStartMs),
-      formatTimestamp(randomSegmentStartMs + randomSegmentDurationMs),
-    ])
-    currentTotalDurationMs += randomSegmentDurationMs
-  }
-
-  reportUnreadableAssets()
-  console.debug('随机素材片段生成完成', {
-    segmentCount: segments.videoFiles.length,
-    totalDurationSeconds: formatTimestamp(currentTotalDurationMs),
-  })
-
-  return segments
 }
 
 defineExpose({ getVideoSegments })

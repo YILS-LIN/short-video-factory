@@ -64,7 +64,8 @@ import { formatErrorForCopy } from '@/lib/error-copy'
 import { createAnalyticsOperationId, trackAnalytics } from '@/lib/analytics'
 import { runBatch, type BatchRunState } from '@/lib/batch'
 import { logGeneration } from '@/lib/generation-diagnostics'
-import { isAudioFile } from '@/lib/render-config'
+import { isAudioFile, normalizeVideoFillMode } from '@/lib/render-config'
+import { resolveSegmentSettings, type SegmentSettings } from '@/lib/video-segments'
 
 const toast = useToast()
 const appStore = useAppStore()
@@ -179,6 +180,7 @@ interface GenerationTask {
   finished: boolean
   metrics: Record<string, string | number | boolean>
   usage?: GenerationUsageSummary
+  segmentController?: AbortController
   finish?: (outcome: GenerationOutcome, error?: unknown) => void
 }
 
@@ -252,9 +254,14 @@ const handleRenderVideo = async () => {
   }
   generationRunning = true
   try {
+    const { segmentMode, segmentOrder, videoFillMode } = appStore.renderConfig
+    const editing = {
+      segments: resolveSegmentSettings(segmentMode, segmentOrder),
+      fill: normalizeVideoFillMode(videoFillMode),
+    }
     if (!appStore.autoBatch) {
       appStore.batchProgress = null
-      await renderSingleVideo()
+      await renderSingleVideo(editing)
       return
     }
     appStore.batchProgress = {
@@ -283,7 +290,7 @@ const handleRenderVideo = async () => {
     try {
       const reason = await runBatch(
         batch,
-        () => renderSingleVideo(batch),
+        () => renderSingleVideo(editing, batch),
         () => {
           TextGenerateInstance.value?.clearOutputText?.()
         },
@@ -314,7 +321,11 @@ const handleRenderVideo = async () => {
   }
 }
 
-const renderSingleVideo = async (batchContext?: BatchContext) => {
+const renderSingleVideo = async (
+  editing: { segments: SegmentSettings; fill: ReturnType<typeof normalizeVideoFillMode> },
+  batchContext?: BatchContext,
+) => {
+  const segmentSettings = editing.segments
   const subtitlesEnabled = appStore.renderConfig.subtitlesEnabled !== false
   const exportSubtitles = appStore.renderConfig.exportSubtitles === true
   const bgmMode =
@@ -334,6 +345,7 @@ const renderSingleVideo = async (batchContext?: BatchContext) => {
     subtitlesEnabled,
     exportSubtitles,
     bgmEnabled: bgmMode !== 'none',
+    segmentMode: segmentSettings.mode,
   })
   const blocked = (reason: string) => {
     logGeneration('task_blocked', logContext, { reason, stage: 'preflight' }, undefined, 'warn')
@@ -588,14 +600,16 @@ const renderSingleVideo = async (batchContext?: BatchContext) => {
     }
     appStore.updateRenderStatus(RenderStatus.SegmentVideo)
     enterStage('media')
+    task.segmentController = new AbortController()
     const videoSegments = await VideoManageInstance.value?.getVideoSegments({
       duration: ttsResult.duration,
+      settings: segmentSettings,
+      signal: task.segmentController.signal,
     })!
-    await new Promise((resolve) => setTimeout(resolve, random.integer(1000, 3000)))
 
     // 合成视频
     // @ts-ignore
-    if (appStore.renderStatus !== RenderStatus.SegmentVideo) {
+    if (task.finished || appStore.renderStatus !== RenderStatus.SegmentVideo) {
       return
     }
     appStore.updateRenderStatus(RenderStatus.Rendering)
@@ -603,6 +617,7 @@ const renderSingleVideo = async (batchContext?: BatchContext) => {
     const renderResult = await window.electron.renderVideo({
       diagnosticContext: logContext,
       ...videoSegments,
+      videoFillMode: editing.fill,
       audioFiles: {
         bgm: randomBgm?.path,
       },
@@ -736,6 +751,7 @@ const handleCancelRender = () => {
       break
 
     case RenderStatus.SegmentVideo:
+      task?.segmentController?.abort()
       break
 
     case RenderStatus.Rendering:

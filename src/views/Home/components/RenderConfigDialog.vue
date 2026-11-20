@@ -12,19 +12,20 @@
         </div>
         <div class="config-settings">
           <v-tabs v-model="tab" color="primary" grow>
-            <v-tab value="video">{{ t('renderSettings.video') }}</v-tab>
+            <v-tab value="output">{{ t('renderSettings.output') }}</v-tab>
+            <v-tab value="editing">{{ t('renderSettings.editing') }}</v-tab>
             <v-tab value="subtitle">{{ t('renderSettings.subtitle') }}</v-tab>
             <v-tab value="audio">{{ t('renderSettings.audio') }}</v-tab>
           </v-tabs>
           <div :key="`${open}-${tab}`" class="config-fields">
-            <div v-if="tab === 'video'" class="fields">
+            <div v-if="tab === 'output'" class="fields">
               <v-select
                 v-model="preset"
                 :items="presets"
                 :label="t('renderSettings.preset')"
                 hide-details
               />
-              <div class="flex gap-2 items-center">
+              <div class="output-dimensions">
                 <v-text-field
                   v-model.number="draft.outputSize.width"
                   type="number"
@@ -68,6 +69,30 @@
               <v-btn prepend-icon="mdi-folder-open" variant="tonal" @click="selectOutput">{{
                 t('common.buttons.selectFolder')
               }}</v-btn>
+            </div>
+            <div v-else-if="tab === 'editing'" class="fields">
+              <v-select
+                v-model="draft.segmentMode"
+                :items="segmentModeOptions"
+                :label="t('renderSettings.segmentMode.label')"
+                :hint="t(`renderSettings.segmentMode.${draft.segmentMode}.hint`)"
+                persistent-hint
+              />
+              <v-select
+                v-if="draft.segmentMode === 'whole'"
+                v-model="draft.segmentOrder"
+                :items="segmentOrderOptions"
+                :label="t('renderSettings.segmentOrder.label')"
+                :hint="t(`renderSettings.segmentOrder.${draft.segmentOrder}.hint`)"
+                persistent-hint
+              />
+              <v-select
+                v-model="draft.videoFillMode"
+                :items="videoFillOptions"
+                :label="t('renderSettings.videoFill.label')"
+                :hint="t(`renderSettings.videoFill.${draft.videoFillMode}.hint`)"
+                persistent-hint
+              />
             </div>
             <div v-else-if="tab === 'subtitle'" class="fields">
               <section class="subtitle-section">
@@ -240,7 +265,13 @@ import { useTranslation } from 'i18next-vue'
 import { useToast } from 'vue-toastification'
 import { useAppStore } from '@/store'
 import SubtitlePreview from '@/components/SubtitlePreview.vue'
-import { normalizeSubtitleStyle, validVideoSize, videoSizePresets } from '@/lib/render-config'
+import {
+  normalizeSubtitleStyle,
+  validVideoSize,
+  videoFillModes,
+  videoSizePresets,
+} from '@/lib/render-config'
+import { segmentModes, segmentOrders } from '@/lib/video-segments'
 
 const open = defineModel<boolean>({ default: false })
 const store = useAppStore()
@@ -252,9 +283,18 @@ const createDraft = () => ({
   subtitleStyle: { ...store.renderConfig.subtitleStyle },
 })
 const draft = ref(createDraft())
-const tab = ref('video')
+const segmentModeOptions = computed(() =>
+  segmentModes.map((value) => ({ title: t(`renderSettings.segmentMode.${value}.title`), value })),
+)
+const segmentOrderOptions = computed(() =>
+  segmentOrders.map((value) => ({ title: t(`renderSettings.segmentOrder.${value}.title`), value })),
+)
+const videoFillOptions = computed(() =>
+  videoFillModes.map((value) => ({ title: t(`renderSettings.videoFill.${value}.title`), value })),
+)
+const tab = ref('output')
 watch(open, (value) => {
-  tab.value = 'video'
+  tab.value = 'output'
   if (value) draft.value = createDraft()
 })
 const presets = computed(() => [
@@ -388,6 +428,15 @@ async function selectAudio() {
 }
 .fields :deep(.v-input) {
   flex: 0 0 auto;
+}
+.output-dimensions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+.output-dimensions :deep(.v-input) {
+  min-width: 0;
 }
 .subtitle-section {
   display: flex;

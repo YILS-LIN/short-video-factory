@@ -44,6 +44,21 @@ describe('app store persisted state', () => {
     localStorage.clear()
   })
 
+  it.each([
+    [undefined, 'standard'],
+    ['invalid', 'standard'],
+    ['long', 'long'],
+    ['whole', 'whole'],
+  ])('normalizes persisted segment mode %s to %s', (segmentMode, expected) => {
+    localStorage.setItem('app', JSON.stringify({ renderConfig: { segmentMode } }))
+    const { app, store } = createPersistedStore()
+    try {
+      expect(store.renderConfig.segmentMode).toBe(expected)
+    } finally {
+      app.unmount()
+    }
+  })
+
   it('migrates legacy model settings and normalizes partial or invalid persisted data', async () => {
     localStorage.setItem(
       'app',
@@ -85,6 +100,8 @@ describe('app store persisted state', () => {
       })
       expect(store.renderConfig).toMatchObject({
         subtitlesEnabled: true,
+        segmentOrder: 'random',
+        videoFillMode: 'contain',
         exportSubtitles: false,
         outputPath: 'C:/render output',
         outputSize: { width: 1080, height: 1920 },
@@ -159,6 +176,9 @@ describe('app store persisted state', () => {
       outputFileExt: '.mp4',
       subtitlesEnabled: false,
       exportSubtitles: true,
+      segmentMode: 'whole',
+      segmentOrder: 'filename',
+      videoFillMode: 'cover',
     })
     firstSession.store.language = 'English (United States)'
     firstSession.store.gender = 'Female'
@@ -197,6 +217,8 @@ describe('app store persisted state', () => {
       expect(secondSession.store.renderConfig.outputPath).toBe('C:/output folder')
       expect(secondSession.store.renderConfig.subtitlesEnabled).toBe(false)
       expect(secondSession.store.renderConfig.exportSubtitles).toBe(true)
+      expect(secondSession.store.renderConfig.segmentOrder).toBe('filename')
+      expect(secondSession.store.renderConfig.videoFillMode).toBe('cover')
       expect(secondSession.store.language).toBe('English (United States)')
       expect(secondSession.store.gender).toBe('Female')
       expect(secondSession.store.voice?.ShortName).toBe('en-US-Test')

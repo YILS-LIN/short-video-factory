@@ -150,6 +150,13 @@ export async function renderVideo(
     const filters = []
     const videoStreams: string[] = []
 
+    const { width, height } = outputSize
+    // 按素材显示宽高比等比覆盖目标画布，再居中裁切；完整显示则保留原有补边行为。
+    const fitVideo =
+      params.videoFillMode === 'cover'
+        ? `scale=w='max(${width},ceil(${height}*dar/2)*2)':h='max(${height},ceil(${width}/dar/2)*2)',crop=${width}:${height}`
+        : `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2`
+
     // 处理每个视频片段
     videoFiles.forEach((_, index) => {
       const [start, end] = timeRanges[index]
@@ -158,7 +165,7 @@ export async function renderVideo(
 
       // 使用 trim、setpts、scale、pad 等操作处理视频
       filters.push(
-        `[${index}:v]trim=start=${start}:end=${end},setpts=PTS-STARTPTS,scale=${outputSize.width}:${outputSize.height}:force_original_aspect_ratio=decrease,pad=${outputSize.width}:${outputSize.height}:(ow-iw)/2:(oh-ih)/2,fps=30,format=yuv420p,setsar=1[${streamLabel}]`,
+        `[${index}:v]trim=start=${start}:end=${end},setpts=PTS-STARTPTS,${fitVideo},fps=30,format=yuv420p,setsar=1[${streamLabel}]`,
       )
     })
 

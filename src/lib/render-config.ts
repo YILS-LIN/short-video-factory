@@ -1,8 +1,12 @@
 import { defaultSubtitleStyle } from '../effect-engine/default-style'
 import type { SubtitleStyleConfig } from '../effect-engine/shared/types'
 import { resolveSubtitleStyle } from '../effect-engine/shared/style'
+import type { VideoFillMode } from '~/electron/ffmpeg/types'
 
 export type BgmMode = 'none' | 'random' | 'fixed'
+export const videoFillModes = ['contain', 'cover'] as const satisfies readonly VideoFillMode[]
+export const normalizeVideoFillMode = (value: unknown): VideoFillMode =>
+  value === 'cover' ? 'cover' : 'contain'
 export const audioExtensions = ['mp3', 'wav', 'm4a', 'aac', 'flac', 'ogg']
 export const isAudioFile = (name: string) =>
   audioExtensions.includes(name.split('.').pop()?.toLowerCase() ?? '')

@@ -93,6 +93,7 @@ describe('FFmpeg execution and render inputs', () => {
       }),
     )
     expect(args[args.indexOf('-filter_complex') + 1]).toContain('overlay=')
+    expect(args[args.indexOf('-filter_complex') + 1]).toContain('pad=720:1280:')
     expect(args[args.indexOf('-filter_complex') + 1]).not.toContain('subtitles=')
 
     child.emit('close', 0)
@@ -100,6 +101,25 @@ describe('FFmpeg execution and render inputs', () => {
     for (const filePath of [videoPath, voicePath, bgmPath, subtitlePath]) {
       expect(fs.existsSync(filePath), `expected caller input to remain: ${filePath}`).toBe(true)
     }
+  })
+
+  it('scales proportionally and center-crops instead of padding in cover mode', async () => {
+    const child = createChildProcess()
+    const render = renderVideo({
+      videoFiles: ['scene.mp4'],
+      timeRanges: [['0', '1']],
+      subtitlesEnabled: false,
+      outputSize: { width: 720, height: 1280 },
+      videoFillMode: 'cover',
+      outputPath: path.join(tempDir, 'output.mp4'),
+    })
+    await vi.waitFor(() => expect(mocks.spawn).toHaveBeenCalledOnce())
+    const args = mocks.spawn.mock.calls[0][1] as string[]
+    const filters = args[args.indexOf('-filter_complex') + 1]
+    expect(filters).toContain("scale=w='max(720,ceil(1280*dar/2)*2)':h='max(1280,ceil(720/dar/2)*2)',crop=720:1280")
+    expect(filters).not.toContain('pad=')
+    child.emit('close', 0)
+    await expect(render).resolves.toMatchObject({ code: 0 })
   })
 
   it('removes generated voice and subtitle files when the render fails', async () => {
