@@ -142,6 +142,11 @@ describe('app store persisted state', () => {
           maxOutputTokens: 1000,
           customHeaders: [{ name: 'X-Trace', value: 'trace' }],
         })
+        expect(store.providerProfiles).toHaveLength(1)
+        expect(store.providerProfiles[0]).toMatchObject({
+          id: store.activeProviderId,
+          models: ['legacy-model'],
+        })
         await nextTick()
         expect(JSON.parse(localStorage.getItem('app') ?? '{}').llmConfig.protocol).toBe(
           'openai-compatible',
@@ -149,6 +154,62 @@ describe('app store persisted state', () => {
       } finally {
         app.unmount()
       }
+    }
+  })
+
+  it('keeps same-vendor profiles, model lists and active selection independent across reloads', async () => {
+    const first = createPersistedStore()
+    const openai = {
+      ...first.store.llmConfig,
+      apiUrl: 'https://api.openai.com/v1',
+      protocol: 'openai-responses' as const,
+    }
+    first.store.saveProviderProfile({
+      id: 'work',
+      name: 'OpenAI · work',
+      config: { ...openai, apiKey: 'work-key', modelName: 'gpt-5-mini' },
+      models: ['gpt-5-mini'],
+    })
+    first.store.saveProviderProfile({
+      id: 'personal',
+      name: 'OpenAI · personal',
+      config: { ...openai, apiKey: 'personal-key', modelName: 'gpt-5-mini' },
+      models: ['gpt-5-mini', ' manual-model ', 'manual-model'],
+    })
+    expect(first.store.llmConfig.apiKey).toBe('')
+    first.store.selectProviderProfile('work')
+    expect(first.store.llmConfig.apiKey).toBe('work-key')
+    first.store.selectProviderProfile('personal', 'manual-model')
+    first.store.saveProviderProfile({
+      ...first.store.providerProfiles[1],
+      config: { ...first.store.providerProfiles[1].config, modelName: 'gpt-5-mini' },
+    })
+    await nextTick()
+    first.app.unmount()
+
+    const second = createPersistedStore()
+    try {
+      expect(second.store.providerProfiles.map(({ name }) => name)).toEqual([
+        'OpenAI · work',
+        'OpenAI · personal',
+      ])
+      expect(second.store.activeProviderId).toBe('personal')
+      expect(second.store.llmConfig).toMatchObject({
+        apiKey: 'personal-key',
+        modelName: 'manual-model',
+      })
+      expect(second.store.providerProfiles[1].models).toEqual(['gpt-5-mini', 'manual-model'])
+      expect(second.store.providerProfiles[1].config.modelName).toBe('gpt-5-mini')
+      second.store.selectProviderProfile('personal')
+      expect(second.store.llmConfig.modelName).toBe('gpt-5-mini')
+      second.store.removeProviderProfile('personal')
+      expect(second.store.activeProviderId).toBeNull()
+      expect(second.store.llmConfig.apiKey).toBe('')
+      second.store.removeProviderProfile('work')
+      expect(second.store.activeProviderId).toBeNull()
+      expect(second.store.llmConfig.apiKey).toBe('')
+    } finally {
+      second.app.unmount()
     }
   })
 
