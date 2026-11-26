@@ -1,5 +1,12 @@
 import { execFileSync } from 'node:child_process'
-import { readFileSync, readdirSync, statSync, writeFileSync, mkdtempSync } from 'node:fs'
+import {
+  createReadStream,
+  readFileSync,
+  readdirSync,
+  statSync,
+  writeFileSync,
+  mkdtempSync,
+} from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { expectedInstallers, releaseNotes, publishCompleteRelease } from './release-utils.mjs'
@@ -26,5 +33,34 @@ const installers = expectedInstallers(version).map((name) => {
 const notes = releaseNotes(readFileSync('CHANGELOG.md', 'utf8'), tag)
 const notesPath = join(mkdtempSync(join(tmpdir(), 'release-notes-')), 'notes.md')
 writeFileSync(notesPath, notes)
-publishCompleteRelease({ tag, repo, installers, notesPath, gh })
+
+async function upload(uploadUrl, file) {
+  const url = new URL(uploadUrl.replace(/\{.*$/, ''))
+  if (url.origin !== 'https://uploads.github.com' || url.username || url.password) {
+    throw new Error(`Unexpected GitHub upload URL for ${file.name}`)
+  }
+  const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN
+  if (!token) throw new Error('GH_TOKEN or GITHUB_TOKEN is required to upload installers')
+  url.searchParams.set('name', file.name)
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/octet-stream',
+      'Content-Length': String(file.size),
+    },
+    body: createReadStream(file.path),
+    duplex: 'half',
+    redirect: 'error',
+    signal: AbortSignal.timeout(5 * 60 * 1000),
+  })
+  if (!response.ok) {
+    throw new Error(
+      `Failed to upload ${file.name} (HTTP ${response.status}): ${await response.text()}`,
+    )
+  }
+  await response.body?.cancel()
+}
+
+await publishCompleteRelease({ tag, repo, installers, notesPath, gh, upload })
 console.log(`Complete stable release verified: ${tag}`)
