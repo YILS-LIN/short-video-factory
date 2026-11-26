@@ -180,9 +180,10 @@ describe('app store persisted state', () => {
     first.store.selectProviderProfile('work')
     expect(first.store.llmConfig.apiKey).toBe('work-key')
     first.store.selectProviderProfile('personal', 'manual-model')
+    first.store.moveProviderProfile('personal', 'work', 'before')
     first.store.saveProviderProfile({
-      ...first.store.providerProfiles[1],
-      config: { ...first.store.providerProfiles[1].config, modelName: 'gpt-5-mini' },
+      ...first.store.providerProfiles[0],
+      config: { ...first.store.providerProfiles[0].config, modelName: 'gpt-5-mini' },
     })
     await nextTick()
     first.app.unmount()
@@ -190,16 +191,16 @@ describe('app store persisted state', () => {
     const second = createPersistedStore()
     try {
       expect(second.store.providerProfiles.map(({ name }) => name)).toEqual([
-        'OpenAI · work',
         'OpenAI · personal',
+        'OpenAI · work',
       ])
       expect(second.store.activeProviderId).toBe('personal')
       expect(second.store.llmConfig).toMatchObject({
         apiKey: 'personal-key',
         modelName: 'manual-model',
       })
-      expect(second.store.providerProfiles[1].models).toEqual(['gpt-5-mini', 'manual-model'])
-      expect(second.store.providerProfiles[1].config.modelName).toBe('gpt-5-mini')
+      expect(second.store.providerProfiles[0].models).toEqual(['gpt-5-mini', 'manual-model'])
+      expect(second.store.providerProfiles[0].config.modelName).toBe('gpt-5-mini')
       second.store.selectProviderProfile('personal')
       expect(second.store.llmConfig.modelName).toBe('gpt-5-mini')
       second.store.removeProviderProfile('personal')

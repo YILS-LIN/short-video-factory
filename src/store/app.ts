@@ -57,6 +57,19 @@ export const useAppStore = defineStore(
       if (index === -1) providerProfiles.value.push(profile)
       else providerProfiles.value[index] = profile
     }
+    const moveProviderProfile = (id: string, targetId: string, position: 'before' | 'after') => {
+      if (id === targetId) return
+      const profiles = providerProfiles.value
+      const from = profiles.findIndex((profile) => profile.id === id)
+      const target = profiles.findIndex((profile) => profile.id === targetId)
+      if (from < 0 || target < 0) return
+      const to = target + (position === 'after' ? 1 : 0) - (from < target ? 1 : 0)
+      if (from === to) return
+      const reordered = [...profiles]
+      const [profile] = reordered.splice(from, 1)
+      reordered.splice(to, 0, profile)
+      providerProfiles.value = reordered
+    }
     const removeProviderProfile = (id: string) => {
       providerProfiles.value = providerProfiles.value.filter((profile) => profile.id !== id)
       if (activeProviderId.value !== id) return
@@ -211,6 +224,7 @@ export const useAppStore = defineStore(
       providerProfiles,
       activeProviderId,
       saveProviderProfile,
+      moveProviderProfile,
       selectProviderProfile,
       removeProviderProfile,
       hydrateProviderProfiles,

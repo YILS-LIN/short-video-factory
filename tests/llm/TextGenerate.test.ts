@@ -237,6 +237,49 @@ describe('TextGenerate configuration and request lifecycle', () => {
     }
   })
 
+  it('reorders saved providers by their handles without changing which provider is in use', async () => {
+    const { wrapper, storeState, findDialogButton } = createHost()
+    const activeId = storeState.activeProviderId
+    const dragEvent = (type: string) =>
+      Object.assign(new MouseEvent(type, { bubbles: true, cancelable: true, clientY: 10 }), {
+        dataTransfer: { setData: vi.fn(), setDragImage: vi.fn() },
+      })
+    try {
+      findDialogButton('common.buttons.config')!.click()
+      await flushPromises()
+      expect(document.querySelector('.saved-provider-drag-handle')).toBeNull()
+      storeState.saveProviderProfile({
+        id: 'second',
+        name: 'Second provider',
+        config: { ...validConfig(), modelName: 'second-model' },
+        models: ['second-model'],
+      })
+      await flushPromises()
+      const rows = document.querySelectorAll<HTMLElement>('.saved-provider-row')
+      const handle = rows[0].querySelector<HTMLButtonElement>('.saved-provider-drag-handle')!
+      expect(rows[0].querySelector('.saved-provider-card')?.hasAttribute('draggable')).toBe(false)
+      handle.dispatchEvent(dragEvent('dragstart'))
+      rows[1].dispatchEvent(dragEvent('dragover'))
+      await flushPromises()
+      expect(rows[1].classList.contains('saved-provider-row--drop-after')).toBe(true)
+      rows[1].dispatchEvent(dragEvent('drop'))
+      await flushPromises()
+      expect(storeState.providerProfiles.map(({ id }) => id)).toEqual(['second', activeId])
+      expect(storeState.activeProviderId).toBe(activeId)
+      expect(storeState.llmConfig.modelName).toBe('test-model')
+      expect(document.querySelector('.saved-provider-row--drop-after')).toBeNull()
+
+      handle.focus()
+      handle.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }))
+      await flushPromises()
+      expect(storeState.providerProfiles.map(({ id }) => id)).toEqual([activeId, 'second'])
+      expect(document.activeElement).toBe(handle)
+    } finally {
+      wrapper.unmount()
+      document.body.innerHTML = ''
+    }
+  })
+
   it('keeps card selection separate from activation and preserves saved profiles when adding is cancelled', async () => {
     const { wrapper, findDialogButton, openProviderPicker, storeState } = createHost()
     storeState.saveProviderProfile({

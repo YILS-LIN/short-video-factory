@@ -239,6 +239,8 @@
         "connectionTab": "Connection",
         "provider": "Model provider",
         "myProviders": "My providers",
+        "reorderProvider": "Reorder {{name}}",
+        "reorderProviderHint": "Drag to reorder, or use the Up and Down arrow keys",
         "noSavedProviders": "No saved providers yet.",
         "editProvider": "Edit",
         "editProviderTitle": "Edit {{name}}",

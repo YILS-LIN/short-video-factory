@@ -239,6 +239,8 @@
         "connectionTab": "模型连接",
         "provider": "模型供应商",
         "myProviders": "我的提供商",
+        "reorderProvider": "调整 {{name}} 的顺序",
+        "reorderProviderHint": "拖动排序，也可用方向键上下移动",
         "noSavedProviders": "暂无已保存的提供商。",
         "editProvider": "编辑",
         "editProviderTitle": "编辑 {{name}}",

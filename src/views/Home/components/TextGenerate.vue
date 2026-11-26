@@ -67,12 +67,43 @@
                       <p v-if="!appStore.providerProfiles.length" class="provider-empty">
                         {{ t('features.llm.config.noSavedProviders') }}
                       </p>
-                      <div v-else class="saved-provider-grid">
+                      <div v-else class="saved-provider-grid" @dragleave="leaveProviderGrid">
                         <div
                           v-for="profile in appStore.providerProfiles"
                           :key="profile.id"
                           class="saved-provider-row"
+                          :class="{
+                            'saved-provider-row--sortable': canReorderProviders,
+                            'saved-provider-row--dragging': draggedProviderId === profile.id,
+                            'saved-provider-row--drop-before':
+                              providerDropTarget?.id === profile.id &&
+                              providerDropTarget.position === 'before',
+                            'saved-provider-row--drop-after':
+                              providerDropTarget?.id === profile.id &&
+                              providerDropTarget.position === 'after',
+                          }"
+                          @dragover="setProviderDropTarget($event, profile.id)"
+                          @drop="dropProvider($event, profile.id)"
                         >
+                          <button
+                            v-if="canReorderProviders"
+                            class="saved-provider-drag-handle"
+                            type="button"
+                            draggable="true"
+                            :title="t('features.llm.config.reorderProviderHint')"
+                            :aria-label="
+                              t('features.llm.config.reorderProvider', {
+                                name: profileTitle(profile),
+                              })
+                            "
+                            aria-keyshortcuts="ArrowUp ArrowDown"
+                            @dragstart="startProviderDrag($event, profile.id)"
+                            @dragend="clearProviderDrag"
+                            @keydown.up.prevent="moveProviderWithKeyboard(profile.id, -1)"
+                            @keydown.down.prevent="moveProviderWithKeyboard(profile.id, 1)"
+                          >
+                            <v-icon icon="mdi-drag-vertical" size="20" aria-hidden="true" />
+                          </button>
                           <button
                             class="saved-provider-card"
                             type="button"
@@ -950,6 +981,58 @@ const testSavedProfile = (profile: ProviderProfile) => {
   profileTestStatus.value.delete(profile.id)
   void handleTestConnection(profile)
 }
+const canReorderProviders = computed(() => appStore.providerProfiles.length > 1)
+const draggedProviderId = ref<string | null>(null)
+const providerDropTarget = ref<{ id: string; position: 'before' | 'after' } | null>(null)
+const clearProviderDrag = () => {
+  draggedProviderId.value = null
+  providerDropTarget.value = null
+}
+const startProviderDrag = (event: DragEvent, id: string) => {
+  if (!event.dataTransfer) return
+  draggedProviderId.value = id
+  event.dataTransfer.effectAllowed = 'move'
+  event.dataTransfer.setData('text/plain', '')
+  const row = (event.currentTarget as HTMLElement).closest('.saved-provider-row')
+  if (row) {
+    const bounds = row.getBoundingClientRect()
+    event.dataTransfer.setDragImage(row, event.clientX - bounds.left, event.clientY - bounds.top)
+  }
+}
+const setProviderDropTarget = (event: DragEvent, id: string) => {
+  if (!draggedProviderId.value) return
+  if (draggedProviderId.value === id) {
+    providerDropTarget.value = null
+    return
+  }
+  event.preventDefault()
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+  const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect()
+  const position = event.clientY < bounds.top + bounds.height / 2 ? 'before' : 'after'
+  providerDropTarget.value = { id, position }
+}
+const leaveProviderGrid = (event: DragEvent) => {
+  if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null)) {
+    providerDropTarget.value = null
+  }
+}
+const dropProvider = (event: DragEvent, id: string) => {
+  const source = draggedProviderId.value
+  if (!source) return
+  setProviderDropTarget(event, id)
+  if (providerDropTarget.value)
+    appStore.moveProviderProfile(source, id, providerDropTarget.value.position)
+  clearProviderDrag()
+}
+const moveProviderWithKeyboard = async (id: string, offset: -1 | 1) => {
+  const index = appStore.providerProfiles.findIndex((profile) => profile.id === id)
+  const target = appStore.providerProfiles[index + offset]
+  if (index < 0 || !target) return
+  const handle = document.activeElement as HTMLElement | null
+  appStore.moveProviderProfile(id, target.id, offset < 0 ? 'before' : 'after')
+  await nextTick()
+  handle?.focus()
+}
 const openProviderPicker = () => {
   providerQuery.value = ''
   providerScrollTop.value = 0
@@ -1251,6 +1334,7 @@ const clearOutputText = () => {
 }
 
 const resetConfigDialog = () => {
+  clearProviderDrag()
   shouldFocusCustomPrompt = false
   selectedProfileId.value = appStore.activeProviderId
   providerPage.value = 'list'
@@ -1502,11 +1586,50 @@ defineExpose({
   gap: 10px;
 }
 .saved-provider-row {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   border: 1px solid rgba(var(--v-theme-on-surface), 0.16);
   border-radius: 8px;
+}
+.saved-provider-row--sortable {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+.saved-provider-row--dragging {
+  opacity: 0.5;
+}
+.saved-provider-row--drop-before::before,
+.saved-provider-row--drop-after::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: rgb(var(--v-theme-primary));
+  pointer-events: none;
+}
+.saved-provider-row--drop-before::before {
+  top: -6px;
+}
+.saved-provider-row--drop-after::after {
+  bottom: -6px;
+}
+.saved-provider-drag-handle {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 36px;
+  color: rgba(var(--v-theme-on-surface), 0.65);
+  cursor: grab;
+}
+.saved-provider-drag-handle:active {
+  cursor: grabbing;
+}
+.saved-provider-drag-handle:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: -2px;
+  border-radius: 6px;
 }
 .saved-provider-row:hover,
 .saved-provider-row:has(.saved-provider-card[aria-pressed='true']) {
