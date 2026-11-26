@@ -231,6 +231,20 @@ const commonProviders: readonly ProviderPreset[] = [
     modelsUrl: 'https://aihubmix.com/models',
   },
   {
+    id: 'martllm',
+    name: 'MartLLM',
+    aliases: 'UberLLM',
+    apiUrl: 'https://api.martllm.com/v1',
+    modelName: 'deepseek/deepseek-v4-flash',
+    suggestedModels: [
+      'deepseek/deepseek-v4-flash',
+      'deepseek/deepseek-v4-pro',
+      'qwen/qwen3.6-plus',
+    ],
+    keysUrl: 'https://martllm.com/dashboard/keys',
+    modelsUrl: 'https://martllm.com/models',
+  },
+  {
     id: 'groq',
     name: 'Groq',
     apiUrl: 'https://api.groq.com/openai/v1',
