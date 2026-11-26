@@ -244,6 +244,7 @@
         "editProviderTitle": "Edit {{name}}",
         "newProviderTitle": "Set up {{name}}",
         "selectProviderTitle": "Choose a provider",
+        "backToProviderPicker": "Back to provider selection",
         "backToProviders": "Back to my providers",
         "advancedConnection": "Advanced connection settings",
         "providerModelList": "Models",

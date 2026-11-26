@@ -327,6 +327,41 @@ describe('TextGenerate configuration and request lifecycle', () => {
     }
   })
 
+  it('keeps the picker search and scroll position when returning from provider configuration', async () => {
+    const { wrapper, findDialogButton, openProviderPicker } = createHost()
+    try {
+      findDialogButton('common.buttons.config')!.click()
+      await flushPromises()
+      const panel = await openProviderPicker()
+      const results = panel.querySelector<HTMLElement>('.provider-results')!
+      const search = panel.querySelector('input')!
+      search.value = 'deepseek'
+      search.dispatchEvent(new Event('input', { bubbles: true }))
+      await flushPromises()
+      expect(results.contains(search)).toBe(false)
+      results.scrollTop = 72
+      results.dispatchEvent(new Event('scroll'))
+      await flushPromises()
+      expect(panel.querySelector('.provider-search-bar--scrolled')).not.toBeNull()
+
+      results.querySelector<HTMLButtonElement>('.provider-option')!.click()
+      await flushPromises()
+      const back = findDialogButton('features.llm.config.backToProviderPicker')!
+      expect(back.closest('.provider-page-heading')?.querySelector('.v-card-title')).not.toBeNull()
+      expect(back.closest('.llm-config-body')).toBeNull()
+      back.click()
+      await flushPromises()
+
+      expect(document.querySelector<HTMLInputElement>('.provider-search input')?.value).toBe(
+        'deepseek',
+      )
+      expect(document.querySelector<HTMLElement>('.provider-results')?.scrollTop).toBe(72)
+    } finally {
+      wrapper.unmount()
+      document.body.innerHTML = ''
+    }
+  })
+
   it('keeps the partner preview out of the default provider directory', async () => {
     vi.stubEnv('VITE_PROVIDER_PARTNER_DEMO', '')
     const { wrapper, findDialogButton, openProviderPicker } = createHost()

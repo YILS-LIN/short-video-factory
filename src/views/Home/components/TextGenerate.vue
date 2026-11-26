@@ -59,7 +59,7 @@
                           class="provider-profile-add"
                           variant="tonal"
                           prepend-icon="mdi-plus"
-                          @click="providerPage = 'choose'"
+                          @click="openProviderPicker"
                         >
                           {{ t('features.llm.config.addProvider') }}
                         </v-btn>
@@ -136,32 +136,34 @@
                       persistent
                       scrollable
                     >
-                      <v-card
-                        class="llm-config-card"
-                        :title="
-                          providerPage === 'choose'
-                            ? t('features.llm.config.selectProviderTitle')
-                            : editorTitle
-                        "
-                      >
-                        <v-card-text :key="providerPage" class="llm-config-body">
-                          <div class="llm-config-panel llm-config-form flex flex-col gap-3">
-                            <div class="provider-page-heading">
-                              <v-btn
-                                icon="mdi-arrow-left"
-                                size="small"
-                                variant="text"
-                                :aria-label="t('features.llm.config.backToProviders')"
-                                v-if="providerPage === 'editor' && !editingProviderId"
-                                @click="backToProviderPicker"
-                              />
-                            </div>
-                            <ProviderPicker
-                              v-if="providerPage === 'choose'"
-                              :groups="providerGroups"
-                              @select="selectProvider"
-                            />
-                            <template v-else>
+                      <v-card class="llm-config-card provider-dialog-card">
+                        <div class="provider-page-heading">
+                          <v-btn
+                            v-if="providerPage === 'editor' && !editingProviderId"
+                            icon="mdi-arrow-left"
+                            size="small"
+                            variant="text"
+                            :aria-label="t('features.llm.config.backToProviderPicker')"
+                            @click="backToProviderPicker"
+                          />
+                          <v-card-title>
+                            {{
+                              providerPage === 'choose'
+                                ? t('features.llm.config.selectProviderTitle')
+                                : editorTitle
+                            }}
+                          </v-card-title>
+                        </div>
+                        <ProviderPicker
+                          v-if="providerPage === 'choose'"
+                          v-model:query="providerQuery"
+                          v-model:scroll-top="providerScrollTop"
+                          :groups="providerGroups"
+                          @select="selectProvider"
+                        />
+                        <template v-else-if="providerPage === 'editor'">
+                          <v-card-text class="llm-config-body">
+                            <div class="llm-config-panel llm-config-form flex flex-col gap-3">
                               <v-text-field
                                 v-model="profileName"
                                 :label="t('features.llm.config.providerName')"
@@ -472,9 +474,9 @@
                                   }}
                                 </div>
                               </div>
-                            </template>
-                          </div>
-                        </v-card-text>
+                            </div>
+                          </v-card-text>
+                        </template>
                         <v-divider />
                         <v-card-actions>
                           <v-btn
@@ -740,6 +742,8 @@ const testAbortController = ref<AbortController | null>(null)
 const configDialogShow = ref(false)
 const config = ref<LlmConfig>(structuredClone(toRaw(appStore.llmConfig)))
 const providerPage = ref<'list' | 'choose' | 'editor'>('list')
+const providerQuery = ref('')
+const providerScrollTop = ref(0)
 const selectedProfileId = ref<string | null>(appStore.activeProviderId)
 const editingProviderId = ref<string | null>(null)
 const advancedOpen = ref(false)
@@ -945,6 +949,11 @@ const testSavedProfile = (profile: ProviderProfile) => {
   if (testAbortController.value) return
   profileTestStatus.value.delete(profile.id)
   void handleTestConnection(profile)
+}
+const openProviderPicker = () => {
+  providerQuery.value = ''
+  providerScrollTop.value = 0
+  providerPage.value = 'choose'
 }
 const selectProvider = (id: string) => {
   const preset = availableProviders.find((provider) => provider.id === id)
@@ -1470,10 +1479,22 @@ defineExpose({
 .provider-model-heading {
   justify-content: space-between;
 }
+.llm-config-card.provider-dialog-card {
+  min-height: 0;
+  overflow: hidden;
+}
 .provider-page-heading {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
+  padding: 12px var(--llm-config-gutter) 8px;
+}
+.provider-page-heading .v-card-title {
+  min-width: 0;
+  padding: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .saved-provider-grid {
   display: grid;

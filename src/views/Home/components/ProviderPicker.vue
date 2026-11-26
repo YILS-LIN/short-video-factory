@@ -1,16 +1,18 @@
 <template>
   <div class="provider-panel">
-    <div class="provider-search">
-      <v-icon icon="mdi-magnify" size="20" />
-      <input
-        ref="searchInput"
-        v-model="query"
-        type="search"
-        :placeholder="t('features.llm.config.searchProviders')"
-        :aria-label="t('features.llm.config.searchProviders')"
-      />
+    <div class="provider-search-bar" :class="{ 'provider-search-bar--scrolled': scrollTop > 0 }">
+      <div class="provider-search">
+        <v-icon icon="mdi-magnify" size="20" />
+        <input
+          ref="searchInput"
+          v-model="query"
+          type="search"
+          :placeholder="t('features.llm.config.searchProviders')"
+          :aria-label="t('features.llm.config.searchProviders')"
+        />
+      </div>
     </div>
-    <div class="provider-results">
+    <div ref="results" class="provider-results" @scroll="updateScrollTop">
       <p v-if="!visibleGroups.length" class="provider-empty" role="status">
         {{ t('features.llm.config.noProvidersFound') }}
       </p>
@@ -40,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useTranslation } from 'i18next-vue'
 import type { ProviderPreset } from '@/lib/llm/provider-presets'
 
@@ -49,9 +51,22 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ select: [id: string] }>()
 const { i18next, t } = useTranslation()
-const query = ref('')
+const query = defineModel<string>('query', { required: true })
+const scrollTop = defineModel<number>('scrollTop', { required: true })
 const searchInput = ref<HTMLInputElement>()
-onMounted(() => searchInput.value?.focus())
+const results = ref<HTMLElement>()
+const updateScrollTop = () => {
+  if (results.value) scrollTop.value = results.value.scrollTop
+}
+onMounted(() => {
+  searchInput.value?.focus({ preventScroll: true })
+  if (results.value) results.value.scrollTop = scrollTop.value
+  updateScrollTop()
+})
+watch(query, () => {
+  if (results.value) results.value.scrollTop = 0
+  scrollTop.value = 0
+})
 
 const groups = computed(() => {
   const preferChinese = (i18next?.resolvedLanguage ?? 'zh-CN').startsWith('zh')
@@ -103,16 +118,20 @@ const visibleGroups = computed(() => {
 .provider-panel {
   display: flex;
   flex-direction: column;
-  background: rgb(var(--v-theme-surface));
-  color: rgb(var(--v-theme-on-surface));
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.14);
-  border-radius: 12px;
+  min-height: 0;
+}
+.provider-search-bar {
+  flex: 0 0 auto;
+  padding: 4px var(--llm-config-gutter) 8px;
+  border-bottom: 1px solid transparent;
+}
+.provider-search-bar--scrolled {
+  border-bottom-color: rgba(var(--v-theme-on-surface), 0.12);
 }
 .provider-search {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 10px 10px 0;
   padding: 0 10px;
   border-radius: 8px;
   background: rgba(var(--v-theme-on-surface), 0.06);
@@ -121,6 +140,9 @@ const visibleGroups = computed(() => {
 .provider-option:focus-visible {
   outline: 2px solid rgb(var(--v-theme-primary));
   outline-offset: 1px;
+}
+.provider-option:focus-visible {
+  outline-offset: -2px;
 }
 .provider-search input {
   width: 100%;
@@ -132,7 +154,7 @@ const visibleGroups = computed(() => {
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 10px;
+  padding: 0 var(--llm-config-gutter) 8px;
 }
 .provider-group + .provider-group {
   margin-top: 8px;

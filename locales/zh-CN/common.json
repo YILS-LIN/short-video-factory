@@ -244,6 +244,7 @@
         "editProviderTitle": "编辑 {{name}}",
         "newProviderTitle": "配置 {{name}}",
         "selectProviderTitle": "选择提供商",
+        "backToProviderPicker": "返回选择提供商",
         "backToProviders": "返回我的提供商",
         "advancedConnection": "高级连接设置",
         "providerModelList": "模型",
