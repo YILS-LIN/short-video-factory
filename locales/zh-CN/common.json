@@ -250,6 +250,7 @@
         "addModelId": "添加此模型 ID",
         "addProvider": "添加提供商",
         "providerName": "配置名称",
+        "defaultProviderName": "默认配置",
         "activeProvider": "使用中",
         "useProvider": "使用此模型",
         "createProvider": "创建提供商",

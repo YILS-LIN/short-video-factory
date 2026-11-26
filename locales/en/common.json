@@ -250,6 +250,7 @@
         "addModelId": "Add this model ID",
         "addProvider": "Add provider",
         "providerName": "Configuration name",
+        "defaultProviderName": "Default configuration",
         "activeProvider": "In use",
         "useProvider": "Use this model",
         "createProvider": "Create provider",

@@ -9,6 +9,7 @@ import {
 } from '@/lib/llm/config'
 import type { CopywritingStatus, LlmConfig } from '@/lib/llm/types'
 import {
+  LEGACY_PROVIDER_ID,
   normalizeProviderProfile,
   normalizeProviderProfiles,
   type ProviderProfile,
@@ -74,8 +75,8 @@ export const useAppStore = defineStore(
         config.modelName ||
         config.customHeaders.length
       ) {
-        saveProviderProfile({ id: 'legacy', name: '', config, models: [] })
-        selectProviderProfile('legacy')
+        saveProviderProfile({ id: LEGACY_PROVIDER_ID, name: '', config, models: [] })
+        selectProviderProfile(LEGACY_PROVIDER_ID)
       } else llmConfig.value = config
     }
     const hydrateProviderProfiles = () => {
@@ -260,9 +261,9 @@ export const useAppStore = defineStore(
             const config = normalizeLlmConfig(state.llmConfig)
             if (config.apiUrl || config.apiKey || config.modelName || config.customHeaders.length) {
               state.providerProfiles = [
-                normalizeProviderProfile({ id: 'legacy', name: '', config, models: [] }),
+                normalizeProviderProfile({ id: LEGACY_PROVIDER_ID, name: '', config, models: [] }),
               ]
-              state.activeProviderId = 'legacy'
+              state.activeProviderId = LEGACY_PROVIDER_ID
             }
           }
           return state
@@ -281,7 +282,7 @@ export const useAppStore = defineStore(
         context.store.updateRenderConfig(context.store.renderConfig)
         const migratedProviders = context.store.hydrateProviderProfiles()
         context.store.updateCopywritingConfig(context.store.copywritingConfig)
-        if (migratedProviders || context.store.activeProviderId === 'legacy')
+        if (migratedProviders || context.store.activeProviderId === LEGACY_PROVIDER_ID)
           context.store.$persist()
       },
     },

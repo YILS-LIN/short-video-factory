@@ -1,6 +1,8 @@
 import { normalizeLlmConfig } from './config'
 import type { LlmConfig } from './types'
 
+export const LEGACY_PROVIDER_ID = 'legacy'
+
 export interface ProviderProfile {
   id: string
   name: string

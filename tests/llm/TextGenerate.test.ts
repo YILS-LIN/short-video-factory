@@ -114,6 +114,34 @@ describe('TextGenerate configuration and request lifecycle', () => {
     mocks.generateCopywriting.mockReset()
   })
 
+  it.each([
+    ['https://long-instance-name.region.example.com/v1', 'features.llm.config.defaultProviderName'],
+    ['https://api.deepseek.com', 'DeepSeek（深度求索）'],
+  ])('shows a short title for an unnamed migrated provider at %s', async (apiUrl, title) => {
+    const { wrapper, storeState, findDialogButton, openEditor } = createHost({
+      ...validConfig(),
+      apiUrl,
+    })
+    try {
+      await openEditor()
+      const nameField = wrapper
+        .findAllComponents({ name: 'VTextField' })
+        .find((field) => field.props('label') === 'features.llm.config.providerName')!
+      expect(nameField.props('placeholder')).toBe(title)
+      findDialogButton('features.llm.config.saveProviderChanges')!.click()
+      await flushPromises()
+      expect(document.querySelector('.saved-provider-name')?.textContent).toBe(title)
+      expect(document.querySelector('.provider-footer-status strong')?.textContent?.trim()).toBe(
+        `${title} / test-model`,
+      )
+      expect(storeState.providerProfiles[0].name).toBe('')
+      expect(storeState.llmConfig.apiUrl).toBe(apiUrl)
+    } finally {
+      wrapper.unmount()
+      document.body.innerHTML = ''
+    }
+  })
+
   it('keeps official Zhipu models selectable when discovery returns an empty list', async () => {
     vi.stubGlobal(
       'fetch',

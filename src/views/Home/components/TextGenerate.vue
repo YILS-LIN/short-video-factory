@@ -165,7 +165,7 @@
                               <v-text-field
                                 v-model="profileName"
                                 :label="t('features.llm.config.providerName')"
-                                :placeholder="defaultProfileName(config)"
+                                :placeholder="defaultProfileName(config, editingProviderId)"
                                 hide-details
                               />
                               <v-alert
@@ -709,7 +709,11 @@ import { generateCopywriting } from '@/lib/llm/generate'
 import { generateDiverseCopywriting, type GenerationPhase } from '@/lib/llm/generate-diverse'
 import { builtinSystemPrompt } from '@/lib/llm/prompts'
 import { applyProviderPreset, getProviderGroups, matchesProvider } from '@/lib/llm/provider-presets'
-import { normalizeModelIds, type ProviderProfile } from '@/lib/llm/provider-profiles'
+import {
+  LEGACY_PROVIDER_ID,
+  normalizeModelIds,
+  type ProviderProfile,
+} from '@/lib/llm/provider-profiles'
 import { discoverProviderModels } from '@/lib/llm/model-discovery'
 import { getRequestUrlHint, getRequestUrlIssue } from '@/lib/llm/providers'
 import { getErrorDetail } from '@/lib/llm/security'
@@ -820,12 +824,13 @@ const applySelectedProfile = () => {
     appStore.selectProviderProfile(selectedProfile.value.id)
   handleCloseDialog()
 }
-const defaultProfileName = (value: LlmConfig) => {
+const defaultProfileName = (value: LlmConfig, id?: string | null) => {
   const preset = availableProviders.find((entry) => matchesProvider(value, entry))
   if (preset) {
     const preferChinese = (i18next?.resolvedLanguage ?? 'zh-CN').startsWith('zh')
     return (preferChinese && preset.nameZh) || preset.name
   }
+  if (id === LEGACY_PROVIDER_ID) return t('features.llm.config.defaultProviderName')
   try {
     return new URL(value.apiUrl).host
   } catch {
@@ -833,7 +838,7 @@ const defaultProfileName = (value: LlmConfig) => {
   }
 }
 const profileTitle = (profile: ProviderProfile) =>
-  profile.name || defaultProfileName(profile.config)
+  profile.name || defaultProfileName(profile.config, profile.id)
 const editorTitle = computed(() => {
   const profile = appStore.providerProfiles.find(({ id }) => id === editingProviderId.value)
   return t(
@@ -1313,7 +1318,9 @@ const handleSaveConfig = () => {
     if (previous && !sameConfig(previous.config, config.value)) profileTestStatus.value.delete(id)
     appStore.saveProviderProfile({
       id,
-      name: profileName.value.trim() || defaultProfileName(config.value),
+      name:
+        profileName.value.trim() ||
+        (id === LEGACY_PROVIDER_ID ? '' : defaultProfileName(config.value)),
       config: normalizeLlmConfig(config.value),
       models: draftModels.value,
     })
